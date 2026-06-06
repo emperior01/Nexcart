@@ -1,0 +1,237 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Nexcart Design System — Orange × Black × White
+ * Brand: Curated Essentials. Clean. Bold. Modern.
+ * Fonts: Syne (display) · DM Sans (body)
+ * Primary: #E8611A  Accent: #0D0D0D  Surface: #FFFFFF
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ── Google Fonts import ───────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+
+:root {
+  --radius: 0.75rem;
+
+  /* ── Core palette ──────────────────────────────── */
+  --background:          #FFFFFF;
+  --foreground:          #0D0D0D;
+
+  /* Cards / surfaces */
+  --card:                #FFFFFF;
+  --card-foreground:     #0D0D0D;
+  --popover:             #FFFFFF;
+  --popover-foreground:  #0D0D0D;
+
+  /* Primary — Orange */
+  --primary:             #E8611A;
+  --primary-foreground:  #FFFFFF;
+  --primary-mid:         #C4511A;
+  --primary-glow:        #F5986A;
+
+  /* Secondary — light gray */
+  --secondary:           #F4F4F4;
+  --secondary-foreground:#1A1A1A;
+
+  /* Muted */
+  --muted:               #F4F4F4;
+  --muted-foreground:    #6B6B6B;
+
+  /* Accent — near-black */
+  --accent:              #1A1A1A;
+  --accent-foreground:   #FFFFFF;
+  --accent-deep:         #0D0D0D;
+
+  /* Destructive */
+  --destructive:         #E8341A;
+  --destructive-foreground: #FFFFFF;
+
+  /* Borders & inputs */
+  --border:              #EFEFEF;
+  --input:               #EFEFEF;
+  --ring:                #E8611A;
+
+  /* ── Brand gradients & effects ─────────────────── */
+  --gradient-brand:      linear-gradient(135deg, #C4511A, #E8611A);
+  --gradient-gold:       linear-gradient(135deg, #E8611A, #F5986A);
+  --gradient-hero:       linear-gradient(to top, rgba(13,13,13,0.92) 0%, rgba(13,13,13,0.3) 50%, transparent 100%);
+  --gradient-hero-bg:    linear-gradient(160deg, #1a1a1a 0%, #2e1a0e 60%, #3d2010 100%);
+  --shadow-elegant:      0 8px 32px rgba(0,0,0,0.13);
+  --shadow-gold:         0 4px 16px rgba(232,97,26,0.25);
+  --shadow-card:         0 2px 12px rgba(0,0,0,0.07);
+
+  /* Charts */
+  --chart-1: #E8611A;
+  --chart-2: #0D0D0D;
+  --chart-3: #F5986A;
+  --chart-4: #C4511A;
+  --chart-5: #6B6B6B;
+
+  /* Sidebar */
+  --sidebar:                    #F4F4F4;
+  --sidebar-foreground:         #0D0D0D;
+  --sidebar-primary:            #E8611A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent:             #EFEFEF;
+  --sidebar-accent-foreground:  #1A1A1A;
+  --sidebar-border:             #E5E5E5;
+  --sidebar-ring:               #E8611A;
+}
+
+/* ── Dark mode (kept for admin / system preference) ── */
+.dark {
+  --background:          #0D0D0D;
+  --foreground:          #F4F4F4;
+
+  --card:                #1A1A1A;
+  --card-foreground:     #F4F4F4;
+  --popover:             #1A1A1A;
+  --popover-foreground:  #F4F4F4;
+
+  --primary:             #F5986A;
+  --primary-foreground:  #0D0D0D;
+  --primary-mid:         #E8611A;
+  --primary-glow:        #FFBF9A;
+
+  --secondary:           #2A2A2A;
+  --secondary-foreground:#F4F4F4;
+
+  --muted:               #2A2A2A;
+  --muted-foreground:    #8A8A8A;
+
+  --accent:              #F5986A;
+  --accent-foreground:   #0D0D0D;
+  --accent-deep:         #E8611A;
+
+  --destructive:         #FF5533;
+  --destructive-foreground: #FFFFFF;
+
+  --border:              rgba(255,255,255,0.08);
+  --input:               rgba(255,255,255,0.1);
+  --ring:                #F5986A;
+
+  --gradient-brand:      linear-gradient(135deg, #E8611A, #F5986A);
+  --gradient-gold:       linear-gradient(135deg, #F5986A, #FFBF9A);
+  --gradient-hero:       linear-gradient(to top, rgba(13,13,13,0.95) 0%, rgba(13,13,13,0.4) 50%, transparent 100%);
+  --gradient-hero-bg:    linear-gradient(160deg, #0D0D0D 0%, #1e0f07 60%, #2a1508 100%);
+  --shadow-elegant:      0 8px 32px rgba(0,0,0,0.5);
+  --shadow-gold:         0 4px 20px rgba(232,97,26,0.35);
+  --shadow-card:         0 2px 12px rgba(0,0,0,0.4);
+
+  --chart-1: #F5986A;
+  --chart-2: #E8611A;
+  --chart-3: #FFBF9A;
+  --chart-4: #C4511A;
+  --chart-5: #8A8A8A;
+
+  --sidebar:                    #111111;
+  --sidebar-foreground:         #F4F4F4;
+  --sidebar-primary:            #E8611A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent:             #1A1A1A;
+  --sidebar-accent-foreground:  #F4F4F4;
+  --sidebar-border:             rgba(255,255,255,0.08);
+  --sidebar-ring:               #F5986A;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: 'DM Sans', sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Syne', sans-serif;
+  }
+}
+
+/* ── Nexcart utility classes ─────────────────────── */
+@layer utilities {
+  .nx-gradient-brand {
+    background: var(--gradient-brand);
+  }
+  .nx-gradient-gold {
+    background: var(--gradient-gold);
+  }
+  .nx-text-gradient {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .nx-text-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .nx-shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+  .nx-shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+  .nx-shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .font-display {
+    font-family: 'Syne', sans-serif;
+  }
+  .font-body {
+    font-family: 'DM Sans', sans-serif;
+  }
+}
