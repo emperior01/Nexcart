@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { User, ShoppingBag, Settings, LogOut, Package } from "lucide-react";
+import { User, ShoppingBag, Settings, LogOut, Package, Shield } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { CurrencySelector } from "@/components/nexcart/CurrencySelector";
@@ -41,6 +41,20 @@ function AccountPage() {
       }
     });
   }, [user]);
+
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
 
   const { data: orders, isLoading: ordersLoading } = useQuery({
     queryKey: ["orders", user?.id],
@@ -120,9 +134,18 @@ function AccountPage() {
                 <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={signOut} className="gap-2 text-muted-foreground">
-              <LogOut className="h-4 w-4" /> Sign out
-            </Button>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button size="sm" className="gap-2 text-white" style={{ background: "#E8611A" }}>
+                    <Shield className="h-4 w-4" /> Admin
+                  </Button>
+                </Link>
+              )}
+              <Button variant="outline" size="sm" onClick={signOut} className="gap-2 text-muted-foreground">
+                <LogOut className="h-4 w-4" /> Sign out
+              </Button>
+            </div>
           </div>
 
           {/* Tabs */}
