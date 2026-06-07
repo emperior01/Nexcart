@@ -154,4 +154,3 @@ function AuthPage() {
     </div>
   );
 }
-ENDOFFILEcat > src/routes/auth.tsx << 'ENDOFFILE'
