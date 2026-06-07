@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchSiteSettings, DEFAULT_SETTINGS, type TrustBadge } from "@/lib/site-settings";
 import type { ProductWithImages } from "@/lib/products";
+import { useCart } from "@/lib/cart";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -30,6 +31,7 @@ const categories = [
 ];
 
 function Index() {
+  const { openCart } = useCart();
   // ── Site settings ──────────────────────────────────
   const { data: settings = DEFAULT_SETTINGS } = useQuery({
     queryKey: ["site-settings"],
@@ -341,7 +343,7 @@ function Index() {
               {item.icon}{item.label}
             </Link>
           ) : (
-            <button key={item.label} className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-[#6B6B6B]">
+            <button key={item.label} onClick={openCart} className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-[#6B6B6B]">
               {item.icon}{item.label}
             </button>
           )

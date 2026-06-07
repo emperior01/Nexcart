@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { Search, ShoppingCart, User, LogIn, Menu } from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,6 +17,8 @@ const navLinks = [
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
   const { count, openCart } = useCart();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-40 w-full">
@@ -56,6 +59,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             className="w-9 h-9 flex items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
             style={{ color: "#3A3A3A" }}
             aria-label="Search"
+            onClick={() => navigate({ to: "/shop" })}
           >
             <Search className="h-5 w-5" strokeWidth={1.8} />
           </button>
@@ -103,11 +107,37 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-[#F4F4F4]"
             style={{ color: "#3A3A3A" }}
             aria-label="Menu"
+            onClick={() => setMobileOpen(v => !v)}
           >
             <Menu className="h-5 w-5" strokeWidth={1.8} />
           </button>
         </div>
       </div>
+
+      {/* Mobile menu dropdown */}
+      {mobileOpen && (
+        <div className="md:hidden fixed top-[96px] left-0 right-0 z-40 bg-white border-b border-[#EFEFEF] shadow-lg px-6 py-4 flex flex-col gap-1">
+          {navLinks.map((l) => (
+            <Link
+              key={l.to}
+              to={l.to}
+              onClick={() => setMobileOpen(false)}
+              className="px-4 py-3 rounded-xl text-sm font-semibold transition-colors"
+              style={{ color: "#3A3A3A" }}
+              activeProps={{ style: { color: "#E8611A", background: "#FEF0E8" } }}
+            >
+              {l.label}
+            </Link>
+          ))}
+          {!user && (
+            <Link to="/auth" onClick={() => setMobileOpen(false)}
+              className="mt-2 px-4 py-3 rounded-xl text-sm font-semibold text-white text-center"
+              style={{ background: "#E8611A" }}>
+              Sign In
+            </Link>
+          )}
+        </div>
+      )}
     </header>
   );
 }
