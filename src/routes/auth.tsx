@@ -1,10 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, Chrome } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/index";
-import { Logo } from "@/components/nexcart/Logo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
@@ -13,46 +10,38 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   async function handleSubmit() {
     setError(null);
-    if (!email || !password) {
-      setError("Please fill in all fields.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    if (mode === "signup" && !fullName.trim()) {
-      setError("Please enter your full name.");
-      return;
-    }
+    setSuccess(null);
+    if (!email.trim() || !password) { setError("Please fill in all fields."); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (mode === "signup" && !fullName.trim()) { setError("Please enter your full name."); return; }
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: fullName } },
+        const { error: err } = await supabase.auth.signUp({
+          email: email.trim(), password,
+          options: { data: { full_name: fullName.trim() } },
         });
-        if (signUpError) throw signUpError;
-        toast.success("Account created! Check your email to confirm.");
+        if (err) throw err;
+        setSuccess("Account created! Check your email to confirm before signing in.");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) throw signInError;
+        const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (err) throw err;
         toast.success("Welcome back!");
         navigate({ to: "/" });
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
@@ -62,132 +51,261 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo: window.location.origin + "/" },
     });
-    if (error) {
-      toast.error(error.message);
+    if (error) { toast.error(error.message); setLoading(false); }
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10"
+      style={{ background: "linear-gradient(160deg,#1a1a1a 0%,#2e1a0e 60%,#3d2010 100%)" }}>
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <Link to="/" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "-0.03em", textDecoration: "none" }}>
+            <span style={{ color: "#E8611A" }}>Nex</span><span style={{ color: "#fff" }}>cart</span>
+          </Link>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 8 }}>
+            {mode === "signin" ? "Welcome back" : "Create your account"}
+          </p>
+        </div>
+
+        <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
+          <div className="flex rounded-xl p-1 mb-6" style={{ background: "rgba(255,255,255,0.08)" }}>
+            {["signin", "signup"].map((m) => (
+              <button key={m} onClick={() => { setMode(m); setError(null); setSuccess(null); }}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                style={{ background: mode === m ? "#E8611A" : "transparent", color: mode === m ? "#fff" : "rgba(255,255,255,0.5)" }}>
+                {m === "signin" ? "Sign In" : "Sign Up"}
+              </button>
+            ))}
+          </div>
+
+          <button onClick={handleGoogle} disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white mb-4 transition-all"
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.1)" }} />
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>or</span>
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.1)" }} />
+          </div>
+
+          <div className="space-y-3">
+            {mode === "signup" && (
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+                <input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white outline-none"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }} />
+              </div>
+            )}
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+              <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white outline-none"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }} />
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+              <input type={showPw ? "text" : "password"} placeholder="Password (min. 8 characters)"
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                className="w-full pl-10 pr-12 py-3 rounded-xl text-sm text-white outline-none"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }} />
+              <button type="button" onClick={() => setShowPw(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: "rgba(255,255,255,0.4)" }}>
+                {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+
+            {error && (
+              <div className="rounded-xl px-4 py-3 text-xs text-red-300"
+                style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="rounded-xl px-4 py-3 text-xs text-green-300"
+                style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)" }}>
+                {success}
+              </div>
+            )}
+
+            <button onClick={handleSubmit} disabled={loading}
+              className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all"
+              style={{ background: loading ? "rgba(232,97,26,0.6)" : "#E8611A", fontFamily: "'Syne',sans-serif" }}>
+              {loading ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
+            </button>
+          </div>
+        </div>
+        <p className="text-center text-xs mt-5" style={{ color: "rgba(255,255,255,0.35)" }}>
+          By continuing you agree to our Terms & Privacy Policy
+        </p>
+      </div>
+    </div>
+  );
+}
+ENDOFFILEcat > src/routes/auth.tsx << 'ENDOFFILE'
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+export const Route = createFileRoute("/auth")({
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  async function handleSubmit() {
+    setError(null);
+    setSuccess(null);
+    if (!email.trim() || !password) { setError("Please fill in all fields."); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (mode === "signup" && !fullName.trim()) { setError("Please enter your full name."); return; }
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { error: err } = await supabase.auth.signUp({
+          email: email.trim(), password,
+          options: { data: { full_name: fullName.trim() } },
+        });
+        if (err) throw err;
+        setSuccess("Account created! Check your email to confirm before signing in.");
+      } else {
+        const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (err) throw err;
+        toast.success("Welcome back!");
+        navigate({ to: "/" });
+      }
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
       setLoading(false);
     }
   }
 
+  async function handleGoogle() {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin + "/" },
+    });
+    if (error) { toast.error(error.message); setLoading(false); }
+  }
+
   return (
-    <div
-      className="flex min-h-screen flex-col items-center justify-center px-4 py-12"
-      style={{ background: "var(--gradient-hero-bg)" }}
-    >
-      {/* Card */}
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-lg shadow-2xl p-8">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <Logo className="scale-110" />
-          <h1 className="text-xl font-extrabold text-white mt-1">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10"
+      style={{ background: "linear-gradient(160deg,#1a1a1a 0%,#2e1a0e 60%,#3d2010 100%)" }}>
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <Link to="/" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "-0.03em", textDecoration: "none" }}>
+            <span style={{ color: "#E8611A" }}>Nex</span><span style={{ color: "#fff" }}>cart</span>
+          </Link>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 8 }}>
             {mode === "signin" ? "Welcome back" : "Create your account"}
-          </h1>
-          <p className="text-sm text-white/50">
-            {mode === "signin"
-              ? "Sign in to continue shopping"
-              : "Join Nexcart and start shopping smarter"}
           </p>
         </div>
 
-        {/* Google */}
-        <Button
-          onClick={handleGoogle}
-          disabled={loading}
-          variant="outline"
-          className="w-full mb-5 border-white/20 bg-white/10 text-white hover:bg-white/20 gap-2 font-semibold"
-        >
-          <Chrome className="h-4 w-4" />
-          Continue with Google
-        </Button>
-
-        <div className="relative mb-5">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/10" />
+        <div className="rounded-2xl p-6" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
+          <div className="flex rounded-xl p-1 mb-6" style={{ background: "rgba(255,255,255,0.08)" }}>
+            {["signin", "signup"].map((m) => (
+              <button key={m} onClick={() => { setMode(m); setError(null); setSuccess(null); }}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold transition-all"
+                style={{ background: mode === m ? "#E8611A" : "transparent", color: mode === m ? "#fff" : "rgba(255,255,255,0.5)" }}>
+                {m === "signin" ? "Sign In" : "Sign Up"}
+              </button>
+            ))}
           </div>
-          <div className="relative flex justify-center">
-            <span className="bg-transparent px-3 text-xs text-white/40">or continue with email</span>
+
+          <button onClick={handleGoogle} disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white mb-4 transition-all"
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.1)" }} />
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>or</span>
+            <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.1)" }} />
           </div>
-        </div>
 
-        {/* Form */}
-        <div className="space-y-4">
-          {mode === "signup" && (
-            <div className="space-y-1.5">
-              <Label className="text-white/70 text-xs font-semibold">Full Name</Label>
-              <Input
-                placeholder="Your full name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-primary"
-              />
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label className="text-white/70 text-xs font-semibold">Email</Label>
+          <div className="space-y-3">
+            {mode === "signup" && (
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+                <input placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white outline-none"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }} />
+              </div>
+            )}
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-              <Input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-primary"
-              />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+              <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white outline-none"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }} />
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-white/70 text-xs font-semibold">Password</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-              <Input
-                type={showPw ? "text" : "password"}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: "rgba(255,255,255,0.3)" }} />
+              <input type={showPw ? "text" : "password"} placeholder="Password (min. 8 characters)"
+                value={password} onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                className="pl-9 pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-primary"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
-              >
+                className="w-full pl-10 pr-12 py-3 rounded-xl text-sm text-white outline-none"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }} />
+              <button type="button" onClick={() => setShowPw(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: "rgba(255,255,255,0.4)" }}>
                 {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+
+            {error && (
+              <div className="rounded-xl px-4 py-3 text-xs text-red-300"
+                style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="rounded-xl px-4 py-3 text-xs text-green-300"
+                style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)" }}>
+                {success}
+              </div>
+            )}
+
+            <button onClick={handleSubmit} disabled={loading}
+              className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all"
+              style={{ background: loading ? "rgba(232,97,26,0.6)" : "#E8611A", fontFamily: "'Syne',sans-serif" }}>
+              {loading ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
+            </button>
           </div>
-
-          {error && (
-            <p className="rounded-lg bg-destructive/20 border border-destructive/30 px-3 py-2 text-xs text-red-300">
-              {error}
-            </p>
-          )}
-
-          <Button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full h-11 font-bold text-[oklch(0.14_0.06_75)] shadow-[var(--shadow-gold)] mt-1"
-            style={{ background: "var(--gradient-gold)" }}
-          >
-            {loading
-              ? "Please wait…"
-              : mode === "signin"
-              ? "Sign In"
-              : "Create Account"}
-          </Button>
         </div>
-
-        {/* Toggle mode */}
-        <p className="mt-6 text-center text-sm text-white/50">
-          {mode === "signin" ? "Don't have an account?" : "Already have an account?"}{" "}
-          <button
-            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); }}
-            className="font-semibold text-primary hover:underline"
-          >
-            {mode === "signin" ? "Sign up" : "Sign in"}
-          </button>
+        <p className="text-center text-xs mt-5" style={{ color: "rgba(255,255,255,0.35)" }}>
+          By continuing you agree to our Terms & Privacy Policy
         </p>
       </div>
     </div>
