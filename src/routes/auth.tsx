@@ -155,8 +155,3 @@ function AuthPage() {
   );
 }
 ENDOFFILEcat > src/routes/auth.tsx << 'ENDOFFILE'
-import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
