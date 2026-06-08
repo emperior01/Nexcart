@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, ShoppingCart, User, LogIn, Menu } from "lucide-react";
+import { Search, ShoppingCart, User, LogIn, Menu, Home, Store, LogOut, X } from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/lib/cart";
@@ -9,9 +9,9 @@ interface NavbarProps {
   announcementText?: string;
 }
 
-const navLinks = [
-  { to: "/",     label: "Home" },
-  { to: "/shop", label: "Shop" },
+const navLinks: { to: string; label: string; icon: React.ElementType }[] = [
+  { to: "/",     label: "Home",  icon: Home },
+  { to: "/shop", label: "Shop",  icon: Store },
 ] as const;
 
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
@@ -114,43 +114,72 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         </div>
       </div>
 
-      {/* Mobile menu dropdown */}
+      {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden fixed top-[96px] left-0 right-0 z-40 bg-white border-b border-[#EFEFEF] shadow-lg px-4 py-3 flex flex-col gap-2">
-          {navLinks.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold border border-[#EFEFEF] transition-colors"
-              style={{ color: "#3A3A3A", background: "#F9F9F9" }}
-              activeProps={{ style: { color: "#E8611A", background: "#FEF0E8", borderColor: "#E8611A" } }}
-            >
-              {l.label}
-            </Link>
-          ))}
-          {user ? (
-            <>
-              <Link to="/account" onClick={() => setMobileOpen(false)}
-                className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold border border-[#EFEFEF] transition-colors"
-                style={{ color: "#3A3A3A", background: "#F9F9F9" }}>
-                My Account
-              </Link>
-              <button
-                onClick={async () => { setMobileOpen(false); await import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut()); navigate({ to: "/" }); }}
-                className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold border border-red-100 w-full text-left"
-                style={{ color: "#EF4444", background: "#FEF2F2" }}>
-                Sign Out
+        <>
+          <div className="md:hidden fixed inset-0 z-30 bg-black/40" onClick={() => setMobileOpen(false)} />
+          <div className="md:hidden fixed top-0 right-0 bottom-0 z-40 w-72 bg-white flex flex-col shadow-2xl">
+            {/* Header */}
+            <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 20, color: "#E8611A", letterSpacing: "-0.03em" }}>Nexcart</span>
+              <button onClick={() => setMobileOpen(false)} style={{ width: 32, height: 32, borderRadius: "50%", background: "#F3F4F6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X style={{ width: 16, height: 16, color: "#6B7280" }} />
               </button>
-            </>
-          ) : (
-            <Link to="/auth" onClick={() => setMobileOpen(false)}
-              className="flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold text-white"
-              style={{ background: "#E8611A" }}>
-              Sign In
-            </Link>
-          )}
-        </div>
+            </div>
+
+            {/* Nav links */}
+            <nav style={{ padding: "12px 12px", display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+              {navLinks.map((l) => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setMobileOpen(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", textDecoration: "none", transition: "all .15s" }}
+                  activeProps={{ style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#E8611A", textDecoration: "none", background: "#FEF0E8" } }}
+                >
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <l.icon style={{ width: 16, height: 16 }} />
+                  </span>
+                  {l.label}
+                </Link>
+              ))}
+
+              {user && (
+                <Link to="/account" onClick={() => setMobileOpen(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", textDecoration: "none" }}
+                  activeProps={{ style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#E8611A", textDecoration: "none", background: "#FEF0E8" } }}
+                >
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <User style={{ width: 16, height: 16 }} />
+                  </span>
+                  My Account
+                </Link>
+              )}
+            </nav>
+
+            {/* Bottom */}
+            <div style={{ padding: "12px", borderTop: "1px solid #F3F4F6" }}>
+              {user ? (
+                <button
+                  onClick={async () => { setMobileOpen(false); await import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut()); navigate({ to: "/" }); }}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#EF4444", background: "#FEF2F2", border: "none", width: "100%", cursor: "pointer" }}
+                >
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <LogOut style={{ width: 16, height: 16 }} />
+                  </span>
+                  Sign Out
+                </button>
+              ) : (
+                <Link to="/auth" onClick={() => setMobileOpen(false)}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 700, color: "#fff", background: "#E8611A", textDecoration: "none" }}
+                >
+                  <LogIn style={{ width: 16, height: 16 }} />
+                  Sign In
+                </Link>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </header>
   );

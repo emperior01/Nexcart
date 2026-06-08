@@ -48,23 +48,18 @@ export function CartDrawer() {
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-              <div
-                className="grid h-16 w-16 place-items-center rounded-2xl opacity-30"
-                style={{ background: "var(--gradient-brand)" }}
-              >
-                <ShoppingCart className="h-8 w-8 text-white" />
+              <div style={{ width: 72, height: 72, borderRadius: 20, background: "#FEF0E8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <ShoppingCart style={{ width: 32, height: 32, color: "#E8611A" }} />
               </div>
               <div>
-                <p className="font-semibold text-foreground">Your cart is empty</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Browse products and add them here.
-                </p>
+                <p style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 16, color: "#0D0D0D" }}>Your cart is empty</p>
+                <p style={{ fontSize: 13, color: "#6B7280", marginTop: 4 }}>Browse products and add them here.</p>
               </div>
               <Button
                 size="sm"
                 onClick={closeCart}
                 className="text-white"
-                style={{ background: "var(--gradient-brand)" }}
+                style={{ background: "#E8611A", borderRadius: 50, padding: "10px 24px", fontWeight: 700 }}
                 asChild
               >
                 <Link to="/shop">Shop Now</Link>
