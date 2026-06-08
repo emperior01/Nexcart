@@ -48,7 +48,7 @@ export function Footer() {
           {/* Logo + tagline */}
           <div
             className="text-[24px] font-extrabold tracking-[-0.03em] mb-2"
-            style={{ fontFamily: "'Syne', sans-serif", color: "#E8611A" }}
+            style={{ fontFamily: "'Inter', sans-serif", color: "#E8611A" }}
           >
             Nexcart
           </div>

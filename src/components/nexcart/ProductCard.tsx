@@ -108,7 +108,7 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
         )}
         <h3
           className="text-[14px] font-semibold text-[#0D0D0D] leading-snug mb-1.5 line-clamp-2"
-          style={{ fontFamily: "'Syne', sans-serif" }}
+          style={{ fontFamily: "'Inter', sans-serif" }}
         >
           {product.title}
         </h3>
@@ -123,7 +123,7 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
         <div className="flex items-center gap-2">
           <span
             className="text-[16px] font-bold text-[#E8611A]"
-            style={{ fontFamily: "'Syne', sans-serif" }}
+            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {formatPrice(product.price, product.currency, currency)}
           </span>

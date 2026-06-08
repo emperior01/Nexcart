@@ -141,7 +141,7 @@ function Index() {
             </span>
             <h1
               className="text-white mb-4 leading-[1.05]"
-              style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(34px,8vw,50px)", letterSpacing: "-0.03em" }}
+              style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: "clamp(34px,8vw,50px)", letterSpacing: "-0.03em" }}
             >
               {settings.hero.heading_line1}<br />
               <em style={{ fontStyle: "normal", color: "#E8611A" }}>{settings.hero.heading_line2}</em>
@@ -194,7 +194,7 @@ function Index() {
           <div className="flex items-end justify-between mb-5">
             <div>
               <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#E8611A] mb-1.5">Categories</div>
-              <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "26px", letterSpacing: "-0.02em", color: "#0D0D0D" }}>
+              <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: "26px", letterSpacing: "-0.02em", color: "#0D0D0D" }}>
                 Shop by category
               </h2>
             </div>
@@ -212,7 +212,7 @@ function Index() {
                 style={{ background: c.bg }}
               >
                 <div className="absolute inset-0 flex items-end p-2.5" style={{ background: "linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 60%)" }}>
-                  <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "-0.01em" }}>
+                  <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "-0.01em" }}>
                     {c.label}
                   </span>
                 </div>
@@ -226,7 +226,7 @@ function Index() {
           <div className="flex items-end justify-between mb-5">
             <div>
               <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#E8611A] mb-1.5">Bestsellers</div>
-              <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "26px", letterSpacing: "-0.02em", color: "#0D0D0D" }}>
+              <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: "26px", letterSpacing: "-0.02em", color: "#0D0D0D" }}>
                 Loved by the community
               </h2>
             </div>
@@ -256,7 +256,7 @@ function Index() {
           <div className="flex items-end justify-between mb-5">
             <div>
               <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#E8611A] mb-1.5">Just Landed</div>
-              <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "26px", letterSpacing: "-0.02em", color: "#0D0D0D" }}>
+              <h2 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: "26px", letterSpacing: "-0.02em", color: "#0D0D0D" }}>
                 New arrivals
               </h2>
             </div>
@@ -282,7 +282,7 @@ function Index() {
           <div className="relative z-10">
             <h2
               className="text-white mb-2 leading-[1.15]"
-              style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "24px", letterSpacing: "-0.02em", whiteSpace: "pre-line" }}
+              style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: "24px", letterSpacing: "-0.02em", whiteSpace: "pre-line" }}
             >
               {settings.promo_banner.heading}
             </h2>
@@ -318,7 +318,7 @@ function Index() {
                   <f.icon className="h-4 w-4 text-[#E8611A]" strokeWidth={1.8} />
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-[#0D0D0D]" style={{ fontFamily: "'Syne',sans-serif" }}>{f.title}</p>
+                  <p className="text-[13px] font-semibold text-[#0D0D0D]" style={{ fontFamily: "'Inter',sans-serif" }}>{f.title}</p>
                   <p className="text-[12px] text-[#6B6B6B] mt-0.5">{f.desc}</p>
                 </div>
               </div>

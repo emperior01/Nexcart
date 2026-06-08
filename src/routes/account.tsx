@@ -78,10 +78,19 @@ function AccountPage() {
     if (!fullName.trim()) { toast.error("Full name cannot be empty."); return; }
     setSaving(true);
     try {
+      // Try update first, then insert if not exists
       const { error: updateError } = await supabase
         .from("profiles")
-        .upsert({ id: user.id, full_name: fullName.trim(), phone: phone.trim() || null });
-      if (updateError) throw updateError;
+        .update({ full_name: fullName.trim(), phone: phone.trim() || null })
+        .eq("id", user.id);
+
+      if (updateError) {
+        // Row might not exist yet, try insert
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({ id: user.id, full_name: fullName.trim(), phone: phone.trim() || null });
+        if (insertError) throw insertError;
+      }
       toast.success("Profile updated!");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save profile.");

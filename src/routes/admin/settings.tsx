@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Save, ImageIcon, Type, Megaphone, Gift, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/index";
+import { supabase } from "@/integrations/supabase/client";
 import { fetchSiteSettings, saveSetting, type HeroSettings, type PromoBannerSettings, type TrustBadge } from "@/lib/site-settings";
 import { toast } from "sonner";
 
@@ -26,6 +27,8 @@ function Section({ icon: Icon, title, children }: { icon: React.ElementType; tit
 function AdminSettings() {
   const qc = useQueryClient();
   const [saving, setSaving] = useState<string | null>(null);
+  const [heroImgUploading, setHeroImgUploading] = useState(false);
+  const heroImgRef = useRef<HTMLInputElement>(null);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["site-settings"],
@@ -89,6 +92,26 @@ function AdminSettings() {
       images[i] = url;
       return { ...h, images };
     });
+  }
+
+  async function uploadHeroImage(file: File) {
+    setHeroImgUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `hero/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("product-images")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+      setHero((h) => ({ ...h, images: [...h.images, data.publicUrl] }));
+      toast.success("Hero image uploaded!");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setHeroImgUploading(false);
+      if (heroImgRef.current) heroImgRef.current.value = "";
+    }
   }
 
   function updateBadge(i: number, field: keyof TrustBadge, val: string) {
@@ -198,16 +221,29 @@ function AdminSettings() {
                 Up to 4 images — they cycle automatically as a slideshow behind the hero.
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={addHeroImage}
-              disabled={hero.images.length >= 4}
-              className="gap-1.5 shrink-0"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add Image
-            </Button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input ref={heroImgRef} type="file" accept="image/*" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadHeroImage(f); }} />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={heroImgUploading || hero.images.length >= 4}
+                onClick={() => heroImgRef.current?.click()}
+                className="gap-1.5 shrink-0"
+              >
+                📷 {heroImgUploading ? "Uploading…" : "Upload"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={addHeroImage}
+                disabled={hero.images.length >= 4}
+                className="gap-1.5 shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add URL
+              </Button>
+            </div>
           </div>
 
           {hero.images.length === 0 ? (
