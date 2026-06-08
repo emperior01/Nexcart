@@ -91,15 +91,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             </Link>
           )}
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
-            aria-label="Toggle theme"
-          >
-            {dark ? <Sun className="h-4 w-4" strokeWidth={1.8} /> : <Moon className="h-4 w-4" strokeWidth={1.8} />}
-          </button>
-
           {/* Cart */}
           <button
             onClick={openCart}
@@ -138,7 +129,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
           <div className="md:hidden fixed top-0 right-0 bottom-0 z-40 w-72 bg-white flex flex-col shadow-2xl">
             {/* Header */}
             <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 20, color: "#E8611A", letterSpacing: "-0.03em" }}>Nexcart</span>
+              <Logo />
               <button onClick={() => setMobileOpen(false)} style={{ width: 32, height: 32, borderRadius: "50%", background: "#F3F4F6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <X style={{ width: 16, height: 16, color: "#6B7280" }} />
               </button>
@@ -182,6 +173,16 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                   </button>
                 </>
               )}
+            {/* Theme toggle inside drawer */}
+              <button
+                onClick={toggleTheme}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", background: "none", border: "none", width: "100%", cursor: "pointer" }}
+              >
+                <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {dark ? <Sun style={{ width: 16, height: 16 }} /> : <Moon style={{ width: 16, height: 16 }} />}
+                </span>
+                {dark ? "Light Mode" : "Dark Mode"}
+              </button>
             </nav>
 
             {/* Bottom */}
