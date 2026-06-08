@@ -65,6 +65,7 @@ function SidebarContent({ onClose, signOut }: { onClose: () => void; signOut: ()
 function AdminLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { data: isAdmin, isLoading: roleLoading } = useQuery({
     queryKey: ["is-admin", user?.id],
@@ -97,7 +98,6 @@ function AdminLayout() {
 
   if (!isAdmin) return null;
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   async function signOut() {
     await supabase.auth.signOut();
