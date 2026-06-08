@@ -116,22 +116,28 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
 
       {/* Mobile menu dropdown */}
       {mobileOpen && (
-        <div className="md:hidden fixed top-[96px] left-0 right-0 z-40 bg-white border-b border-[#EFEFEF] shadow-lg px-6 py-4 flex flex-col gap-1">
+        <div className="md:hidden fixed top-[96px] left-0 right-0 z-40 bg-white border-b border-[#EFEFEF] shadow-lg px-4 py-3 flex flex-col gap-2">
           {navLinks.map((l) => (
             <Link
               key={l.to}
               to={l.to}
               onClick={() => setMobileOpen(false)}
-              className="px-4 py-3 rounded-xl text-sm font-semibold transition-colors"
-              style={{ color: "#3A3A3A" }}
-              activeProps={{ style: { color: "#E8611A", background: "#FEF0E8" } }}
+              className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold border border-[#EFEFEF] transition-colors"
+              style={{ color: "#3A3A3A", background: "#F9F9F9" }}
+              activeProps={{ style: { color: "#E8611A", background: "#FEF0E8", borderColor: "#E8611A" } }}
             >
               {l.label}
             </Link>
           ))}
-          {!user && (
+          {user ? (
+            <Link to="/account" onClick={() => setMobileOpen(false)}
+              className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold border border-[#EFEFEF] transition-colors"
+              style={{ color: "#3A3A3A", background: "#F9F9F9" }}>
+              My Account
+            </Link>
+          ) : (
             <Link to="/auth" onClick={() => setMobileOpen(false)}
-              className="mt-2 px-4 py-3 rounded-xl text-sm font-semibold text-white text-center"
+              className="flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold text-white"
               style={{ background: "#E8611A" }}>
               Sign In
             </Link>

@@ -18,6 +18,50 @@ const navItems = [
   { to: "/admin/settings",  label: "Homepage Settings",  icon: Settings },
 ] as const;
 
+function SidebarContent({ onClose, signOut }: { onClose: () => void; signOut: () => void }) {
+  return (
+    <>
+      <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-5">
+        <Logo />
+        <span className="ml-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary">
+          Admin
+        </span>
+      </div>
+      <nav className="flex-1 space-y-1 px-3 py-4">
+        {navItems.map(({ to, label, icon: Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            onClick={onClose}
+            activeProps={{ className: "bg-sidebar-accent text-sidebar-primary font-bold" }}
+            inactiveProps={{ className: "text-sidebar-foreground" }}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent"
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </Link>
+        ))}
+      </nav>
+      <div className="space-y-1 border-t border-sidebar-border px-3 py-3">
+        <Link
+          to="/"
+          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+        >
+          <Home className="h-4 w-4" />
+          Back to Store
+        </Link>
+        <button
+          onClick={signOut}
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </button>
+      </div>
+    </>
+  );
+}
+
 function AdminLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -60,48 +104,6 @@ function AdminLayout() {
     navigate({ to: "/" });
   }
 
-  const SidebarContent = () => (
-    <>
-      <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-5">
-        <Logo />
-        <span className="ml-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-primary">
-          Admin
-        </span>
-      </div>
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {navItems.map(({ to, label, icon: Icon }) => (
-          <Link
-            key={to}
-            to={to}
-            onClick={() => setSidebarOpen(false)}
-            activeProps={{ className: "bg-sidebar-accent text-sidebar-primary font-bold" }}
-            inactiveProps={{ className: "text-sidebar-foreground" }}
-            className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent"
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </Link>
-        ))}
-      </nav>
-      <div className="space-y-1 border-t border-sidebar-border px-3 py-3">
-        <Link
-          to="/"
-          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-        >
-          <Home className="h-4 w-4" />
-          Back to Store
-        </Link>
-        <button
-          onClick={signOut}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </button>
-      </div>
-    </>
-  );
-
   return (
     <div className="flex min-h-screen bg-background">
       {/* Mobile top bar */}
@@ -120,14 +122,14 @@ function AdminLayout() {
         <div className="fixed inset-0 z-40 md:hidden" onClick={() => setSidebarOpen(false)}>
           <div className="absolute inset-0 bg-black/40" />
           <aside className="absolute left-0 top-0 bottom-0 flex w-64 flex-col bg-sidebar shadow-xl" onClick={e => e.stopPropagation()}>
-            <SidebarContent />
+            <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} />
           </aside>
         </div>
       )}
 
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border/50 bg-sidebar">
-        <SidebarContent />
+        <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} />
       </aside>
 
       {/* Main content */}
