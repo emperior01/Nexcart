@@ -107,6 +107,55 @@ function Index() {
           {/* Overlays */}
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(13,13,13,0.92) 0%,rgba(13,13,13,0.45) 50%,rgba(13,13,13,0.2) 100%)" }} />
           <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 70% 30%,rgba(180,80,20,0.25) 0%,transparent 60%)" }} />
+
+          {/* Image dots */}
+          {heroImages.length > 1 && (
+            <div className="absolute bottom-5 right-6 flex gap-1.5 z-20">
+              {heroImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setHeroIdx(i)}
+                  className="transition-all duration-300 rounded-full"
+                  style={{
+                    width: i === heroIdx ? "20px" : "6px",
+                    height: "6px",
+                    background: i === heroIdx ? "#E8611A" : "rgba(255,255,255,0.4)",
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="relative z-10 max-w-[440px]" style={{ animation: "fadeUp 0.8s ease both" }}>
+            <h1
+              className="text-white mb-4 leading-[1.05]"
+              style={{ fontWeight: 800, fontSize: "clamp(34px,8vw,50px)", letterSpacing: "-0.03em" }}
+            >
+              {settings.hero.heading_line1}<br />
+              <em style={{ fontStyle: "normal", color: "#E8611A" }}>{settings.hero.heading_line2}</em>
+            </h1>
+            <p className="text-[15px] leading-[1.65] mb-7 max-w-[340px]" style={{ color: "rgba(255,255,255,0.65)" }}>
+              {settings.hero.subtext}
+            </p>
+            <div className="flex gap-3 flex-wrap">
+              <Link
+                to="/shop"
+                className="inline-flex items-center gap-2 text-white text-[14px] font-semibold px-6 py-3.5 rounded-full transition-all hover:opacity-90 hover:-translate-y-px"
+                style={{ background: "#E8611A" }}
+              >
+                {settings.hero.cta_primary} <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                to="/shop"
+                search={{ category: "electronics" }}
+                className="inline-flex items-center gap-2 text-white text-[14px] font-medium px-6 py-3.5 rounded-full transition-colors hover:bg-white/20"
+                style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)" }}
+              >
+                {settings.hero.cta_secondary}
+              </Link>
+            </div>
+          </div>
         </section>
 
         {/* ── TRUST STRIP ───────────────────────────────── */}
