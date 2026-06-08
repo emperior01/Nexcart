@@ -91,15 +91,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             </Link>
           )}
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
-            aria-label="Toggle theme"
-          >
-            {dark ? <Sun className="h-4 w-4" strokeWidth={1.8} /> : <Moon className="h-4 w-4" strokeWidth={1.8} />}
-          </button>
-
           {/* Cart */}
           <button
             onClick={openCart}
@@ -182,6 +173,16 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                   </button>
                 </>
               )}
+              {/* Theme toggle */}
+              <button
+                onClick={toggleTheme}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", background: "none", border: "none", width: "100%", cursor: "pointer" }}
+              >
+                <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {dark ? <Sun style={{ width: 16, height: 16 }} /> : <Moon style={{ width: 16, height: 16 }} />}
+                </span>
+                {dark ? "Light Mode" : "Dark Mode"}
+              </button>
             </nav>
 
             {/* Bottom */}

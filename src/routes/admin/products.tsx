@@ -111,9 +111,7 @@ function AdminProducts() {
     if (isNaN(parseInt(form.stock, 10)) || parseInt(form.stock, 10) < 0) {
       toast.error("Stock must be a non-negative number."); return;
     }
-    if (form.image_url && !/^https?:\/\/.+\..+/.test(form.image_url)) {
-      toast.error("Image URL must be a valid https:// URL."); return;
-    }
+    
     setSaving(true);
     try {
       const payload = {
@@ -140,11 +138,15 @@ function AdminProducts() {
         productId = data.id;
       }
 
-      // Add image if provided
-      if (form.image_url && productId) {
+      // Add image if URL provided
+      if (form.image_url.trim() && productId) {
+        // Remove old primary image first if editing
+        if (editing) {
+          await supabase.from("product_images").delete().eq("product_id", productId).eq("is_primary", true);
+        }
         await supabase.from("product_images").insert({
           product_id: productId,
-          url: form.image_url,
+          url: form.image_url.trim(),
           is_primary: true,
           sort_order: 0,
         });
