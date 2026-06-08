@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, ShoppingCart, User, LogIn, Menu, Home, Store, LogOut, X } from "lucide-react";
+import { Search, ShoppingCart, User, LogIn, Menu, Home, Store, LogOut, X, Moon, Sun } from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/lib/cart";
@@ -19,6 +19,13 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
   const { count, openCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+
+  function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle("dark");
+    setDark(isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full">
@@ -84,9 +91,19 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             </Link>
           )}
 
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="hidden md:flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
+            aria-label="Toggle theme"
+          >
+            {dark ? <Sun className="h-4 w-4" strokeWidth={1.8} /> : <Moon className="h-4 w-4" strokeWidth={1.8} />}
+          </button>
+
           {/* Cart */}
           <button
             onClick={openCart}
+            aria-label="Cart"
             className="w-9 h-9 flex items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4] relative"
             style={{ color: "#3A3A3A" }}
             aria-label="Cart"
