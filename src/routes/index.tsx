@@ -319,26 +319,6 @@ function Index() {
 
       <Footer />
 
-      {/* ── MOBILE BOTTOM NAV ─────────────────────────── */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-black/8 flex md:hidden z-50" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        {[
-          { label: "Home",    to: "/",        icon: <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> },
-          { label: "Search",  to: "/shop",    icon: <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg> },
-          { label: "Cart",    to: null,       icon: <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg> },
-          { label: "Account", to: "/account", icon: <svg viewBox="0 0 24 24" className="w-[22px] h-[22px]" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-        ].map((item) =>
-          item.to ? (
-            <Link key={item.label} to={item.to} className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-[#6B6B6B] transition-colors [&.active]:text-[#E8611A]">
-              {item.icon}{item.label}
-            </Link>
-          ) : (
-            <button key={item.label} onClick={openCart} className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-[#6B6B6B]">
-              {item.icon}{item.label}
-            </button>
-          )
-        )}
-      </nav>
-
       <style>{`
         @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
       `}</style>

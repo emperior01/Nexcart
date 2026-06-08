@@ -295,10 +295,6 @@ function AdminSettings() {
           disabled={saving === "hero"}
           onClick={() => {
             const cleanImages = hero.images.filter((u) => u.trim() !== "");
-            if (cleanImages.some((u) => !/^https?:\/\/.+/.test(u))) {
-              toast.error("All image URLs must start with http:// or https://");
-              return;
-            }
             save("hero", { ...hero, images: cleanImages });
           }}
         >
