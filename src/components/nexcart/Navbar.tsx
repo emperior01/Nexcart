@@ -94,7 +94,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
           {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            className="hidden md:flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
+            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
             aria-label="Toggle theme"
           >
             {dark ? <Sun className="h-4 w-4" strokeWidth={1.8} /> : <Moon className="h-4 w-4" strokeWidth={1.8} />}
@@ -170,6 +170,14 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                     <User style={{ width: 16, height: 16 }} />
                   </span>
                   My Account
+                </Link>
+                <Link to="/account" search={{ tab: "settings" }} onClick={() => setMobileOpen(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", textDecoration: "none" }}
+                >
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+                  </span>
+                  Settings
                 </Link>
               )}
             </nav>

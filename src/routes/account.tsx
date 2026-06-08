@@ -16,13 +16,17 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/account")({
   component: AccountPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search.tab as string) ?? "orders",
+  }),
 });
 
 function AccountPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { currency } = useCurrency();
-  const [tab, setTab] = useState<"orders" | "settings">("orders");
+  const { tab: tabParam } = Route.useSearch();
+  const [tab, setTab] = useState<"orders" | "settings">((tabParam as "orders" | "settings") ?? "orders");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -72,16 +76,21 @@ function AccountPage() {
   async function saveProfile() {
     if (!user) return;
     if (!fullName.trim()) { toast.error("Full name cannot be empty."); return; }
-    if (phone && !/^\+?[\d\s\-()]{7,20}$/.test(phone)) {
-      toast.error("Please enter a valid phone number.");
-      return;
-    }
     setSaving(true);
     try {
-      const { error } = await supabase
+      // Try update first, then insert if not exists
+      const { error: updateError } = await supabase
         .from("profiles")
-        .upsert({ id: user.id, full_name: fullName.trim(), phone: phone.trim() || null });
-      if (error) throw error;
+        .update({ full_name: fullName.trim(), phone: phone.trim() || null })
+        .eq("id", user.id);
+
+      if (updateError) {
+        // Row might not exist yet, try insert
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({ id: user.id, full_name: fullName.trim(), phone: phone.trim() || null });
+        if (insertError) throw insertError;
+      }
       toast.success("Profile updated!");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save profile.");

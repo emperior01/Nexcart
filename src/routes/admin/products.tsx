@@ -320,21 +320,29 @@ function AdminProducts() {
         )}
       </div>
 
-      {/* Form Modal */}
+      {/* Form Modal - Professional slide-up sheet */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border/50 bg-background shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between border-b border-border/50 px-5 py-4">
-              <h2 className="font-extrabold text-foreground">
-                {editing ? "Edit Product" : "Add Product"}
-              </h2>
-              <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="h-5 w-5" />
+        <>
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl overflow-y-auto max-h-[95vh] md:top-0 md:right-0 md:left-auto md:bottom-0 md:w-[480px] md:rounded-none md:rounded-l-3xl">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1 md:hidden">
+              <div style={{ width: 40, height: 4, borderRadius: 2, background: "#E5E7EB" }} />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #F3F4F6" }}>
+              <div>
+                <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 18, color: "#0D0D0D" }}>
+                  {editing ? "Edit Product" : "Add Product"}
+                </h2>
+                <p style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>Fill in the product details below</p>
+              </div>
+              <button onClick={() => setShowForm(false)} style={{ width: 32, height: 32, borderRadius: "50%", background: "#F3F4F6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X style={{ width: 16, height: 16, color: "#6B7280" }} />
               </button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="space-y-1.5">
-                <Label>Title *</Label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#6B7280" }}>Title *</label>
                 <Input
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value, slug: toSlug(e.target.value) }))}
@@ -447,7 +455,8 @@ function AdminProducts() {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
