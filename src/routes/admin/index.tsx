@@ -20,16 +20,16 @@ function StatCard({
   gradient: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm flex items-center gap-4">
+    <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm flex items-center gap-3">
       <div
-        className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-white"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-white"
         style={{ background: gradient }}
       >
-        <Icon className="h-6 w-6" />
+        <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
-        <p className="text-2xl font-black text-foreground">{value}</p>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{label}</p>
+        <p className="text-xl font-black text-foreground">{value}</p>
       </div>
     </div>
   );
@@ -75,16 +75,16 @@ function AdminDashboard() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-8">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Welcome back, Admin.</p>
+        <h1 className="text-xl font-black text-foreground sm:text-2xl">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Welcome back, Admin.</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stats grid — 2 cols on mobile, 4 on desktop */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)
         ) : (
           <>
             <StatCard label="Total Products" value={stats!.products} icon={Package} gradient="var(--gradient-brand)" />
@@ -100,48 +100,68 @@ function AdminDashboard() {
         )}
       </div>
 
-      {/* Recent orders */}
+      {/* Recent orders — card list on mobile instead of table */}
       <div>
-        <h2 className="mb-4 text-base font-extrabold text-foreground">Recent Orders</h2>
+        <h2 className="mb-3 text-base font-extrabold text-foreground">Recent Orders</h2>
         <div className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
           {ordersLoading ? (
             <div className="p-4 space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-xl" />)}
+              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
             </div>
           ) : (recentOrders ?? []).length === 0 ? (
             <p className="p-8 text-center text-sm text-muted-foreground">No orders yet.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="border-b border-border/50 bg-secondary/30">
-                <tr>
-                  {["Order ID", "Status", "Total", "Date"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50">
+            <>
+              {/* Mobile card list */}
+              <div className="sm:hidden divide-y divide-border/50">
                 {recentOrders!.map((order) => (
-                  <tr key={order.id} className="hover:bg-secondary/20 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                      #{order.id.slice(0, 8).toUpperCase()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusColors[order.status]}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-bold">
-                      {order.currency} {Number(order.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
+                  <div key={order.id} className="p-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</p>
+                      <p className="font-bold text-sm mt-0.5">
+                        {order.currency} {Number(order.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusColors[order.status]}`}>
+                      {order.status}
+                    </span>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+              {/* Desktop table */}
+              <table className="hidden sm:table w-full text-sm">
+                <thead className="border-b border-border/50 bg-secondary/30">
+                  <tr>
+                    {["Order ID", "Status", "Total", "Date"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {recentOrders!.map((order) => (
+                    <tr key={order.id} className="hover:bg-secondary/20 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                        #{order.id.slice(0, 8).toUpperCase()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusColors[order.status]}`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-bold">
+                        {order.currency} {Number(order.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
         </div>
       </div>
