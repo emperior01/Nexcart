@@ -162,23 +162,25 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
               ))}
 
               {user && (
-                <Link to="/account" onClick={() => setMobileOpen(false)}
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", textDecoration: "none" }}
-                  activeProps={{ style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#E8611A", textDecoration: "none", background: "#FEF0E8" } }}
-                >
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <User style={{ width: 16, height: 16 }} />
-                  </span>
-                  My Account
-                </Link>
-                <button onClick={() => { setMobileOpen(false); navigate({ to: "/account", search: { tab: "settings" } }); }}
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", background: "none", border: "none", width: "100%", cursor: "pointer" }}
-                >
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-                  </span>
-                  Settings
-                </Link>
+                <>
+                  <Link to="/account" onClick={() => setMobileOpen(false)}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", textDecoration: "none" }}
+                    activeProps={{ style: { display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#E8611A", textDecoration: "none", background: "#FEF0E8" } }}
+                  >
+                    <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <User style={{ width: 16, height: 16 }} />
+                    </span>
+                    My Account
+                  </Link>
+                  <button onClick={() => { setMobileOpen(false); navigate({ to: "/account", search: { tab: "settings" } }); }}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", background: "none", border: "none", width: "100%", cursor: "pointer" }}
+                  >
+                    <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+                    </span>
+                    Settings
+                  </button>
+                </>
               )}
             </nav>
 
