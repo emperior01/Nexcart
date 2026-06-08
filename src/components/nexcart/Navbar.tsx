@@ -130,11 +130,19 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             </Link>
           ))}
           {user ? (
-            <Link to="/account" onClick={() => setMobileOpen(false)}
-              className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold border border-[#EFEFEF] transition-colors"
-              style={{ color: "#3A3A3A", background: "#F9F9F9" }}>
-              My Account
-            </Link>
+            <>
+              <Link to="/account" onClick={() => setMobileOpen(false)}
+                className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold border border-[#EFEFEF] transition-colors"
+                style={{ color: "#3A3A3A", background: "#F9F9F9" }}>
+                My Account
+              </Link>
+              <button
+                onClick={async () => { setMobileOpen(false); await import("@/integrations/supabase/client").then(m => m.supabase.auth.signOut()); navigate({ to: "/" }); }}
+                className="flex items-center px-4 py-3 rounded-xl text-sm font-semibold border border-red-100 w-full text-left"
+                style={{ color: "#EF4444", background: "#FEF2F2" }}>
+                Sign Out
+              </button>
+            </>
           ) : (
             <Link to="/auth" onClick={() => setMobileOpen(false)}
               className="flex items-center justify-center px-4 py-3 rounded-xl text-sm font-semibold text-white"

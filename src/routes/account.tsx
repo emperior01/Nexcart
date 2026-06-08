@@ -119,33 +119,26 @@ function AccountPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       <main className="flex-1">
-        <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl px-4 py-6">
           {/* Header */}
-          <div className="mb-8 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div
-                className="grid h-12 w-12 place-items-center rounded-full text-white font-black text-lg"
-                style={{ background: "var(--gradient-brand)" }}
-              >
-                {(user.email?.[0] ?? "U").toUpperCase()}
-              </div>
-              <div>
-                <h1 className="text-xl font-extrabold text-foreground">{fullName || "My Account"}</h1>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
+          <div className="mb-6 flex items-center gap-3">
+            <div
+              className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-white font-black text-lg"
+              style={{ background: "var(--gradient-brand)" }}
+            >
+              {(user.email?.[0] ?? "U").toUpperCase()}
             </div>
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <Link to="/admin">
-                  <Button size="sm" className="gap-2 text-white" style={{ background: "#E8611A" }}>
-                    <Shield className="h-4 w-4" /> Admin
-                  </Button>
-                </Link>
-              )}
-              <Button variant="outline" size="sm" onClick={signOut} className="gap-2 text-muted-foreground">
-                <LogOut className="h-4 w-4" /> Sign out
-              </Button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-extrabold text-foreground truncate">{fullName || "My Account"}</h1>
+              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
             </div>
+            {isAdmin && (
+              <Link to="/admin" className="shrink-0">
+                <Button size="sm" className="gap-1.5 text-white text-xs" style={{ background: "#E8611A" }}>
+                  <Shield className="h-3.5 w-3.5" /> Admin
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Tabs */}
