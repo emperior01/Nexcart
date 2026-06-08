@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --radius: 0.75rem;
+  --background: #FFFFFF;
+  --foreground: #0D0D0D;
+  --card: #FFFFFF;
+  --card-foreground: #0D0D0D;
+  --primary: #E8611A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F4F4;
+  --secondary-foreground: #1A1A1A;
+  --muted: #F4F4F4;
+  --muted-foreground: #6B6B6B;
+  --accent: #1A1A1A;
+  --accent-foreground: #FFFFFF;
+  --destructive: #E8341A;
+  --destructive-foreground: #FFFFFF;
+  --border: #EFEFEF;
+  --input: #EFEFEF;
+  --ring: #E8611A;
+  --gradient-brand: linear-gradient(135deg, #C4511A, #E8611A);
+  --gradient-gold: linear-gradient(135deg, #E8611A, #F5986A);
+  --gradient-hero-bg: linear-gradient(160deg, #1a1a1a 0%, #2e1a0e 60%, #3d2010 100%);
+  --shadow-elegant: 0 8px 32px rgba(0,0,0,0.13);
+  --shadow-gold: 0 4px 16px rgba(232,97,26,0.25);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.07);
+  --sidebar: #F4F4F4;
+  --sidebar-foreground: #0D0D0D;
+  --sidebar-primary: #E8611A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EFEFEF;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: #E5E5E5;
+  --sidebar-ring: #E8611A;
+}
+
+* { border-color: var(--border); }
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Syne', sans-serif;
+}
