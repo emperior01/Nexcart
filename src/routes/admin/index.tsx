@@ -2,38 +2,35 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Package, ShoppingBag, Users, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/index";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboard,
 });
 
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  gradient,
-}: {
-  label: string;
-  value: string | number;
-  icon: React.ElementType;
-  gradient: string;
+function StatCard({ label, value, icon: Icon, gradient }: {
+  label: string; value: string | number;
+  icon: React.ElementType; gradient: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm flex items-center gap-3">
-      <div
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-white"
-        style={{ background: gradient }}
-      >
-        <Icon className="h-5 w-5" />
+    <div style={{ background: "#fff", border: "1px solid #EBEBEB", borderRadius: 16, padding: "14px 12px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+      <div style={{ width: 44, height: 44, borderRadius: 12, background: gradient, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <Icon style={{ width: 20, height: 20, color: "#fff" }} />
       </div>
       <div>
-        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{label}</p>
-        <p className="text-xl font-black text-foreground">{value}</p>
+        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#6B7280", marginBottom: 3 }}>{label}</p>
+        <p style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 22, color: "#0D0D0D", letterSpacing: "-0.02em" }}>{value}</p>
       </div>
     </div>
   );
 }
+
+const statusStyles: Record<string, { bg: string; color: string }> = {
+  pending:   { bg: "#FEF3C7", color: "#92400E" },
+  paid:      { bg: "#DBEAFE", color: "#1E40AF" },
+  shipped:   { bg: "#EDE9FE", color: "#5B21B6" },
+  delivered: { bg: "#D1FAE5", color: "#065F46" },
+  cancelled: { bg: "#FEE2E2", color: "#991B1B" },
+};
 
 function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
@@ -45,12 +42,7 @@ function AdminDashboard() {
         supabase.from("profiles").select("id", { count: "exact", head: true }),
       ]);
       const revenue = (orders.data ?? []).reduce((sum, o) => sum + Number(o.total), 0);
-      return {
-        products: products.count ?? 0,
-        orders: orders.count ?? 0,
-        users: users.count ?? 0,
-        revenue,
-      };
+      return { products: products.count ?? 0, orders: orders.count ?? 0, users: users.count ?? 0, revenue };
     },
   });
 
@@ -59,112 +51,81 @@ function AdminDashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("orders")
-        .select("id,status,total,currency,created_at,user_id")
+        .select("id,status,total,currency,created_at")
         .order("created_at", { ascending: false })
         .limit(5);
       return data ?? [];
     },
   });
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800",
-    paid: "bg-blue-100 text-blue-800",
-    shipped: "bg-purple-100 text-purple-800",
-    delivered: "bg-green-100 text-green-800",
-    cancelled: "bg-red-100 text-red-800",
-  };
-
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-black text-foreground sm:text-2xl">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Welcome back, Admin.</p>
+    <div style={{ padding: "16px", maxWidth: "100%" }}>
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", color: "#0D0D0D" }}>Dashboard</h1>
+        <p style={{ fontSize: 13, color: "#6B7280", marginTop: 3 }}>Welcome back, Admin. Here's what's happening.</p>
       </div>
 
-      {/* Stats grid — 2 cols on mobile, 4 on desktop */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* Stats — 2 cols mobile, 4 cols desktop */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, width: "100%", marginBottom: 24 }}>
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} style={{ height: 80, borderRadius: 16, background: "#EBEBEB", animation: "pulse 1.5s ease-in-out infinite" }} />
+          ))
         ) : (
           <>
-            <StatCard label="Total Products" value={stats!.products} icon={Package} gradient="var(--gradient-brand)" />
-            <StatCard label="Total Orders" value={stats!.orders} icon={ShoppingBag} gradient="var(--gradient-gold)" />
-            <StatCard label="Total Users" value={stats!.users} icon={Users} gradient="var(--gradient-brand)" />
+            <StatCard label="Products"    value={stats!.products} icon={Package}     gradient="linear-gradient(135deg,#E8611A,#C4511A)" />
+            <StatCard label="Orders"      value={stats!.orders}   icon={ShoppingBag} gradient="linear-gradient(135deg,#3B82F6,#1D4ED8)" />
+            <StatCard label="Users"       value={stats!.users}    icon={Users}       gradient="linear-gradient(135deg,#8B5CF6,#6D28D9)" />
             <StatCard
-              label="Total Revenue"
+              label="Revenue"
               value={`$${stats!.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               icon={TrendingUp}
-              gradient="var(--gradient-gold)"
+              gradient="linear-gradient(135deg,#10B981,#065F46)"
             />
           </>
         )}
       </div>
 
-      {/* Recent orders — card list on mobile instead of table */}
-      <div>
-        <h2 className="mb-3 text-base font-extrabold text-foreground">Recent Orders</h2>
-        <div className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
-          {ordersLoading ? (
-            <div className="p-4 space-y-3">
-              {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+      {/* Recent Orders */}
+      <p style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 15, color: "#0D0D0D", marginBottom: 12 }}>Recent Orders</p>
+      <div style={{ background: "#fff", border: "1px solid #EBEBEB", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+        {ordersLoading ? (
+          <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} style={{ height: 56, borderRadius: 12, background: "#F3F4F6" }} />
+            ))}
+          </div>
+        ) : (recentOrders ?? []).length === 0 ? (
+          <div style={{ padding: "48px 24px", textAlign: "center" }}>
+            <div style={{ width: 48, height: 48, background: "#FEF0E8", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+              <ShoppingBag style={{ width: 22, height: 22, color: "#E8611A" }} />
             </div>
-          ) : (recentOrders ?? []).length === 0 ? (
-            <p className="p-8 text-center text-sm text-muted-foreground">No orders yet.</p>
-          ) : (
-            <>
-              {/* Mobile card list */}
-              <div className="sm:hidden divide-y divide-border/50">
-                {recentOrders!.map((order) => (
-                  <div key={order.id} className="p-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8).toUpperCase()}</p>
-                      <p className="font-bold text-sm mt-0.5">
-                        {order.currency} {Number(order.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusColors[order.status]}`}>
-                      {order.status}
-                    </span>
-                  </div>
-                ))}
+            <p style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 14, color: "#0D0D0D", marginBottom: 4 }}>No orders yet</p>
+            <p style={{ fontSize: 13, color: "#6B7280" }}>Orders will appear here once customers start buying.</p>
+          </div>
+        ) : (
+          recentOrders!.map((order) => {
+            const s = statusStyles[order.status] ?? { bg: "#F3F4F6", color: "#374151" };
+            return (
+              <div key={order.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #F3F4F6", gap: 12 }}>
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", fontFamily: "monospace", marginBottom: 3 }}>#{order.id.slice(0, 8).toUpperCase()}</p>
+                  <p style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: 15, color: "#0D0D0D" }}>
+                    {order.currency} {Number(order.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                  <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>{new Date(order.created_at).toLocaleDateString()}</p>
+                </div>
+                <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 50, background: s.bg, color: s.color, whiteSpace: "nowrap" }}>
+                  {order.status}
+                </span>
               </div>
-              {/* Desktop table */}
-              <table className="hidden sm:table w-full text-sm">
-                <thead className="border-b border-border/50 bg-secondary/30">
-                  <tr>
-                    {["Order ID", "Status", "Total", "Date"].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {recentOrders!.map((order) => (
-                    <tr key={order.id} className="hover:bg-secondary/20 transition-colors">
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        #{order.id.slice(0, 8).toUpperCase()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusColors[order.status]}`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-bold">
-                        {order.currency} {Number(order.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          )}
-        </div>
+            );
+          })
+        )}
       </div>
+
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
     </div>
   );
 }

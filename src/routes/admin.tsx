@@ -97,7 +97,9 @@ function AdminLayout() {
     return (
       <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center" }}>
         <div style={{ width: 32, height: 32, borderRadius: "50%", border: "4px solid #E8611A", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }
+        :root { --admin-ml: 220px; }
+        @media (max-width: 768px) { :root { --admin-ml: 0px; } aside { transform: translateX(-100%); } }`}</style>
       </div>
     );
   }
@@ -138,7 +140,7 @@ function AdminLayout() {
       </aside>
 
       {/* Main */}
-      <div style={{ marginLeft: 220, flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }} className="max-md:ml-0">
+      <div style={{ marginLeft: "var(--admin-ml, 220px)", flex: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }} className="max-md:ml-0">
 
         {/* Top bar */}
         <div style={{
