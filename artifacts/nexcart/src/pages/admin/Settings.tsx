@@ -143,15 +143,51 @@ export default function AdminSettings() {
         <div className="grid gap-4 sm:grid-cols-2 mb-5">
           <div className="space-y-1.5">
             <Label>Heading — Line 1</Label>
-            <Input value={hero.heading_line1} onChange={(e) => setHero((h) => ({ ...h, heading_line1: e.target.value }))} placeholder="Shop Smarter." />
+            <div className="flex gap-2 items-center">
+              <Input value={hero.heading_line1} onChange={(e) => setHero((h) => ({ ...h, heading_line1: e.target.value }))} placeholder="Shop Smarter." className="flex-1" />
+              <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                <input
+                  type="color"
+                  value={hero.heading_line1_color ?? "#FFFFFF"}
+                  onChange={(e) => setHero((h) => ({ ...h, heading_line1_color: e.target.value }))}
+                  title="Line 1 text color"
+                  className="h-9 w-9 cursor-pointer rounded-md border border-border/60 bg-transparent p-0.5"
+                />
+                <span className="text-[9px] text-muted-foreground">Color</span>
+              </div>
+            </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Heading — Line 2 (orange)</Label>
-            <Input value={hero.heading_line2} onChange={(e) => setHero((h) => ({ ...h, heading_line2: e.target.value }))} placeholder="Live Better with Nexcart" />
+            <Label>Heading — Line 2</Label>
+            <div className="flex gap-2 items-center">
+              <Input value={hero.heading_line2} onChange={(e) => setHero((h) => ({ ...h, heading_line2: e.target.value }))} placeholder="Live Better with Nexcart" className="flex-1" />
+              <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
+                <input
+                  type="color"
+                  value={hero.heading_line2_color ?? "#E8611A"}
+                  onChange={(e) => setHero((h) => ({ ...h, heading_line2_color: e.target.value }))}
+                  title="Line 2 text color"
+                  className="h-9 w-9 cursor-pointer rounded-md border border-border/60 bg-transparent p-0.5"
+                />
+                <span className="text-[9px] text-muted-foreground">Color</span>
+              </div>
+            </div>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Subtext</Label>
-            <Textarea value={hero.subtext} onChange={(e) => setHero((h) => ({ ...h, subtext: e.target.value }))} placeholder="Quality goods, easy ordering…" rows={2} />
+            <div className="flex gap-2 items-start">
+              <Textarea value={hero.subtext} onChange={(e) => setHero((h) => ({ ...h, subtext: e.target.value }))} placeholder="Quality goods, easy ordering…" rows={2} className="flex-1" />
+              <div className="flex flex-col items-center gap-0.5 flex-shrink-0 mt-0.5">
+                <input
+                  type="color"
+                  value={hero.subtext_color ?? "#A8A8A8"}
+                  onChange={(e) => setHero((h) => ({ ...h, subtext_color: e.target.value }))}
+                  title="Subtext color"
+                  className="h-9 w-9 cursor-pointer rounded-md border border-border/60 bg-transparent p-0.5"
+                />
+                <span className="text-[9px] text-muted-foreground">Color</span>
+              </div>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Primary Button Text</Label>
@@ -200,7 +236,7 @@ export default function AdminSettings() {
           )}
         </div>
 
-        <Button className="mt-5 gap-2 text-white" style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }} disabled={saving === "hero"} onClick={() => save("hero", { ...hero, images: hero.images.filter((u) => u.trim()) })}>
+        <Button className="mt-5 gap-2 text-white" style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }} disabled={saving === "hero"} onClick={() => save("hero", { ...hero, images: hero.images.map((u) => u.trim()).filter(Boolean) })}>
           <Save className="h-4 w-4" /> {saving === "hero" ? "Saving…" : "Save Hero"}
         </Button>
       </Section>

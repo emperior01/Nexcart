@@ -60,7 +60,10 @@ export default function AccountPage() {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .upsert({ id: user.id, full_name: fullName, phone: phone || null });
+      .upsert(
+        { id: user.id, full_name: fullName, phone: phone || null },
+        { onConflict: "id" }
+      );
     setSaving(false);
     if (error) toast.error(error.message);
     else toast.success("Profile updated!");

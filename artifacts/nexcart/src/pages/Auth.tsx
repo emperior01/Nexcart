@@ -83,6 +83,12 @@ export default function AuthPage() {
             </div>
           )}
 
+          {forgotMode && (
+            <p className="text-[13px] text-[#6B6B6B] mb-5">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+          )}
+
           <div className="space-y-4">
             {mode === "signup" && !forgotMode && (
               <div className="space-y-1.5">
@@ -175,12 +181,15 @@ export default function AuthPage() {
           )}
 
           {forgotMode && (
-            <button
-              className="w-full mt-3 text-[13px] text-[#6B6B6B] hover:text-[#E8611A] transition-colors"
-              onClick={() => { setForgotMode(false); setError(null); setSuccess(null); }}
-            >
-              Back to sign in
-            </button>
+            <p className="mt-4 text-center text-[12px] text-[#9CA3AF]">
+              Remembered it?{" "}
+              <button
+                className="text-[#E8611A] hover:underline"
+                onClick={() => { setForgotMode(false); setError(null); setSuccess(null); }}
+              >
+                Go back
+              </button>
+            </p>
           )}
         </div>
       </div>

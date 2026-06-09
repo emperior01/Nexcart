@@ -85,9 +85,9 @@ export default function IndexPage() {
         >
           {heroImages.length > 0 && heroImages.map((url, i) => (
             <div
-              key={url + i}
+              key={i}
               className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
-              style={{ backgroundImage: `url(${url})`, opacity: i === heroIdx ? 1 : 0 }}
+              style={{ backgroundImage: `url("${url}")`, opacity: i === heroIdx ? 1 : 0 }}
             />
           ))}
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top,rgba(13,13,13,0.92) 0%,rgba(13,13,13,0.45) 50%,rgba(13,13,13,0.2) 100%)" }} />
@@ -108,13 +108,13 @@ export default function IndexPage() {
 
           <div className="relative z-10 max-w-[440px]" style={{ animation: "fadeUp 0.8s ease both" }}>
             <h1
-              className="text-white mb-4 leading-[1.05]"
-              style={{ fontWeight: 800, fontSize: "clamp(34px,8vw,50px)", letterSpacing: "-0.03em" }}
+              className="mb-4 leading-[1.05]"
+              style={{ fontWeight: 800, fontSize: "clamp(34px,8vw,50px)", letterSpacing: "-0.03em", color: settings.hero.heading_line1_color ?? "#FFFFFF" }}
             >
               {settings.hero.heading_line1}<br />
-              <em style={{ fontStyle: "normal", color: "#E8611A" }}>{settings.hero.heading_line2}</em>
+              <em style={{ fontStyle: "normal", color: settings.hero.heading_line2_color ?? "#E8611A" }}>{settings.hero.heading_line2}</em>
             </h1>
-            <p className="text-[15px] leading-[1.65] mb-7 max-w-[340px]" style={{ color: "rgba(255,255,255,0.65)" }}>
+            <p className="text-[15px] leading-[1.65] mb-7 max-w-[340px]" style={{ color: settings.hero.subtext_color ?? "#A8A8A8" }}>
               {settings.hero.subtext}
             </p>
             <div className="flex gap-3 flex-wrap">

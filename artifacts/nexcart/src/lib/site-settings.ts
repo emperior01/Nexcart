@@ -7,6 +7,9 @@ export interface HeroSettings {
   cta_primary: string;
   cta_secondary: string;
   images: string[]; // up to 4 image URLs
+  heading_line1_color: string;
+  heading_line2_color: string;
+  subtext_color: string;
 }
 
 export interface PromoBannerSettings {
@@ -38,6 +41,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     cta_primary: "Shop the collection",
     cta_secondary: "Browse new tech",
     images: [],
+    heading_line1_color: "#FFFFFF",
+    heading_line2_color: "#E8611A",
+    subtext_color: "#A8A8A8",
   },
   promo_banner: {
     heading: "Shop Smarter.\nLive Better with Nexcart",
