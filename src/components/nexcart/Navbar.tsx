@@ -90,7 +90,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             aria-label="Cart"
             className="w-9 h-9 flex items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4] relative"
             style={{ color: "#3A3A3A" }}
-            aria-label="Cart"
           >
             <ShoppingCart className="h-5 w-5" strokeWidth={1.8} />
             {count > 0 && (
