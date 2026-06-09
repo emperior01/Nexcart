@@ -18,6 +18,7 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [forgotMode, setForgotMode] = useState(false);
 
   async function handleSubmit() {
     setError(null);
@@ -47,6 +48,24 @@ function AuthPage() {
     }
   }
 
+  async function handleForgot() {
+    setError(null);
+    setSuccess(null);
+    if (!email.trim()) { setError("Please enter your email address."); return; }
+    setLoading(true);
+    try {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: window.location.origin + "/auth?mode=reset",
+      });
+      if (err) throw err;
+      setSuccess("Password reset link sent! Check your email.");
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleGoogle() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithOAuth({
@@ -61,7 +80,7 @@ function AuthPage() {
       style={{ background: "linear-gradient(160deg,#1a1a1a 0%,#2e1a0e 60%,#3d2010 100%)" }}>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link to="/" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "-0.03em", textDecoration: "none" }}>
+          <Link to="/" style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 28, letterSpacing: "-0.03em", textDecoration: "none" }}>
             <span style={{ color: "#E8611A" }}>Nex</span><span style={{ color: "#fff" }}>cart</span>
           </Link>
           <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, marginTop: 8 }}>
@@ -127,6 +146,30 @@ function AuthPage() {
               </button>
             </div>
 
+            {mode === "signin" && !forgotMode && (
+              <div className="text-right">
+                <button type="button" onClick={() => { setForgotMode(true); setError(null); setSuccess(null); }}
+                  style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", background: "none", border: "none", cursor: "pointer" }}>
+                  Forgot password?
+                </button>
+              </div>
+            )}
+            {forgotMode && (
+              <div className="space-y-3">
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", textAlign: "center" }}>
+                  Enter your email and we'll send a reset link.
+                </p>
+                <button onClick={handleForgot} disabled={loading}
+                  className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all"
+                  style={{ background: loading ? "rgba(232,97,26,0.6)" : "#E8611A" }}>
+                  {loading ? "Sending…" : "Send Reset Link"}
+                </button>
+                <button type="button" onClick={() => { setForgotMode(false); setError(null); setSuccess(null); }}
+                  style={{ width: "100%", fontSize: 12, color: "rgba(255,255,255,0.4)", background: "none", border: "none", cursor: "pointer", marginTop: 4 }}>
+                  Back to sign in
+                </button>
+              </div>
+            )}
             {error && (
               <div className="rounded-xl px-4 py-3 text-xs text-red-300"
                 style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)" }}>
@@ -142,7 +185,7 @@ function AuthPage() {
 
             <button onClick={handleSubmit} disabled={loading}
               className="w-full py-3.5 rounded-xl text-sm font-bold text-white transition-all"
-              style={{ background: loading ? "rgba(232,97,26,0.6)" : "#E8611A", fontFamily: "'Syne',sans-serif" }}>
+              style={{ background: loading ? "rgba(232,97,26,0.6)" : "#E8611A", fontFamily: "'Inter',sans-serif" }}>
               {loading ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Account"}
             </button>
           </div>
