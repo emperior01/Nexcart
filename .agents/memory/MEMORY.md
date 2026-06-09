@@ -1,2 +1,5 @@
 - [TanStack Router code-based setup](tanstack-router-code-based.md) — use code-based API in src/router.ts; no vite plugin or routeTree.gen.ts needed
 - [Nexcart env credentials](nexcart-env.md) — secrets go in artifacts/nexcart/.env.local (gitignored); never use Replit secrets for VITE_ vars
+- [Supabase v2 never types](supabase-never-types.md) — column-select type inference returns `never`; cast results and mutation args.
+- [Vite config build env vars](vite-build-env.md) — PORT/BASE_PATH required only in dev; guard with isBuild flag so vite build works without env vars.
+- [TanStack Router Link search params](tanstack-router-link.md) — never embed query strings in `to`; use search={{}} and params={{}} props.

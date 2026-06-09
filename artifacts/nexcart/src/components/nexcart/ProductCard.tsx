@@ -35,7 +35,8 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
 
   return (
     <Link
-      to={`/products/${product.slug}`}
+      to="/products/$slug"
+      params={{ slug: product.slug }}
       className="group bg-white rounded-[20px] overflow-hidden border border-black/5 transition-all duration-200 hover:-translate-y-0.5"
       style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.07)", display: "block", textDecoration: "none" }}
       onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.13)")}

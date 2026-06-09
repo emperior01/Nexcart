@@ -11,12 +11,16 @@ export default function AdminUsers() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const { data: profiles } = await supabase
+      type Profile = { id: string; full_name: string | null; preferred_currency: string; created_at: string };
+      type Role = { user_id: string; role: string };
+      const { data: rawProfiles } = await supabase
         .from("profiles")
         .select("id, full_name, preferred_currency, created_at");
-      const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-      const roleMap = new Map((roles ?? []).map((r) => [r.user_id, r.role]));
-      return (profiles ?? []).map((p) => ({ ...p, role: roleMap.get(p.id) ?? null }));
+      const { data: rawRoles } = await supabase.from("user_roles").select("user_id, role");
+      const profiles = (rawProfiles ?? []) as Profile[];
+      const roles = (rawRoles ?? []) as Role[];
+      const roleMap = new Map(roles.map((r) => [r.user_id, r.role]));
+      return profiles.map((p) => ({ ...p, role: roleMap.get(p.id) ?? null }));
     },
   });
 
@@ -26,7 +30,7 @@ export default function AdminUsers() {
       if (error) toast.error(error.message);
       else toast.success("Admin role removed.");
     } else {
-      const { error } = await supabase.from("user_roles").upsert({ user_id: userId, role: "admin" });
+      const { error } = await supabase.from("user_roles").upsert({ user_id: userId, role: "admin" } as any);
       if (error) toast.error(error.message);
       else toast.success("Admin role granted.");
     }

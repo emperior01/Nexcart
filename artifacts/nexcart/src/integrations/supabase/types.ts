@@ -102,6 +102,15 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["profiles"]["Row"], "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
       };
+      site_settings: {
+        Row: {
+          key: string;
+          value: Json;
+          updated_at: string;
+        };
+        Insert: { key: string; value: Json; updated_at?: string };
+        Update: Partial<{ key: string; value: Json; updated_at: string }>;
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

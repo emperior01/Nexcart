@@ -43,7 +43,7 @@ export default function ShopPage() {
     queryKey: ["categories"],
     queryFn: async () => {
       const { data } = await supabase.from("categories").select("id,name,slug").order("sort_order");
-      return data ?? [];
+      return (data ?? []) as { id: string; name: string; slug: string }[];
     },
   });
 
@@ -58,7 +58,8 @@ export default function ShopPage() {
       if (q) query = query.ilike("title", `%${q}%`);
       if (category) {
         const catData = await supabase.from("categories").select("id").eq("slug", category).single();
-        if (catData.data) query = query.eq("category_id", catData.data.id);
+        const catRow = catData.data as { id: string } | null;
+        if (catRow) query = query.eq("category_id", catRow.id);
       }
 
       if (sort === "price_asc") query = query.order("price", { ascending: true });

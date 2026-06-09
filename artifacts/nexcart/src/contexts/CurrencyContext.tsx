@@ -25,7 +25,8 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
       .select("preferred_currency")
       .eq("id", user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then((result) => {
+        const data = result.data as { preferred_currency: string } | null;
         if (data?.preferred_currency) {
           setCurrencyState(data.preferred_currency);
           localStorage.setItem("nexcart-currency", data.preferred_currency);
@@ -39,7 +40,7 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     if (user) {
       supabase
         .from("profiles")
-        .upsert({ id: user.id, preferred_currency: code })
+        .upsert({ id: user.id, preferred_currency: code } as any)
         .then(() => {});
     }
   }

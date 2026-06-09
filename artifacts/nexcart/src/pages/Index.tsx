@@ -126,7 +126,8 @@ export default function IndexPage() {
                 {settings.hero.cta_primary} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                to="/shop?category=electronics"
+                to="/shop"
+                search={{ category: "electronics" }}
                 className="inline-flex items-center gap-2 text-white text-[14px] font-medium px-6 py-3.5 rounded-full transition-colors hover:bg-white/20"
                 style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)" }}
               >
@@ -171,7 +172,8 @@ export default function IndexPage() {
             {categories.map((c) => (
               <Link
                 key={c.slug}
-                to={`/shop?category=${c.slug}`}
+                to="/shop"
+                search={{ category: c.slug }}
                 className="flex-shrink-0 w-[100px] aspect-square rounded-xl overflow-hidden relative transition-all hover:-translate-y-0.5"
                 style={{ background: c.bg }}
               >

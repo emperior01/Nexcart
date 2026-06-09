@@ -36,7 +36,7 @@ export default function AdminDashboard() {
         supabase.from("orders").select("id,total", { count: "exact" }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
       ]);
-      const revenue = (orders.data ?? []).reduce((sum, o) => sum + Number(o.total), 0);
+      const revenue = ((orders.data ?? []) as { id: string; total: number }[]).reduce((sum, o) => sum + Number(o.total), 0);
       return { products: products.count ?? 0, orders: orders.count ?? 0, users: users.count ?? 0, revenue };
     },
   });
@@ -44,12 +44,13 @@ export default function AdminDashboard() {
   const { data: recentOrders, isLoading: ordersLoading } = useQuery({
     queryKey: ["admin-recent-orders"],
     queryFn: async () => {
+      type RecentOrder = { id: string; status: string; total: number; currency: string; created_at: string };
       const { data } = await supabase
         .from("orders")
         .select("id,status,total,currency,created_at")
         .order("created_at", { ascending: false })
         .limit(5);
-      return data ?? [];
+      return (data ?? []) as RecentOrder[];
     },
   });
 

@@ -164,7 +164,8 @@ export default function ProductDetailPage() {
             <div className="space-y-5">
               {product.categories && (
                 <Link
-                  to={`/shop?category=${(product.categories as { slug: string }).slug}`}
+                  to="/shop"
+                  search={{ category: (product.categories as { slug: string }).slug }}
                   className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#E8611A] hover:opacity-80"
                 >
                   {(product.categories as { name: string }).name}

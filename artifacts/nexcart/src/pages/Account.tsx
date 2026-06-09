@@ -34,10 +34,11 @@ export default function AccountPage() {
       .select("full_name, phone")
       .eq("id", user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then((result) => {
+        const data = result.data as { full_name: string | null; phone: string | null } | null;
         if (data) {
           setFullName(data.full_name ?? "");
-          setPhone((data as { phone?: string }).phone ?? "");
+          setPhone(data.phone ?? "");
         }
       });
   }, [user]);
@@ -46,12 +47,14 @@ export default function AccountPage() {
     queryKey: ["orders", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      type OrderItem = { id: string; quantity: number; unit_price: number; currency: string; products?: { title: string } | null };
+      type Order = { id: string; status: string; total: number; currency: string; created_at: string; order_items?: OrderItem[] };
       const { data } = await supabase
         .from("orders")
         .select("*, order_items(id, quantity, unit_price, currency, products(title))")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
-      return data ?? [];
+      return (data ?? []) as Order[];
     },
   });
 
@@ -61,7 +64,7 @@ export default function AccountPage() {
     const { error } = await supabase
       .from("profiles")
       .upsert(
-        { id: user.id, full_name: fullName, phone: phone || null },
+        { id: user.id, full_name: fullName, phone: phone || null } as any,
         { onConflict: "id" }
       );
     setSaving(false);

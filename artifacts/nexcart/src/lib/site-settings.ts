@@ -60,24 +60,25 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 };
 
 export async function fetchSiteSettings(): Promise<SiteSettings> {
-  const { data, error } = await supabase
+  const { data: rawData, error } = await supabase
     .from("site_settings")
     .select("key, value");
+  const data = rawData as { key: string; value: unknown }[] | null;
 
   if (error || !data?.length) return DEFAULT_SETTINGS;
 
   const map = Object.fromEntries(data.map((r) => [r.key, r.value]));
   return {
-    announcement_bar: map.announcement_bar ?? DEFAULT_SETTINGS.announcement_bar,
-    hero:         map.hero          ?? DEFAULT_SETTINGS.hero,
-    promo_banner: map.promo_banner  ?? DEFAULT_SETTINGS.promo_banner,
-    trust_badges: map.trust_badges  ?? DEFAULT_SETTINGS.trust_badges,
+    announcement_bar: (map.announcement_bar as string) ?? DEFAULT_SETTINGS.announcement_bar,
+    hero:         (map.hero as HeroSettings)                  ?? DEFAULT_SETTINGS.hero,
+    promo_banner: (map.promo_banner as PromoBannerSettings)   ?? DEFAULT_SETTINGS.promo_banner,
+    trust_badges: (map.trust_badges as TrustBadge[])          ?? DEFAULT_SETTINGS.trust_badges,
   };
 }
 
 export async function saveSetting(key: string, value: unknown): Promise<void> {
   const { error } = await supabase
     .from("site_settings")
-    .upsert({ key, value, updated_at: new Date().toISOString() });
+    .upsert({ key, value, updated_at: new Date().toISOString() } as any);
   if (error) throw error;
 }

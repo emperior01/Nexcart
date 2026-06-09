@@ -59,7 +59,7 @@ export default function AdminProducts() {
         .from("products")
         .select("*, categories(name), product_images(url,is_primary)")
         .order("created_at", { ascending: false });
-      return data ?? [];
+      return (data ?? []) as Product[];
     },
   });
 
@@ -118,12 +118,12 @@ export default function AdminProducts() {
       let productId = editing?.id;
 
       if (editing) {
-        const { error } = await supabase.from("products").update(payload).eq("id", editing.id);
+        const { error } = await (supabase.from("products") as any).update(payload).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("products").insert(payload).select().single();
+        const { data, error } = await supabase.from("products").insert(payload as any).select().single();
         if (error) throw error;
-        productId = data.id;
+        productId = (data as { id: string }).id;
       }
 
       if (form.image_url.trim() && productId) {
@@ -135,7 +135,7 @@ export default function AdminProducts() {
           url: form.image_url.trim(),
           is_primary: true,
           sort_order: 0,
-        });
+        } as any);
       }
 
       toast.success(editing ? "Product updated!" : "Product created!");
@@ -185,7 +185,7 @@ export default function AdminProducts() {
             is_featured: row.is_featured === "true",
             is_active: row.is_active !== "false",
             category_id: null,
-          });
+          } as any);
           if (error) failed++;
           else created++;
         }

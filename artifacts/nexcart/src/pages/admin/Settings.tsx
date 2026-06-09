@@ -40,6 +40,9 @@ export default function AdminSettings() {
     cta_primary: "Shop the collection",
     cta_secondary: "Browse new tech",
     images: [],
+    heading_line1_color: "#FFFFFF",
+    heading_line2_color: "#E8611A",
+    subtext_color: "#A8A8A8",
   });
   useEffect(() => { if (settings) setHero(settings.hero); }, [settings]);
 

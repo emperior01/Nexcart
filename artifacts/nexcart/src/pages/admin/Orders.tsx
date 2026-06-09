@@ -20,16 +20,18 @@ export default function AdminOrders() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
+      type OrderItem = { id: string; quantity: number; unit_price: number; currency: string; products?: { title: string } | null };
+      type AdminOrder = { id: string; status: string; total: number; currency: string; created_at: string; paystack_ref?: string | null; order_items?: OrderItem[] };
       const { data } = await supabase
         .from("orders")
         .select("*, order_items(id, quantity, unit_price, currency, products(title))")
         .order("created_at", { ascending: false });
-      return data ?? [];
+      return (data ?? []) as AdminOrder[];
     },
   });
 
   async function updateStatus(id: string, status: OrderStatus) {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
+    const { error } = await (supabase.from("orders") as any).update({ status }).eq("id", id);
     if (error) toast.error(error.message);
     else {
       toast.success("Order status updated.");

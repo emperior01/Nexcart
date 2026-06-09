@@ -78,7 +78,8 @@ export function CartDrawer() {
 
                   <div className="flex flex-1 flex-col gap-1 min-w-0">
                     <Link
-                      to={`/products/${item.slug}`}
+                      to="/products/$slug"
+                      params={{ slug: item.slug }}
                       onClick={closeCart}
                       className="line-clamp-1 text-sm font-semibold text-foreground hover:text-primary"
                     >
