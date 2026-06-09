@@ -1,4 +1,4 @@
-import { Link, useSearch, useLocation } from "wouter";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, SlidersHorizontal, X } from "lucide-react";
@@ -14,8 +14,8 @@ import type { ProductWithImages } from "@/lib/products";
 const PAGE_SIZE = 12;
 
 function useSearchParams() {
-  const [location] = useLocation();
-  const params = new URLSearchParams(location.split("?")[1] ?? "");
+  const searchStr = useRouterState({ select: (s) => s.location.searchStr });
+  const params = new URLSearchParams(searchStr);
   return {
     category: params.get("category") ?? "",
     q: params.get("q") ?? "",
@@ -25,7 +25,7 @@ function useSearchParams() {
 }
 
 export default function ShopPage() {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const { category, q, sort, page } = useSearchParams();
   const [search, setSearch] = useState(q);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -35,7 +35,8 @@ export default function ShopPage() {
     if (value) params.set(key, value);
     else params.delete(key);
     if (key !== "page") params.delete("page");
-    navigate("/shop?" + params.toString());
+    const searchObj = Object.fromEntries(params.entries());
+    navigate({ to: "/shop", search: searchObj as Record<string, string> });
   }
 
   const { data: categories } = useQuery({
@@ -132,7 +133,7 @@ export default function ShopPage() {
               variant="ghost"
               size="sm"
               className="gap-1.5 text-[#E8611A]"
-              onClick={() => { setSearch(""); navigate("/shop"); }}
+              onClick={() => { setSearch(""); navigate({ to: "/shop", search: {} }); }}
             >
               <X className="h-3.5 w-3.5" /> Clear
             </Button>
@@ -154,7 +155,7 @@ export default function ShopPage() {
             <Button
               className="mt-5 text-white rounded-full px-6"
               style={{ background: "#E8611A" }}
-              onClick={() => { setSearch(""); navigate("/shop"); }}
+              onClick={() => { setSearch(""); navigate({ to: "/shop", search: {} }); }}
             >
               View all products
             </Button>

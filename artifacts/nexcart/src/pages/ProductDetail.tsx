@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ShoppingCart, Zap, Star, Minus, Plus, ImageOff } from "lucide-react";
@@ -14,13 +14,9 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
 
-interface Props {
-  params: { slug: string };
-}
-
-export default function ProductDetailPage({ params }: Props) {
-  const { slug } = params;
-  const [, navigate] = useLocation();
+export default function ProductDetailPage() {
+  const { slug } = useParams({ strict: false }) as { slug: string };
+  const navigate = useNavigate();
   const { currency } = useCurrency();
   const { addItem, openCart } = useCart();
   const [selectedImg, setSelectedImg] = useState(0);
@@ -103,7 +99,7 @@ export default function ProductDetailPage({ params }: Props) {
           <Button
             className="mt-2 text-white rounded-full px-6"
             style={{ background: "#E8611A" }}
-            onClick={() => navigate("/shop")}
+            onClick={() => navigate({ to: "/shop" })}
           >
             Browse shop
           </Button>

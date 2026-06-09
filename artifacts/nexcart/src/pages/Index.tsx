@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "@tanstack/react-router";
 import { ArrowRight, Truck, ShieldCheck, RefreshCw, MessageCircle, Tag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";

@@ -1,0 +1,2 @@
+- [TanStack Router code-based setup](tanstack-router-code-based.md) — use code-based API in src/router.ts; no vite plugin or routeTree.gen.ts needed
+- [Nexcart env credentials](nexcart-env.md) — secrets go in artifacts/nexcart/.env.local (gitignored); never use Replit secrets for VITE_ vars

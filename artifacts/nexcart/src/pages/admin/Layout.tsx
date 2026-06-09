@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react";
-import { useLocation, Link, Switch, Route } from "wouter";
+import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
 import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Home, Settings, Menu, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import AdminDashboard from "./Dashboard";
-import AdminProducts from "./Products";
-import AdminOrders from "./Orders";
-import AdminUsers from "./Users";
-import AdminSettings from "./Settings";
 
 const navItems = [
   { to: "",          label: "Dashboard",         icon: LayoutDashboard },
@@ -18,7 +13,7 @@ const navItems = [
 ] as const;
 
 function SidebarContent({ onClose, signOut }: { onClose: () => void; signOut: () => void }) {
-  const [location] = useLocation();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -29,7 +24,7 @@ function SidebarContent({ onClose, signOut }: { onClose: () => void; signOut: ()
       <nav style={{ flex: 1, padding: "12px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
         {navItems.map(({ to, label, icon: Icon }) => {
           const fullPath = "/admin" + to;
-          const isActive = to === "" ? location === "/" || location === "" : location.startsWith(to);
+          const isActive = to === "" ? pathname === "/admin" || pathname === "/admin/" : pathname.startsWith("/admin" + to);
           return (
             <Link
               key={to}
@@ -76,20 +71,20 @@ function SidebarContent({ onClose, signOut }: { onClose: () => void; signOut: ()
 
 export default function AdminLayout() {
   const { user, loading } = useAuth();
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (loading) return;
-    if (!user) { navigate("/auth"); return; }
+    if (!user) { void navigate({ to: "/auth" }); return; }
     supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle().then(({ data }) => {
-      if (!data) navigate("/");
+      if (!data) void navigate({ to: "/" });
     });
   }, [user, loading, navigate]);
 
   async function signOut() {
     await supabase.auth.signOut();
-    navigate("/");
+    void navigate({ to: "/" });
   }
 
   if (loading) {
@@ -138,13 +133,7 @@ export default function AdminLayout() {
         </div>
 
         <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
-          <Switch>
-            <Route path="/" component={AdminDashboard} />
-            <Route path="/products" component={AdminProducts} />
-            <Route path="/orders" component={AdminOrders} />
-            <Route path="/users" component={AdminUsers} />
-            <Route path="/settings" component={AdminSettings} />
-          </Switch>
+          <Outlet />
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, Link } from "wouter";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingBag, Settings, LogOut, Package } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 export default function AccountPage() {
   const { user, loading } = useAuth();
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const { currency } = useCurrency();
   const [tab, setTab] = useState<"orders" | "settings">("orders");
   const [fullName, setFullName] = useState("");
@@ -24,7 +24,7 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) navigate("/auth");
+    if (!loading && !user) void navigate({ to: "/auth" });
   }, [user, loading, navigate]);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function AccountPage() {
 
   async function signOut() {
     await supabase.auth.signOut();
-    navigate("/");
+    void navigate({ to: "/" });
   }
 
   if (loading) {

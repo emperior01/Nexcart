@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ShoppingCart, ArrowLeft, CreditCard } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
@@ -32,7 +32,7 @@ declare global {
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string;
 
 export default function CheckoutPage() {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { items, total, clearCart } = useCart();
   const { currency } = useCurrency();
@@ -122,7 +122,7 @@ export default function CheckoutPage() {
 
             clearCart();
             toast.success("Payment confirmed! Order placed. 🎉");
-            navigate("/account");
+            void navigate({ to: "/account" });
           } catch {
             toast.error("Payment received but order creation failed. Contact support with ref: " + tx.reference);
             setLoading(false);

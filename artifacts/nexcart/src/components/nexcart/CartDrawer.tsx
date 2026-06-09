@@ -1,5 +1,5 @@
 import { X, ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
-import { Link } from "wouter";
+import { Link } from "@tanstack/react-router";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";

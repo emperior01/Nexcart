@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "@tanstack/react-router";
 import { Heart, Plus } from "lucide-react";
 import { formatPrice, primaryImage, type ProductWithImages } from "@/lib/products";
 import { useCart } from "@/lib/cart";

@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search, ShoppingCart, User, LogIn, Menu, Home, Store, LogOut, X } from "lucide-react";
 import { Logo } from "./Logo";
@@ -19,9 +19,10 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
   const { user, loading } = useAuth();
   const { count, openCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [location, navigate] = useLocation();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  const isActive = (to: string) => to === "/" ? location === "/" : location.startsWith(to);
+  const isActive = (to: string) => to === "/" ? pathname === "/" : pathname.startsWith(to);
 
   return (
     <header className="sticky top-0 z-40 w-full">
@@ -60,7 +61,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             className="w-9 h-9 flex items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
             style={{ color: "#3A3A3A" }}
             aria-label="Search"
-            onClick={() => navigate("/shop")}
+            onClick={() => void navigate({ to: "/shop" })}
           >
             <Search className="h-5 w-5" strokeWidth={1.8} />
           </button>
@@ -164,7 +165,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                   onClick={async () => {
                     setMobileOpen(false);
                     await supabase.auth.signOut();
-                    navigate("/");
+                    void navigate({ to: "/" });
                   }}
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#EF4444", background: "#FEF2F2", border: "none", width: "100%", cursor: "pointer" }}
                 >

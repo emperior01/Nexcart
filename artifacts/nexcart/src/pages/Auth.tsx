@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "@tanstack/react-router";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function AuthPage() {
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const [mode, setMode] = useState("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +39,7 @@ export default function AuthPage() {
         const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (err) throw err;
         toast.success("Welcome back!");
-        navigate("/");
+        navigate({ to: "/" });
       }
     } catch (err) {
       setError((err as Error).message || "Something went wrong.");
