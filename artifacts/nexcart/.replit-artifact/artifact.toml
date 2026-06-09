@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Nexcart — Shop Smarter. Live Better."
+version = "1.0.0"
+id = "artifacts/nexcart"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24711
+
+[services.development]
+run = "pnpm --filter @workspace/nexcart run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/nexcart", "run", "build" ]
+publicDir = "artifacts/nexcart/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24711"
+BASE_PATH = "/"

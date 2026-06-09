@@ -1,0 +1,77 @@
+import { supabase } from "@/integrations/supabase/client";
+
+export interface HeroSettings {
+  heading_line1: string;
+  heading_line2: string;
+  subtext: string;
+  cta_primary: string;
+  cta_secondary: string;
+  images: string[]; // up to 4 image URLs
+}
+
+export interface PromoBannerSettings {
+  heading: string;
+  subtext: string;
+  code: string;
+  cta: string;
+}
+
+export interface TrustBadge {
+  icon: "truck" | "shield" | "refresh" | "chat";
+  title: string;
+  sub: string;
+}
+
+export interface SiteSettings {
+  announcement_bar: string;
+  hero: HeroSettings;
+  promo_banner: PromoBannerSettings;
+  trust_badges: TrustBadge[];
+}
+
+export const DEFAULT_SETTINGS: SiteSettings = {
+  announcement_bar: "Fast delivery · Secure encrypted checkout",
+  hero: {
+    heading_line1: "Shop Smarter.",
+    heading_line2: "Live Better with Nexcart",
+    subtext: "Quality goods, easy ordering, and reliable service.",
+    cta_primary: "Shop the collection",
+    cta_secondary: "Browse new tech",
+    images: [],
+  },
+  promo_banner: {
+    heading: "Shop Smarter.\nLive Better with Nexcart",
+    subtext: "Quality goods, easy ordering, and reliable service.",
+    code: "NEXCART10",
+    cta: "Start shopping",
+  },
+  trust_badges: [
+    { icon: "truck",   title: "Fast delivery",   sub: "Fast fulfillment and dependable shipping on every order." },
+    { icon: "shield",  title: "Secure checkout", sub: "Encrypted payments via Paystack." },
+    { icon: "refresh", title: "30-day returns",  sub: "No-fuss return policy." },
+    { icon: "chat",    title: "Real support",    sub: "Humans, not bots." },
+  ],
+};
+
+export async function fetchSiteSettings(): Promise<SiteSettings> {
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("key, value");
+
+  if (error || !data?.length) return DEFAULT_SETTINGS;
+
+  const map = Object.fromEntries(data.map((r) => [r.key, r.value]));
+  return {
+    announcement_bar: map.announcement_bar ?? DEFAULT_SETTINGS.announcement_bar,
+    hero:         map.hero          ?? DEFAULT_SETTINGS.hero,
+    promo_banner: map.promo_banner  ?? DEFAULT_SETTINGS.promo_banner,
+    trust_badges: map.trust_badges  ?? DEFAULT_SETTINGS.trust_badges,
+  };
+}
+
+export async function saveSetting(key: string, value: unknown): Promise<void> {
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert({ key, value, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
