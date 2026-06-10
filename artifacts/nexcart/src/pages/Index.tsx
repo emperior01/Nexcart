@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Truck, ShieldCheck, RefreshCw, MessageCircle, Tag } from "lucide-react";
+import { ArrowRight, Truck, ShieldCheck, RefreshCw, MessageCircle, Tag, Store } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/nexcart/Navbar";
@@ -132,6 +132,16 @@ export default function IndexPage() {
                 style={{ background: "rgba(255,255,255,0.1)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)" }}
               >
                 {settings.hero.cta_secondary}
+              </Link>
+            </div>
+            <div className="mt-4">
+              <Link
+                to="/become-seller"
+                className="inline-flex items-center gap-2 text-[13px] font-semibold px-5 py-2.5 rounded-full transition-all hover:opacity-90"
+                style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)" }}
+              >
+                <Store className="h-3.5 w-3.5" />
+                Become a Seller
               </Link>
             </div>
           </div>

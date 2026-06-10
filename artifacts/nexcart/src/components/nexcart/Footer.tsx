@@ -1,25 +1,11 @@
-import { Truck, ShieldCheck, RefreshCw, MessageCircle } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Truck, ShieldCheck, RefreshCw, MessageCircle, Store } from "lucide-react";
 
 const trustBadges = [
   { icon: Truck, label: "Free shipping", sub: "On orders over $50" },
   { icon: ShieldCheck, label: "Secure checkout", sub: "Encrypted payments" },
   { icon: RefreshCw, label: "30-day returns", sub: "No-fuss policy" },
   { icon: MessageCircle, label: "Real support", sub: "Humans, not bots" },
-];
-
-const footerLinks = [
-  {
-    title: "Shop",
-    links: ["All products", "Electronics", "Beauty", "Fashion", "Home", "Fitness"],
-  },
-  {
-    title: "Account",
-    links: ["Your account", "Your orders", "Cart", "Wishlist"],
-  },
-  {
-    title: "Help",
-    links: ["Shipping", "Returns", "Contact us", "FAQ"],
-  },
 ];
 
 export function Footer() {
@@ -57,23 +43,80 @@ export function Footer() {
           </p>
 
           {/* Link grid */}
-          <div className="grid grid-cols-3 gap-6 mb-8">
-            {footerLinks.map((col) => (
-              <div key={col.title}>
-                <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-white/40 mb-3">
-                  {col.title}
-                </h4>
-                <ul className="space-y-2">
-                  {col.links.map((l) => (
-                    <li key={l}>
-                      <a href="#" className="text-[13px] text-white/70 hover:text-[#E8611A] transition-colors">
-                        {l}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 mb-8">
+            <div>
+              <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-white/40 mb-3">Shop</h4>
+              <ul className="space-y-2">
+                {["All products", "Electronics", "Beauty", "Fashion", "Home", "Fitness"].map((l) => (
+                  <li key={l}>
+                    <a href="#" className="text-[13px] text-white/70 hover:text-[#E8611A] transition-colors">{l}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-white/40 mb-3">Account</h4>
+              <ul className="space-y-2">
+                {["Your account", "Your orders", "Cart", "Wishlist"].map((l) => (
+                  <li key={l}>
+                    <a href="#" className="text-[13px] text-white/70 hover:text-[#E8611A] transition-colors">{l}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-white/40 mb-3">Help</h4>
+              <ul className="space-y-2">
+                {["Shipping", "Returns", "Contact us", "FAQ"].map((l) => (
+                  <li key={l}>
+                    <a href="#" className="text-[13px] text-white/70 hover:text-[#E8611A] transition-colors">{l}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-[10px] font-bold tracking-[0.14em] uppercase text-white/40 mb-3 flex items-center gap-1.5">
+                <Store className="h-3 w-3" strokeWidth={2} />
+                Sell with Us
+              </h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    to="/become-seller"
+                    className="text-[13px] text-white/70 hover:text-[#E8611A] transition-colors"
+                  >
+                    Become a Seller
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/become-seller"
+                    className="text-[13px] text-white/70 hover:text-[#E8611A] transition-colors"
+                  >
+                    Sell on Nexcart
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/become-seller"
+                    className="text-[13px] text-white/70 hover:text-[#E8611A] transition-colors"
+                  >
+                    Start Selling
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/seller"
+                    className="text-[13px] text-white/70 hover:text-[#E8611A] transition-colors"
+                  >
+                    Seller Dashboard
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* Bottom bar */}

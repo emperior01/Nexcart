@@ -3,9 +3,11 @@ import { useState, useEffect, useRef } from "react";
 import {
   Search, ShoppingCart, User, LogIn, Menu, Home, Store,
   LogOut, X, ShoppingBag, Heart, MapPin, Settings, LayoutDashboard,
+  TrendingUp,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/use-auth";
+import { useSeller } from "@/hooks/use-seller";
 import { useCart } from "@/lib/cart";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,6 +30,7 @@ const accountMenuItems = [
 
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
+  const { isSeller, isVerified, isLoading: sellerLoading } = useSeller();
   const { count, openCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -74,6 +77,10 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
     void navigate({ to: "/" });
   }
 
+  const showSellerReady = !loading && !sellerLoading;
+  const isVerifiedSeller = showSellerReady && !!user && isSeller && isVerified;
+  const showBecomeSeller = showSellerReady && (!user || (!!user && !isSeller));
+
   return (
     <header className="sticky top-0 z-40 w-full">
       <div
@@ -103,6 +110,31 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                 {l.label}
               </Link>
             ))}
+
+            {showSellerReady && (
+              isVerifiedSeller ? (
+                <Link
+                  to="/seller"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5"
+                  style={{
+                    color: isActive("/seller") ? "#E8611A" : "#6B6B6B",
+                    background: isActive("/seller") ? "#FEF0E8" : "transparent",
+                  }}
+                >
+                  <TrendingUp className="h-3.5 w-3.5" strokeWidth={2} />
+                  Seller Dashboard
+                </Link>
+              ) : showBecomeSeller ? (
+                <Link
+                  to="/become-seller"
+                  className="ml-2 px-4 py-2 rounded-full text-sm font-semibold transition-all hover:opacity-90 hover:-translate-y-px flex items-center gap-1.5"
+                  style={{ background: "#E8611A", color: "#fff" }}
+                >
+                  <Store className="h-3.5 w-3.5" strokeWidth={2} />
+                  Sell on Nexcart
+                </Link>
+              ) : null
+            )}
           </nav>
         </div>
 
@@ -161,6 +193,32 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                       </Link>
                     ))}
                   </div>
+
+                  {showSellerReady && (
+                    <div className="border-t border-[#F5F5F5] py-1.5">
+                      {isVerifiedSeller ? (
+                        <Link
+                          to="/seller"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-[#FEF0E8]"
+                          style={{ color: "#E8611A" }}
+                        >
+                          <TrendingUp className="h-4 w-4 flex-shrink-0" strokeWidth={1.8} />
+                          <span className="font-semibold">Seller Dashboard</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/become-seller"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-[#FEF0E8]"
+                          style={{ color: "#E8611A" }}
+                        >
+                          <Store className="h-4 w-4 flex-shrink-0" strokeWidth={1.8} />
+                          <span className="font-semibold">Become a Seller</span>
+                        </Link>
+                      )}
+                    </div>
+                  )}
 
                   {isAdmin && (
                     <div className="border-t border-[#F5F5F5] py-1.5">
@@ -259,6 +317,41 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                   {l.label}
                 </Link>
               ))}
+
+              {/* Seller CTA in mobile nav */}
+              {showSellerReady && (
+                isVerifiedSeller ? (
+                  <Link
+                    to="/seller"
+                    onClick={() => setMobileOpen(false)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                      borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
+                      color: "#E8611A", background: isActive("/seller") ? "#FEF0E8" : "transparent",
+                    }}
+                  >
+                    <span style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(232,97,26,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <TrendingUp style={{ width: 15, height: 15, color: "#E8611A" }} />
+                    </span>
+                    Seller Dashboard
+                  </Link>
+                ) : (
+                  <Link
+                    to="/become-seller"
+                    onClick={() => setMobileOpen(false)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                      borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: "none",
+                      color: "#fff", background: "#E8611A", marginTop: 4,
+                    }}
+                  >
+                    <span style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Store style={{ width: 15, height: 15, color: "#fff" }} />
+                    </span>
+                    Sell on Nexcart
+                  </Link>
+                )
+              )}
 
               {user && (
                 <>
