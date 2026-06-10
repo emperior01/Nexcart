@@ -35,6 +35,7 @@ export interface Database {
           is_active: boolean;
           is_featured: boolean;
           category_id: string | null;
+          seller_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -110,6 +111,63 @@ export interface Database {
         };
         Insert: { key: string; value: Json; updated_at?: string };
         Update: Partial<{ key: string; value: Json; updated_at: string }>;
+      };
+      sellers: {
+        Row: {
+          id: string;
+          user_id: string;
+          store_name: string;
+          store_description: string | null;
+          store_logo: string | null;
+          store_banner: string | null;
+          phone: string | null;
+          address: string | null;
+          verification_status: "pending" | "verified" | "rejected" | "suspended";
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["sellers"]["Row"], "id" | "created_at" | "updated_at">;
+        Update: Partial<Database["public"]["Tables"]["sellers"]["Insert"]>;
+      };
+      withdrawals: {
+        Row: {
+          id: string;
+          seller_id: string;
+          amount: number;
+          bank_name: string;
+          account_name: string;
+          account_number: string;
+          status: "pending" | "approved" | "rejected";
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["withdrawals"]["Row"], "id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["withdrawals"]["Insert"]>;
+      };
+      seller_notifications: {
+        Row: {
+          id: string;
+          seller_id: string;
+          title: string;
+          message: string;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["seller_notifications"]["Row"], "id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["seller_notifications"]["Insert"]>;
+      };
+      reviews: {
+        Row: {
+          id: string;
+          product_id: string;
+          user_id: string;
+          seller_id: string | null;
+          rating: number;
+          comment: string | null;
+          seller_reply: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["reviews"]["Row"], "id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["reviews"]["Insert"]>;
       };
     };
     Views: Record<string, never>;

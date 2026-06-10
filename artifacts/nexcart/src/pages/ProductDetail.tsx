@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ShoppingCart, Zap, Star, Minus, Plus, ImageOff, Heart } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Star, Minus, Plus, ImageOff, Heart, Store } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { ProductCard } from "@/components/nexcart/ProductCard";
@@ -14,6 +14,8 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { toast } from "sonner";
+
+type SellerInfo = { id: string; store_name: string; store_logo: string | null; verification_status: string };
 
 export default function ProductDetailPage() {
   const { slug } = useParams({ strict: false }) as { slug: string };
@@ -35,6 +37,21 @@ export default function ProductDetailPage() {
         .maybeSingle();
       if (error) throw error;
       return data as ProductWithImages | null;
+    },
+  });
+
+  const { data: seller } = useQuery({
+    queryKey: ["product-seller", (product as any)?.seller_id],
+    enabled: !!(product as any)?.seller_id,
+    queryFn: async (): Promise<SellerInfo | null> => {
+      const sellerId = (product as any)?.seller_id;
+      if (!sellerId) return null;
+      const { data } = await supabase
+        .from("sellers")
+        .select("id,store_name,store_logo,verification_status")
+        .eq("id", sellerId)
+        .maybeSingle();
+      return data as SellerInfo | null;
     },
   });
 
@@ -210,6 +227,28 @@ export default function ProductDetailPage() {
 
               {product.description && (
                 <p className="text-[15px] leading-relaxed text-muted-foreground">{product.description}</p>
+              )}
+
+              {/* Seller info */}
+              {seller && seller.verification_status === "verified" && (
+                <Link
+                  to={`/store/${seller.id}`}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:border-[#E8611A]/40 hover:bg-orange-50/50 transition-all"
+                  style={{ textDecoration: "none" }}
+                >
+                  <div className="h-9 w-9 rounded-xl overflow-hidden bg-orange-50 flex items-center justify-center flex-shrink-0">
+                    {seller.store_logo ? (
+                      <img src={seller.store_logo} alt={seller.store_name} className="h-full w-full object-cover" />
+                    ) : (
+                      <Store className="h-4 w-4 text-[#E8611A]" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Sold by</p>
+                    <p className="text-sm font-bold text-foreground">{seller.store_name}</p>
+                  </div>
+                  <span className="ml-auto text-[10px] font-bold text-[#E8611A]">View Store →</span>
+                </Link>
               )}
 
               {/* Stock */}

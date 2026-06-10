@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Package, ShoppingBag, Users, TrendingUp } from "lucide-react";
+import { Package, ShoppingBag, Users, TrendingUp, Store, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 function StatCard({ label, value, icon: Icon, gradient }: {
@@ -31,13 +31,26 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [products, orders, users] = await Promise.all([
+      const [products, orders, users, sellers, pendingWithdrawals] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id,total", { count: "exact" }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("sellers").select("id,verification_status", { count: "exact" }),
+        supabase.from("withdrawals").select("id,amount").eq("status", "pending"),
       ]);
       const revenue = ((orders.data ?? []) as { id: string; total: number }[]).reduce((sum, o) => sum + Number(o.total), 0);
-      return { products: products.count ?? 0, orders: orders.count ?? 0, users: users.count ?? 0, revenue };
+      const sellerRows = (sellers.data ?? []) as { id: string; verification_status: string }[];
+      const verifiedSellers = sellerRows.filter((s) => s.verification_status === "verified").length;
+      const pendingWithdrawalsTotal = ((pendingWithdrawals.data ?? []) as { id: string; amount: number }[]).reduce((s, w) => s + Number(w.amount), 0);
+      return {
+        products: products.count ?? 0,
+        orders: orders.count ?? 0,
+        users: users.count ?? 0,
+        revenue,
+        totalSellers: sellers.count ?? 0,
+        verifiedSellers,
+        pendingWithdrawalsTotal,
+      };
     },
   });
 
@@ -61,7 +74,8 @@ export default function AdminDashboard() {
         <p style={{ fontSize: 13, color: "#6B7280", marginTop: 3 }}>Welcome back, Admin. Here's what's happening.</p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, width: "100%", marginBottom: 24 }}>
+      {/* Main stats */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, width: "100%", marginBottom: 16 }}>
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} style={{ height: 80, borderRadius: 16, background: "#EBEBEB" }} />
@@ -76,6 +90,24 @@ export default function AdminDashboard() {
               value={`$${stats!.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               icon={TrendingUp}
               gradient="linear-gradient(135deg,#10B981,#065F46)"
+            />
+          </>
+        )}
+      </div>
+
+      {/* Marketplace stats */}
+      <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 13, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Marketplace</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 24 }}>
+        {isLoading ? (
+          Array.from({ length: 2 }).map((_, i) => <div key={i} style={{ height: 80, borderRadius: 16, background: "#EBEBEB" }} />)
+        ) : (
+          <>
+            <StatCard label="Sellers" value={`${stats!.verifiedSellers}/${stats!.totalSellers}`} icon={Store} gradient="linear-gradient(135deg,#F59E0B,#D97706)" />
+            <StatCard
+              label="Pending Payouts"
+              value={`$${stats!.pendingWithdrawalsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              icon={Wallet}
+              gradient="linear-gradient(135deg,#06B6D4,#0891B2)"
             />
           </>
         )}

@@ -25,6 +25,19 @@ import AdminProducts from "@/pages/admin/Products";
 import AdminOrders from "@/pages/admin/Orders";
 import AdminUsers from "@/pages/admin/Users";
 import AdminSettings from "@/pages/admin/Settings";
+import AdminSellers from "@/pages/admin/Sellers";
+import AdminWithdrawals from "@/pages/admin/Withdrawals";
+import SellerLayout from "@/pages/seller/Layout";
+import SellerDashboard from "@/pages/seller/Dashboard";
+import SellerProducts from "@/pages/seller/Products";
+import SellerOrders from "@/pages/seller/Orders";
+import SellerEarnings from "@/pages/seller/Earnings";
+import SellerWithdrawals from "@/pages/seller/Withdrawals";
+import SellerReviews from "@/pages/seller/Reviews";
+import SellerSettings from "@/pages/seller/Settings";
+import SellerNotifications from "@/pages/seller/Notifications";
+import BecomeSellerPage from "@/pages/BecomeSeller";
+import StorePage from "@/pages/Store";
 import NotFound from "@/pages/not-found";
 
 function RootComponent() {
@@ -75,6 +88,18 @@ const wishlistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/wishlist",
   component: WishlistPage,
+});
+
+const becomeSellerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/become-seller",
+  component: BecomeSellerPage,
+});
+
+const storeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/store/$sellerId",
+  component: StorePage,
 });
 
 const accountRoute = createRoute({
@@ -155,6 +180,72 @@ const adminSettingsRoute = createRoute({
   component: AdminSettings,
 });
 
+const adminSellersRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: "/sellers",
+  component: AdminSellers,
+});
+
+const adminWithdrawalsRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: "/withdrawals",
+  component: AdminWithdrawals,
+});
+
+const sellerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/seller",
+  component: SellerLayout,
+});
+
+const sellerIndexRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/",
+  component: SellerDashboard,
+});
+
+const sellerProductsRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/products",
+  component: SellerProducts,
+});
+
+const sellerOrdersRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/orders",
+  component: SellerOrders,
+});
+
+const sellerEarningsRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/earnings",
+  component: SellerEarnings,
+});
+
+const sellerWithdrawalsRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/withdrawals",
+  component: SellerWithdrawals,
+});
+
+const sellerReviewsRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/reviews",
+  component: SellerReviews,
+});
+
+const sellerSettingsRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/settings",
+  component: SellerSettings,
+});
+
+const sellerNotificationsRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/notifications",
+  component: SellerNotifications,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   shopRoute,
@@ -162,6 +253,8 @@ const routeTree = rootRoute.addChildren([
   checkoutRoute,
   authRoute,
   wishlistRoute,
+  becomeSellerRoute,
+  storeRoute,
   accountRoute.addChildren([
     accountIndexRoute,
     accountProfileRoute,
@@ -176,6 +269,18 @@ const routeTree = rootRoute.addChildren([
     adminOrdersRoute,
     adminUsersRoute,
     adminSettingsRoute,
+    adminSellersRoute,
+    adminWithdrawalsRoute,
+  ]),
+  sellerRoute.addChildren([
+    sellerIndexRoute,
+    sellerProductsRoute,
+    sellerOrdersRoute,
+    sellerEarningsRoute,
+    sellerWithdrawalsRoute,
+    sellerReviewsRoute,
+    sellerSettingsRoute,
+    sellerNotificationsRoute,
   ]),
 ]);
 
