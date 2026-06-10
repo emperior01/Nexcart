@@ -1,6 +1,9 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
-import { Search, ShoppingCart, User, LogIn, Menu, Home, Store, LogOut, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Search, ShoppingCart, User, LogIn, Menu, Home, Store,
+  LogOut, X, ShoppingBag, Heart, MapPin, Settings, LayoutDashboard,
+} from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/lib/cart";
@@ -15,14 +18,61 @@ const navLinks = [
   { to: "/shop", label: "Shop",  icon: Store },
 ];
 
+const accountMenuItems = [
+  { label: "My Profile",  icon: User,       to: "/account" as const },
+  { label: "My Orders",   icon: ShoppingBag, to: "/account" as const },
+  { label: "Wishlist",    icon: Heart,       to: "/account" as const },
+  { label: "Addresses",   icon: MapPin,      to: "/account" as const },
+  { label: "Settings",    icon: Settings,    to: "/account" as const },
+] as const;
+
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
   const { count, openCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isActive = (to: string) => to === "/" ? pathname === "/" : pathname.startsWith(to);
+
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(!!data));
+  }, [user]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onOutsideClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    function onEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onOutsideClick);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onOutsideClick);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [menuOpen]);
+
+  async function handleSignOut() {
+    setMenuOpen(false);
+    setMobileOpen(false);
+    await supabase.auth.signOut();
+    void navigate({ to: "/" });
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full">
@@ -67,14 +117,82 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
           </button>
 
           {loading ? null : user ? (
-            <Link
-              to="/account"
-              className="w-9 h-9 flex items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
-              style={{ color: "#3A3A3A" }}
-              aria-label="Account"
-            >
-              <User className="h-5 w-5" strokeWidth={1.8} />
-            </Link>
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="w-9 h-9 flex items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
+                style={{ color: menuOpen ? "#E8611A" : "#3A3A3A", background: menuOpen ? "#FEF0E8" : undefined }}
+                aria-label="Account menu"
+                aria-expanded={menuOpen}
+              >
+                <User className="h-5 w-5" strokeWidth={1.8} />
+              </button>
+
+              {menuOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-xl border border-[#F0F0F0] overflow-hidden z-50"
+                  style={{ top: "calc(100% + 6px)" }}
+                >
+                  {/* User identity */}
+                  <div className="px-4 py-3 border-b border-[#F5F5F5]">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                        style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }}
+                      >
+                        {(user.email?.[0] ?? "?").toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[#1A1A1A] truncate">{user.email}</p>
+                        <p className="text-[11px] text-[#9B9B9B] mt-0.5">My Account</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu items */}
+                  <div className="py-1.5">
+                    {accountMenuItems.map(({ label, icon: Icon, to }) => (
+                      <Link
+                        key={label}
+                        to={to}
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#3A3A3A] hover:bg-[#F9F9F9] transition-colors"
+                      >
+                        <Icon className="h-4 w-4 text-[#9B9B9B] flex-shrink-0" strokeWidth={1.8} />
+                        <span className="font-medium">{label}</span>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {/* Admin Dashboard (admin only) */}
+                  {isAdmin && (
+                    <div className="border-t border-[#F5F5F5] py-1.5">
+                      <Link
+                        to="/admin"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-[#FEF0E8]"
+                        style={{ color: "#E8611A" }}
+                      >
+                        <LayoutDashboard className="h-4 w-4 flex-shrink-0" strokeWidth={1.8} />
+                        <span className="font-semibold">Admin Dashboard</span>
+                      </Link>
+                    </div>
+                  )}
+
+                  {/* Logout */}
+                  <div className="border-t border-[#F5F5F5] py-1.5">
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm w-full text-left transition-colors hover:bg-[#FFF5F5]"
+                      style={{ color: "#EF4444" }}
+                    >
+                      <LogOut className="h-4 w-4 flex-shrink-0" strokeWidth={1.8} />
+                      <span className="font-medium">Logout</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <Link
               to="/auth"
@@ -114,6 +232,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         </div>
       </div>
 
+      {/* Mobile sidebar */}
       {mobileOpen && (
         <>
           <div className="md:hidden fixed inset-0 z-30 bg-black/40" onClick={() => setMobileOpen(false)} />
@@ -125,54 +244,81 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
               </button>
             </div>
 
-            <nav style={{ padding: "12px 12px", display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+            <nav style={{ padding: "12px 12px", display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
+              {/* Nav links */}
               {navLinks.map((l) => (
                 <Link
                   key={l.to}
                   to={l.to}
                   onClick={() => setMobileOpen(false)}
                   style={{
-                    display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
+                    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
                     borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
                     color: isActive(l.to) ? "#E8611A" : "#3A3A3A",
                     background: isActive(l.to) ? "#FEF0E8" : "transparent",
                   }}
                 >
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <l.icon style={{ width: 16, height: 16 }} />
+                  <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <l.icon style={{ width: 15, height: 15 }} />
                   </span>
                   {l.label}
                 </Link>
               ))}
 
+              {/* Account section */}
               {user && (
-                <Link
-                  to="/account"
-                  onClick={() => setMobileOpen(false)}
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#3A3A3A", textDecoration: "none" }}
-                >
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <User style={{ width: 16, height: 16 }} />
-                  </span>
-                  My Account
-                </Link>
+                <>
+                  <div style={{ margin: "8px 14px 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
+                    Account
+                  </div>
+                  {accountMenuItems.map(({ label, icon: Icon, to }) => (
+                    <Link
+                      key={label}
+                      to={to}
+                      onClick={() => setMobileOpen(false)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                        borderRadius: 12, fontSize: 14, fontWeight: 500, textDecoration: "none", color: "#3A3A3A",
+                      }}
+                    >
+                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon style={{ width: 15, height: 15, color: "#6B6B6B" }} />
+                      </span>
+                      {label}
+                    </Link>
+                  ))}
+
+                  {/* Admin Dashboard (admin only) */}
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setMobileOpen(false)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                        borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#E8611A",
+                        background: "#FEF0E8",
+                      }}
+                    >
+                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(232,97,26,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <LayoutDashboard style={{ width: 15, height: 15, color: "#E8611A" }} />
+                      </span>
+                      Admin Dashboard
+                    </Link>
+                  )}
+                </>
               )}
             </nav>
 
             <div style={{ padding: "12px", borderTop: "1px solid #F3F4F6" }}>
               {user ? (
                 <button
-                  onClick={async () => {
-                    setMobileOpen(false);
-                    await supabase.auth.signOut();
-                    void navigate({ to: "/" });
-                  }}
+                  onClick={handleSignOut}
                   style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#EF4444", background: "#FEF2F2", border: "none", width: "100%", cursor: "pointer" }}
                 >
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <LogOut style={{ width: 16, height: 16 }} />
+                  <span style={{ width: 30, height: 30, borderRadius: 8, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <LogOut style={{ width: 15, height: 15 }} />
                   </span>
-                  Sign Out
+                  Logout
                 </button>
               ) : (
                 <Link
