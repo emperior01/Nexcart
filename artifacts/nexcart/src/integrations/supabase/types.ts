@@ -123,6 +123,8 @@ export interface Database {
           phone: string | null;
           address: string | null;
           verification_status: "pending" | "verified" | "rejected" | "suspended";
+          reviewed_at: string | null;
+          reviewed_by: string | null;
           created_at: string;
           updated_at: string;
         };
