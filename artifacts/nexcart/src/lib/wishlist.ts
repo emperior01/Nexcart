@@ -10,7 +10,7 @@ export interface WishlistItem {
   image: string | null;
 }
 
-interface WishlistState {
+interface LocalWishlistState {
   items: WishlistItem[];
   addItem: (item: WishlistItem) => void;
   removeItem: (productId: string) => void;
@@ -20,7 +20,7 @@ interface WishlistState {
   count: number;
 }
 
-export const useWishlist = create<WishlistState>()(
+export const useLocalWishlist = create<LocalWishlistState>()(
   persist(
     (set, get) => ({
       items: [],

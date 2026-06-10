@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Heart, Plus } from "lucide-react";
 import { formatPrice, primaryImage, type ProductWithImages } from "@/lib/products";
 import { useCart } from "@/lib/cart";
-import { useWishlist } from "@/lib/wishlist";
+import { useWishlist } from "@/hooks/use-wishlist";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 

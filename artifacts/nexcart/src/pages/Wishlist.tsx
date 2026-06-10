@@ -3,14 +3,15 @@ import { Heart, Trash2, ShoppingCart } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { Button } from "@/components/ui/button";
-import { useWishlist } from "@/lib/wishlist";
+import { Skeleton } from "@/components/ui/index";
+import { useWishlist } from "@/hooks/use-wishlist";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
 export default function WishlistPage() {
-  const { items, removeItem } = useWishlist();
+  const { items, removeItem, loading } = useWishlist();
   const { addItem, openCart } = useCart();
   const { currency } = useCurrency();
 
@@ -52,7 +53,20 @@ export default function WishlistPage() {
           )}
         </div>
 
-        {items.length === 0 ? (
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 rounded-2xl border border-border/50 bg-card p-4">
+                <Skeleton className="w-20 h-20 rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4 rounded" />
+                  <Skeleton className="h-4 w-1/4 rounded" />
+                </div>
+                <Skeleton className="w-24 h-8 rounded-full flex-shrink-0" />
+              </div>
+            ))}
+          </div>
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: "#FEF0E8" }}>
               <Heart className="h-7 w-7" style={{ color: "#E8611A" }} />

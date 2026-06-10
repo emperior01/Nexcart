@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatPrice, primaryImage, sortedImages, type ProductWithImages } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/lib/cart";
-import { useWishlist } from "@/lib/wishlist";
+import { useWishlist } from "@/hooks/use-wishlist";
 import { toast } from "sonner";
 
 export default function ProductDetailPage() {
