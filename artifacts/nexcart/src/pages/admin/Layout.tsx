@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
 import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -14,7 +15,15 @@ const navItems = [
   { to: "/settings",     label: "Homepage Settings", icon: Settings },
 ] as const;
 
-function SidebarContent({ onClose, signOut }: { onClose: () => void; signOut: () => void }) {
+function SidebarContent({
+  onClose,
+  signOut,
+  pendingSellers,
+}: {
+  onClose: () => void;
+  signOut: () => void;
+  pendingSellers: number;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -27,6 +36,7 @@ function SidebarContent({ onClose, signOut }: { onClose: () => void; signOut: ()
         {navItems.map(({ to, label, icon: Icon }) => {
           const fullPath = "/admin" + to;
           const isActive = to === "" ? pathname === "/admin" || pathname === "/admin/" : pathname.startsWith("/admin" + to);
+          const badge = to === "/sellers" && pendingSellers > 0 ? pendingSellers : 0;
           return (
             <Link
               key={to}
@@ -40,8 +50,19 @@ function SidebarContent({ onClose, signOut }: { onClose: () => void; signOut: ()
                 background: isActive ? "rgba(232,97,26,0.10)" : "transparent",
               }}
             >
-              <Icon style={{ width: 16, height: 16 }} />
-              {label}
+              <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{label}</span>
+              {badge > 0 && (
+                <span style={{
+                  minWidth: 18, height: 18, borderRadius: 50,
+                  background: "#E8611A", color: "#fff",
+                  fontSize: 10, fontWeight: 800,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "0 5px",
+                }}>
+                  {badge > 99 ? "99+" : badge}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -78,6 +99,19 @@ export default function AdminLayout() {
     });
   }, [user, loading, navigate]);
 
+  const { data: pendingSellers = 0 } = useQuery({
+    queryKey: ["admin-pending-sellers-count"],
+    enabled: !!user && !loading,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("sellers")
+        .select("id", { count: "exact", head: true })
+        .eq("verification_status", "pending");
+      return count ?? 0;
+    },
+  });
+
   async function signOut() {
     await supabase.auth.signOut();
     void navigate({ to: "/" });
@@ -96,7 +130,7 @@ export default function AdminLayout() {
     <div style={{ display: "flex", minHeight: "100vh", background: "#F9FAFB" }}>
       {/* Desktop sidebar */}
       <aside style={{ width: 220, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", flexShrink: 0, display: "flex", flexDirection: "column" }} className="hidden md:flex">
-        <SidebarContent onClose={() => {}} signOut={signOut} />
+        <SidebarContent onClose={() => {}} signOut={signOut} pendingSellers={pendingSellers} />
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -110,7 +144,7 @@ export default function AdminLayout() {
             >
               <X style={{ width: 14, height: 14, color: "#6B7280" }} />
             </button>
-            <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} />
+            <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} pendingSellers={pendingSellers} />
           </aside>
         </>
       )}
@@ -126,6 +160,17 @@ export default function AdminLayout() {
             <Menu style={{ width: 18, height: 18, color: "#3A3A3A" }} />
           </button>
           <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 16, color: "#E8611A" }}>Nexcart Admin</span>
+          {pendingSellers > 0 && (
+            <span style={{
+              minWidth: 20, height: 20, borderRadius: 50,
+              background: "#E8611A", color: "#fff",
+              fontSize: 10, fontWeight: 800,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "0 5px", marginLeft: "auto",
+            }}>
+              {pendingSellers > 99 ? "99+" : pendingSellers} pending
+            </span>
+          )}
         </div>
 
         <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
