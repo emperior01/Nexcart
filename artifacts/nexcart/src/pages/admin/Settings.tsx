@@ -118,7 +118,7 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-black text-foreground">Homepage Settings</h1>
         <p className="text-sm text-muted-foreground mt-1">Edit your storefront content without touching any code.</p>

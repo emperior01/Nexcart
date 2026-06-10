@@ -40,7 +40,7 @@ export default function AdminOrders() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-black text-foreground">Orders</h1>
         <p className="text-sm text-muted-foreground mt-0.5">{orders?.length ?? 0} total</p>
@@ -54,8 +54,8 @@ export default function AdminOrders() {
         ) : (orders ?? []).length === 0 ? (
           <p className="p-12 text-center text-muted-foreground">No orders yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm min-w-[600px]">
               <thead className="border-b border-border/50 bg-secondary/30">
                 <tr>
                   {["Order", "Items", "Total", "Paystack Ref", "Date", "Status"].map((h) => (

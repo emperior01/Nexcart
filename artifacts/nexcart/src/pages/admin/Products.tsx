@@ -197,7 +197,7 @@ export default function AdminProducts() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-foreground">Products</h1>

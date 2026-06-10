@@ -18,13 +18,20 @@ const navLinks = [
   { to: "/shop", label: "Shop",  icon: Store },
 ];
 
-const accountMenuItems = [
-  { label: "My Profile",  icon: User,       to: "/account" as const },
-  { label: "My Orders",   icon: ShoppingBag, to: "/account" as const },
-  { label: "Wishlist",    icon: Heart,       to: "/wishlist" as const },
-  { label: "Addresses",   icon: MapPin,      to: "/account" as const },
-  { label: "Settings",    icon: Settings,    to: "/account" as const },
-] as const;
+type AccountMenuItem = {
+  label: string;
+  icon: React.ElementType;
+  to: "/" | "/shop" | "/account" | "/wishlist" | "/addresses" | "/auth";
+  search?: Record<string, string>;
+};
+
+const accountMenuItems: AccountMenuItem[] = [
+  { label: "My Profile",  icon: User,        to: "/account" },
+  { label: "My Orders",   icon: ShoppingBag, to: "/account" },
+  { label: "Wishlist",    icon: Heart,       to: "/wishlist" },
+  { label: "Addresses",   icon: MapPin,      to: "/addresses" },
+  { label: "Settings",    icon: Settings,    to: "/account", search: { tab: "settings" } },
+];
 
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
@@ -151,10 +158,11 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
 
                   {/* Menu items */}
                   <div className="py-1.5">
-                    {accountMenuItems.map(({ label, icon: Icon, to }) => (
+                    {accountMenuItems.map(({ label, icon: Icon, to, search }) => (
                       <Link
                         key={label}
                         to={to}
+                        search={search as any}
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#3A3A3A] hover:bg-[#F9F9F9] transition-colors"
                       >
@@ -271,10 +279,11 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                   <div style={{ margin: "8px 14px 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
                     Account
                   </div>
-                  {accountMenuItems.map(({ label, icon: Icon, to }) => (
+                  {accountMenuItems.map(({ label, icon: Icon, to, search }) => (
                     <Link
                       key={label}
                       to={to}
+                      search={search as any}
                       onClick={() => setMobileOpen(false)}
                       style={{
                         display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",

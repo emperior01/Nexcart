@@ -55,7 +55,7 @@ export default function AdminDashboard() {
   });
 
   return (
-    <div style={{ padding: "16px", maxWidth: "100%" }}>
+    <div style={{ padding: "12px", maxWidth: "100%" }} className="sm:p-4">
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 22, letterSpacing: "-0.02em", color: "#0D0D0D" }}>Dashboard</h1>
         <p style={{ fontSize: 13, color: "#6B7280", marginTop: 3 }}>Welcome back, Admin. Here's what's happening.</p>

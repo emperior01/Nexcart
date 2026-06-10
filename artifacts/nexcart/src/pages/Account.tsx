@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ShoppingBag, Settings, LogOut, Package } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
@@ -18,7 +18,9 @@ export default function AccountPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { currency } = useCurrency();
-  const [tab, setTab] = useState<"orders" | "settings">("orders");
+  const search = useRouterState({ select: (s) => s.location.search });
+  const params = new URLSearchParams(search);
+  const tab = (params.get("tab") === "settings" ? "settings" : "orders") as "orders" | "settings";
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -124,25 +126,11 @@ export default function AccountPage() {
           </Button>
         </div>
 
-        <div className="flex rounded-xl bg-secondary p-1 mb-6">
-          {[
-            { key: "orders", label: "Orders", icon: ShoppingBag },
-            { key: "settings", label: "Settings", icon: Settings },
-          ].map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key as "orders" | "settings")}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[13px] font-semibold transition-all"
-              style={tab === key ? { background: "#fff", color: "#0D0D0D", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" } : { color: "#6B6B6B" }}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-
         {tab === "orders" && (
           <div className="space-y-4">
+            <h2 className="font-extrabold text-foreground flex items-center gap-2 mb-4">
+              <ShoppingBag className="h-5 w-5 text-[#E8611A]" /> My Orders
+            </h2>
             {ordersLoading ? (
               Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)
             ) : (orders ?? []).length === 0 ? (
@@ -191,6 +179,9 @@ export default function AccountPage() {
 
         {tab === "settings" && (
           <div className="space-y-6">
+            <h2 className="font-extrabold text-foreground flex items-center gap-2 mb-4">
+              <Settings className="h-5 w-5 text-[#E8611A]" /> Settings
+            </h2>
             <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm space-y-4">
               <h3 className="font-extrabold text-foreground">Profile</h3>
               <div className="space-y-3">
