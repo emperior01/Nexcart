@@ -12,6 +12,7 @@ import ProductDetailPage from "@/pages/ProductDetail";
 import CheckoutPage from "@/pages/Checkout";
 import AuthPage from "@/pages/Auth";
 import AccountPage from "@/pages/Account";
+import WishlistPage from "@/pages/Wishlist";
 import AdminLayout from "@/pages/admin/Layout";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminProducts from "@/pages/admin/Products";
@@ -70,6 +71,12 @@ const accountRoute = createRoute({
   component: AccountPage,
 });
 
+const wishlistRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/wishlist",
+  component: WishlistPage,
+});
+
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
@@ -113,6 +120,7 @@ const routeTree = rootRoute.addChildren([
   checkoutRoute,
   authRoute,
   accountRoute,
+  wishlistRoute,
   adminRoute.addChildren([
     adminIndexRoute,
     adminProductsRoute,

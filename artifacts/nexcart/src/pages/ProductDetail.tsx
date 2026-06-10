@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ShoppingCart, Zap, Star, Minus, Plus, ImageOff } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Zap, Star, Minus, Plus, ImageOff, Heart } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { ProductCard } from "@/components/nexcart/ProductCard";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatPrice, primaryImage, sortedImages, type ProductWithImages } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { toast } from "sonner";
 
 export default function ProductDetailPage() {
@@ -19,6 +20,7 @@ export default function ProductDetailPage() {
   const navigate = useNavigate();
   const { currency } = useCurrency();
   const { addItem, openCart } = useCart();
+  const { toggle, hasItem } = useWishlist();
   const [selectedImg, setSelectedImg] = useState(0);
   const [qty, setQty] = useState(1);
 
@@ -114,6 +116,20 @@ export default function ProductDetailPage() {
   const discount = onSale ? Math.round((1 - Number(product.price) / Number(product.compare_at_price!)) * 100) : 0;
   const inStock = product.stock > 0;
   const displayImg = images[selectedImg]?.url ?? primaryImage(product);
+  const wishlisted = hasItem(product.id);
+
+  function handleWishlist() {
+    toggle({
+      productId: product!.id,
+      slug: product!.slug,
+      title: product!.title,
+      price: Number(product!.price),
+      currency: product!.currency,
+      image: primaryImage(product!),
+    });
+    if (wishlisted) toast.success("Removed from wishlist");
+    else toast.success("Saved to wishlist", { description: product!.title });
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -237,6 +253,21 @@ export default function ProductDetailPage() {
                       <ShoppingCart className="h-5 w-5" />
                       Add to cart
                     </Button>
+                    <button
+                      onClick={handleWishlist}
+                      aria-label={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
+                      className="w-14 h-14 flex items-center justify-center rounded-full border border-border/60 transition-all hover:border-[#E8611A]"
+                      style={{
+                        background: wishlisted ? "#FEF0E8" : "#fff",
+                        borderColor: wishlisted ? "#E8611A" : undefined,
+                      }}
+                    >
+                      <Heart
+                        className="h-5 w-5 transition-colors"
+                        strokeWidth={1.8}
+                        style={{ color: wishlisted ? "#E8611A" : "#6B6B6B", fill: wishlisted ? "#E8611A" : "none" }}
+                      />
+                    </button>
                   </div>
                 </div>
               )}

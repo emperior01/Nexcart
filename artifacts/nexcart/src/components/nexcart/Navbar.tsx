@@ -21,7 +21,7 @@ const navLinks = [
 const accountMenuItems = [
   { label: "My Profile",  icon: User,       to: "/account" as const },
   { label: "My Orders",   icon: ShoppingBag, to: "/account" as const },
-  { label: "Wishlist",    icon: Heart,       to: "/account" as const },
+  { label: "Wishlist",    icon: Heart,       to: "/wishlist" as const },
   { label: "Addresses",   icon: MapPin,      to: "/account" as const },
   { label: "Settings",    icon: Settings,    to: "/account" as const },
 ] as const;

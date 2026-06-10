@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Heart, Plus } from "lucide-react";
 import { formatPrice, primaryImage, type ProductWithImages } from "@/lib/products";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
@@ -15,6 +16,8 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
     ? Math.round((1 - Number(product.price) / Number(product.compare_at_price!)) * 100)
     : 0;
   const { addItem, openCart } = useCart();
+  const { toggle, hasItem } = useWishlist();
+  const wishlisted = hasItem(product.id);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -31,6 +34,24 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
     });
     toast.success("Added to cart", { description: product.title });
     openCart();
+  };
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle({
+      productId: product.id,
+      slug: product.slug,
+      title: product.title,
+      price: Number(product.price),
+      currency: product.currency,
+      image: img,
+    });
+    if (wishlisted) {
+      toast.success("Removed from wishlist");
+    } else {
+      toast.success("Saved to wishlist", { description: product.title });
+    }
   };
 
   return (
@@ -78,10 +99,14 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
 
         <button
           className="absolute top-2.5 right-2.5 w-[30px] h-[30px] bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors"
-          onClick={(e) => e.preventDefault()}
-          aria-label="Save"
+          onClick={handleWishlist}
+          aria-label={wishlisted ? "Remove from wishlist" : "Save to wishlist"}
         >
-          <Heart className="h-3.5 w-3.5 text-[#3A3A3A]" strokeWidth={1.8} />
+          <Heart
+            className="h-3.5 w-3.5 transition-colors"
+            strokeWidth={1.8}
+            style={{ color: wishlisted ? "#E8611A" : "#3A3A3A", fill: wishlisted ? "#E8611A" : "none" }}
+          />
         </button>
 
         <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/60 to-transparent p-3 transition-transform duration-300 group-hover:translate-y-0">
