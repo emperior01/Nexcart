@@ -16,22 +16,15 @@ interface NavbarProps {
 const navLinks = [
   { to: "/",     label: "Home",  icon: Home },
   { to: "/shop", label: "Shop",  icon: Store },
-];
+] as const;
 
-type AccountMenuItem = {
-  label: string;
-  icon: React.ElementType;
-  to: "/" | "/shop" | "/account" | "/wishlist" | "/addresses" | "/auth";
-  search?: Record<string, string>;
-};
-
-const accountMenuItems: AccountMenuItem[] = [
-  { label: "My Profile",  icon: User,        to: "/account" },
-  { label: "My Orders",   icon: ShoppingBag, to: "/account" },
-  { label: "Wishlist",    icon: Heart,       to: "/wishlist" },
-  { label: "Addresses",   icon: MapPin,      to: "/addresses" },
-  { label: "Settings",    icon: Settings,    to: "/account", search: { tab: "settings" } },
-];
+const accountMenuItems = [
+  { label: "My Profile",  icon: User,        to: "/account/profile"   },
+  { label: "My Orders",   icon: ShoppingBag, to: "/account/orders"    },
+  { label: "Wishlist",    icon: Heart,       to: "/account/wishlist"  },
+  { label: "Addresses",   icon: MapPin,      to: "/account/addresses" },
+  { label: "Settings",    icon: Settings,    to: "/account/settings"  },
+] as const;
 
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
@@ -140,7 +133,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                   className="absolute right-0 mt-2 w-56 rounded-2xl bg-white shadow-xl border border-[#F0F0F0] overflow-hidden z-50"
                   style={{ top: "calc(100% + 6px)" }}
                 >
-                  {/* User identity */}
                   <div className="px-4 py-3 border-b border-[#F5F5F5]">
                     <div className="flex items-center gap-2.5">
                       <div
@@ -156,13 +148,11 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                     </div>
                   </div>
 
-                  {/* Menu items */}
                   <div className="py-1.5">
-                    {accountMenuItems.map(({ label, icon: Icon, to, search }) => (
+                    {accountMenuItems.map(({ label, icon: Icon, to }) => (
                       <Link
                         key={label}
                         to={to}
-                        search={search as any}
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#3A3A3A] hover:bg-[#F9F9F9] transition-colors"
                       >
@@ -172,7 +162,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                     ))}
                   </div>
 
-                  {/* Admin Dashboard (admin only) */}
                   {isAdmin && (
                     <div className="border-t border-[#F5F5F5] py-1.5">
                       <Link
@@ -187,7 +176,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                     </div>
                   )}
 
-                  {/* Logout */}
                   <div className="border-t border-[#F5F5F5] py-1.5">
                     <button
                       onClick={handleSignOut}
@@ -252,8 +240,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
               </button>
             </div>
 
-            <nav style={{ padding: "12px 12px", display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
-              {/* Nav links */}
+            <nav style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
               {navLinks.map((l) => (
                 <Link
                   key={l.to}
@@ -273,21 +260,21 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                 </Link>
               ))}
 
-              {/* Account section */}
               {user && (
                 <>
                   <div style={{ margin: "8px 14px 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
                     Account
                   </div>
-                  {accountMenuItems.map(({ label, icon: Icon, to, search }) => (
+                  {accountMenuItems.map(({ label, icon: Icon, to }) => (
                     <Link
                       key={label}
                       to={to}
-                      search={search as any}
                       onClick={() => setMobileOpen(false)}
                       style={{
                         display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                        borderRadius: 12, fontSize: 14, fontWeight: 500, textDecoration: "none", color: "#3A3A3A",
+                        borderRadius: 12, fontSize: 14, fontWeight: 500, textDecoration: "none",
+                        color: isActive(to) ? "#E8611A" : "#3A3A3A",
+                        background: isActive(to) ? "#FEF0E8" : "transparent",
                       }}
                     >
                       <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -297,7 +284,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                     </Link>
                   ))}
 
-                  {/* Admin Dashboard (admin only) */}
                   {isAdmin && (
                     <Link
                       to="/admin"
