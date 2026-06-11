@@ -34,11 +34,12 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-function SidebarContent({ onClose, signOut, storeName, sellerStatus }: {
+function SidebarContent({ onClose, signOut, storeName, sellerStatus, sellerId }: {
   onClose: () => void;
   signOut: () => void;
   storeName: string;
   sellerStatus: string;
+  sellerId: string;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isVerified = sellerStatus === "verified";
@@ -90,6 +91,14 @@ function SidebarContent({ onClose, signOut, storeName, sellerStatus }: {
       </nav>
 
       <div style={{ padding: "12px 10px", borderTop: "1px solid #EBEBEB", display: "flex", flexDirection: "column", gap: 4 }}>
+        <Link
+          to="/store/$sellerId"
+          params={{ sellerId }}
+          onClick={onClose}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#E8611A", textDecoration: "none", background: "rgba(232,97,26,0.06)", borderRadius: 10 }}
+        >
+          <Store style={{ width: 16, height: 16 }} /> View My Store
+        </Link>
         <Link
           to="/"
           onClick={onClose}
@@ -158,7 +167,7 @@ export default function SellerLayout() {
         className="seller-sidebar-desktop"
         style={{ width: 224, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", flexShrink: 0, flexDirection: "column" }}
       >
-        <SidebarContent onClose={() => {}} signOut={signOut} storeName={storeName} sellerStatus={sellerStatus} />
+        <SidebarContent onClose={() => {}} signOut={signOut} storeName={storeName} sellerStatus={sellerStatus} sellerId={seller?.id ?? ""} />
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -175,7 +184,7 @@ export default function SellerLayout() {
             >
               <X style={{ width: 16, height: 16, color: "#6B7280" }} />
             </button>
-            <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} storeName={storeName} sellerStatus={sellerStatus} />
+            <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} storeName={storeName} sellerStatus={sellerStatus} sellerId={seller?.id ?? ""} />
           </aside>
         </>
       )}
