@@ -5,6 +5,12 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type Seller = Database["public"]["Tables"]["sellers"]["Row"];
 
+// Hybrid seller status model
+// basic    → instant access after "Become a Seller" (can create products, manage orders; NO withdrawals)
+// verified → admin-upgraded; full access including withdrawals
+// suspended → blocked; no dashboard access
+export type SellerStatus = "basic" | "verified" | "suspended";
+
 export function useSeller() {
   const { user, loading: authLoading } = useAuth();
 
@@ -22,11 +28,17 @@ export function useSeller() {
     },
   });
 
+  const status = seller?.verification_status as SellerStatus | "pending" | "rejected" | undefined;
+
   return {
     seller: seller ?? null,
     isLoading: authLoading || isLoading,
     isSeller: !!seller,
-    isVerified: seller?.verification_status === "verified",
+    // Active if basic or verified (not suspended, not pending legacy)
+    isActiveSeller: status === "basic" || status === "verified",
+    isBasic: status === "basic",
+    isVerified: status === "verified",
+    isSuspended: status === "suspended",
     refetch,
   };
 }

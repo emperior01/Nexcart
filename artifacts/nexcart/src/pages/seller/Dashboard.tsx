@@ -1,16 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { Package, ShoppingBag, TrendingUp, DollarSign, AlertTriangle, Clock } from "lucide-react";
+import { Package, ShoppingBag, TrendingUp, DollarSign, AlertTriangle, Clock, ShieldCheck } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useSeller } from "@/hooks/use-seller";
 
 const statusColors: Record<string, { bg: string; color: string }> = {
-  pending:   { bg: "#FEF3C7", color: "#92400E" },
-  paid:      { bg: "#DBEAFE", color: "#1E40AF" },
-  processing:{ bg: "#EDE9FE", color: "#5B21B6" },
-  shipped:   { bg: "#E0E7FF", color: "#3730A3" },
-  delivered: { bg: "#D1FAE5", color: "#065F46" },
-  cancelled: { bg: "#FEE2E2", color: "#991B1B" },
+  pending:    { bg: "#FEF3C7", color: "#92400E" },
+  paid:       { bg: "#DBEAFE", color: "#1E40AF" },
+  processing: { bg: "#EDE9FE", color: "#5B21B6" },
+  shipped:    { bg: "#E0E7FF", color: "#3730A3" },
+  delivered:  { bg: "#D1FAE5", color: "#065F46" },
+  cancelled:  { bg: "#FEE2E2", color: "#991B1B" },
 };
 
 function StatCard({ label, value, icon: Icon, gradient, sub }: {
@@ -30,8 +30,32 @@ function StatCard({ label, value, icon: Icon, gradient, sub }: {
   );
 }
 
+function StatusBanner({ status }: { status: string }) {
+  if (status === "verified") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#D1FAE5", border: "1px solid #A7F3D0", borderRadius: 12, padding: "10px 14px", marginBottom: 20 }}>
+        <ShieldCheck style={{ width: 18, height: 18, color: "#065F46", flexShrink: 0 }} />
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#065F46" }}>Verified Seller</p>
+          <p style={{ fontSize: 11, color: "#047857" }}>You have full access including withdrawals.</p>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FEF3C7", border: "1px solid #FDE68A", borderRadius: 12, padding: "10px 14px", marginBottom: 20 }}>
+      <ShieldCheck style={{ width: 18, height: 18, color: "#92400E", flexShrink: 0 }} />
+      <div>
+        <p style={{ fontSize: 13, fontWeight: 700, color: "#92400E" }}>Basic Seller</p>
+        <p style={{ fontSize: 11, color: "#B45309" }}>You can list products and manage orders. Withdrawals unlock after verification.</p>
+      </div>
+    </div>
+  );
+}
+
 export default function SellerDashboard() {
   const { seller } = useSeller();
+  const sellerStatus = (seller?.verification_status as string) ?? "basic";
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["seller-stats", seller?.id],
@@ -93,7 +117,8 @@ export default function SellerDashboard() {
         </p>
       </div>
 
-      {/* Stats Grid */}
+      <StatusBanner status={sellerStatus} />
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 24 }}>
         {isLoading ? (
           Array.from({ length: 6 }).map((_, i) => (
@@ -101,10 +126,10 @@ export default function SellerDashboard() {
           ))
         ) : (
           <>
-            <StatCard label="Products"        value={stats?.totalProducts ?? 0}  icon={Package}     gradient="linear-gradient(135deg,#E8611A,#C4511A)" />
-            <StatCard label="Total Orders"    value={stats?.totalOrders ?? 0}    icon={ShoppingBag} gradient="linear-gradient(135deg,#3B82F6,#1D4ED8)" />
-            <StatCard label="Pending Orders"  value={stats?.pendingOrders ?? 0}  icon={Clock}       gradient="linear-gradient(135deg,#F59E0B,#D97706)" />
-            <StatCard label="Completed"       value={stats?.completedOrders ?? 0}icon={TrendingUp}  gradient="linear-gradient(135deg,#10B981,#065F46)" />
+            <StatCard label="Products"       value={stats?.totalProducts ?? 0}  icon={Package}     gradient="linear-gradient(135deg,#E8611A,#C4511A)" />
+            <StatCard label="Total Orders"   value={stats?.totalOrders ?? 0}    icon={ShoppingBag} gradient="linear-gradient(135deg,#3B82F6,#1D4ED8)" />
+            <StatCard label="Pending Orders" value={stats?.pendingOrders ?? 0}  icon={Clock}       gradient="linear-gradient(135deg,#F59E0B,#D97706)" />
+            <StatCard label="Completed"      value={stats?.completedOrders ?? 0}icon={TrendingUp}  gradient="linear-gradient(135deg,#10B981,#065F46)" />
             <div style={{ gridColumn: "span 2" }}>
               <StatCard
                 label="Total Revenue"
@@ -119,7 +144,6 @@ export default function SellerDashboard() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }} className="lg:grid-cols-2">
-        {/* Recent Orders */}
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 15, color: "#0D0D0D" }}>Recent Orders</p>
@@ -156,7 +180,6 @@ export default function SellerDashboard() {
           </div>
         </div>
 
-        {/* Low Stock */}
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 15, color: "#0D0D0D" }}>Stock Alerts</p>

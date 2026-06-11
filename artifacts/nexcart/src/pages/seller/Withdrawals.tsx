@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Wallet, X } from "lucide-react";
+import { Plus, Wallet, X, ShieldCheck, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSeller } from "@/hooks/use-seller";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ const statusStyles: Record<string, { bg: string; color: string }> = {
 };
 
 export default function SellerWithdrawals() {
-  const { seller } = useSeller();
+  const { seller, isVerified } = useSeller();
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -25,7 +25,7 @@ export default function SellerWithdrawals() {
 
   const { data: withdrawals, isLoading } = useQuery({
     queryKey: ["seller-withdrawals", seller?.id],
-    enabled: !!seller?.id,
+    enabled: !!seller?.id && isVerified,
     queryFn: async (): Promise<Withdrawal[]> => {
       if (!seller?.id) return [];
       const { data } = await supabase
@@ -39,7 +39,7 @@ export default function SellerWithdrawals() {
 
   const { data: availableBalance } = useQuery({
     queryKey: ["seller-available-balance", seller?.id],
-    enabled: !!seller?.id,
+    enabled: !!seller?.id && isVerified,
     queryFn: async () => {
       if (!seller?.id) return 0;
       const productRes = await supabase.from("products").select("id").eq("seller_id", seller.id);
@@ -95,6 +95,36 @@ export default function SellerWithdrawals() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (!isVerified) {
+    return (
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-black text-foreground">Withdrawals</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Request payouts to your bank account</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 24px", textAlign: "center", background: "#fff", borderRadius: 20, border: "1px solid #EBEBEB", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", gap: 16 }}>
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Lock style={{ width: 28, height: 28, color: "#92400E" }} />
+          </div>
+          <div>
+            <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 18, color: "#0D0D0D", marginBottom: 8 }}>
+              Withdrawals Locked
+            </p>
+            <p style={{ fontSize: 13, color: "#6B7280", maxWidth: 320, lineHeight: 1.6 }}>
+              Withdrawals are only available to <strong>Verified Sellers</strong>. An admin will review your store and upgrade your account.
+            </p>
+          </div>
+          <div style={{ background: "#F0FDF4", border: "1px solid #A7F3D0", borderRadius: 12, padding: "12px 18px", display: "flex", alignItems: "center", gap: 8, maxWidth: 320 }}>
+            <ShieldCheck style={{ width: 16, height: 16, color: "#065F46", flexShrink: 0 }} />
+            <p style={{ fontSize: 12, color: "#065F46", fontWeight: 600 }}>
+              Keep selling — your earnings are tracked and will be available once verified.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -193,7 +223,7 @@ export default function SellerWithdrawals() {
               </div>
               <div className="flex gap-3 pt-2">
                 <Button type="submit" disabled={submitting} className="flex-1 text-white" style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }}>
-                  {submitting ? "Submitting…" : "Submit Request"}
+                  {submitting ? "Submitting..." : "Submit Request"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
