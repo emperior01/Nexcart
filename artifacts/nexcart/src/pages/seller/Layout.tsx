@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, ShoppingBag, TrendingUp, Wallet,
-  Star, Settings, Bell, LogOut, Home, Menu, X, ShieldCheck,
+  Star, Settings, Bell, LogOut, Home, Menu, X, ShieldCheck,,
+  Store,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
