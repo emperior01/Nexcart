@@ -80,7 +80,7 @@ function SidebarContent({ onClose, signOut, storeName, sellerStatus }: {
               <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{label}</span>
               {locked && (
-                <span style={{ fontSize: 9, fontWeight: 700, background: "#FEF3C7", color: "#92400E", padding: "2px 6px", borderRadius: 50 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, background: "#FEF3C7", color: "#92400E", padding: "2px 6px", borderRadius: 50, whiteSpace: "nowrap" as const }}>
                   Verified only
                 </span>
               )}
@@ -118,12 +118,10 @@ export default function SellerLayout() {
     if (authLoading || sellerLoading) return;
     if (!user) { void navigate({ to: "/auth" }); return; }
     if (!seller) { void navigate({ to: "/become-seller" }); return; }
-
     const status = seller.verification_status as string;
     if (status === "suspended" || status === "rejected") {
       void navigate({ to: "/" });
     }
-    // basic, verified, and legacy pending all get dashboard access
   }, [user, seller, authLoading, sellerLoading, navigate]);
 
   async function signOut() {
@@ -135,7 +133,7 @@ export default function SellerLayout() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F9FAFB" }}>
         <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #E8611A", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -145,38 +143,65 @@ export default function SellerLayout() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F9FAFB" }}>
-      <aside style={{ width: 224, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", flexShrink: 0, display: "flex", flexDirection: "column" }} className="hidden md:flex">
+      {/* Responsive styles */}
+      <style>{`
+        .seller-sidebar-desktop { display: flex; }
+        .seller-mobile-header   { display: none; }
+        @media (max-width: 767px) {
+          .seller-sidebar-desktop { display: none !important; }
+          .seller-mobile-header   { display: flex !important; }
+        }
+      `}</style>
+
+      {/* Desktop sidebar */}
+      <aside
+        className="seller-sidebar-desktop"
+        style={{ width: 224, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", flexShrink: 0, flexDirection: "column" }}
+      >
         <SidebarContent onClose={() => {}} signOut={signOut} storeName={storeName} sellerStatus={sellerStatus} />
       </aside>
 
+      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <>
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }} onClick={() => setSidebarOpen(false)} />
-          <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 248, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", zIndex: 50, display: "flex", flexDirection: "column" }}>
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }}
+            onClick={() => setSidebarOpen(false)}
+          />
+          <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", zIndex: 50, display: "flex", flexDirection: "column" }}>
             <button
               onClick={() => setSidebarOpen(false)}
-              style={{ position: "absolute", top: 16, right: 16, width: 28, height: 28, background: "#F3F4F6", border: "none", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, background: "#F3F4F6", border: "none", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
             >
-              <X style={{ width: 14, height: 14, color: "#6B7280" }} />
+              <X style={{ width: 16, height: 16, color: "#6B7280" }} />
             </button>
             <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} storeName={storeName} sellerStatus={sellerStatus} />
           </aside>
         </>
       )}
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#FFFFFF", borderBottom: "1px solid #EBEBEB" }} className="flex md:hidden">
+      {/* Main content */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+
+        {/* Mobile header */}
+        <div
+          className="seller-mobile-header"
+          style={{ alignItems: "center", gap: 12, padding: "12px 16px", background: "#FFFFFF", borderBottom: "1px solid #EBEBEB", position: "sticky", top: 0, zIndex: 30 }}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
-            style={{ width: 36, height: 36, background: "#F3F4F6", border: "none", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ width: 36, height: 36, background: "#F3F4F6", border: "none", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
           >
             <Menu style={{ width: 18, height: 18, color: "#3A3A3A" }} />
           </button>
-          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 16, color: "#E8611A" }}>Seller Dashboard</span>
+          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 16, color: "#E8611A" }}>
+            Seller Dashboard
+          </span>
           <div style={{ marginLeft: "auto" }}>
             <StatusPill status={sellerStatus} />
           </div>
         </div>
+
         <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
           <Outlet />
         </div>
