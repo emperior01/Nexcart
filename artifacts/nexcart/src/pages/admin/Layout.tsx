@@ -6,13 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
-  { to: "",              label: "Dashboard",         icon: LayoutDashboard },
-  { to: "/products",     label: "Products",          icon: Package },
-  { to: "/orders",       label: "Orders",            icon: ShoppingBag },
-  { to: "/users",        label: "Users",             icon: Users },
-  { to: "/sellers",      label: "Sellers",           icon: Store },
-  { to: "/withdrawals",  label: "Withdrawals",       icon: Wallet },
-  { to: "/settings",     label: "Homepage Settings", icon: Settings },
+  { to: "",             label: "Dashboard",         icon: LayoutDashboard },
+  { to: "/products",    label: "Products",          icon: Package },
+  { to: "/orders",      label: "Orders",            icon: ShoppingBag },
+  { to: "/users",       label: "Users",             icon: Users },
+  { to: "/sellers",     label: "Sellers",           icon: Store },
+  { to: "/withdrawals", label: "Withdrawals",       icon: Wallet },
+  { to: "/settings",    label: "Homepage Settings", icon: Settings },
 ] as const;
 
 function SidebarContent({
@@ -32,6 +32,7 @@ function SidebarContent({
         <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 20, color: "#E8611A", letterSpacing: "-0.03em" }}>Nexcart</span>
         <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" as const, background: "rgba(232,97,26,0.12)", color: "#E8611A", padding: "3px 8px", borderRadius: 50, border: "1px solid rgba(232,97,26,0.25)" }}>Admin</span>
       </div>
+
       <nav style={{ flex: 1, padding: "12px 10px", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" as const }}>
         {navItems.map(({ to, label, icon: Icon }) => {
           const fullPath = "/admin" + to;
@@ -67,6 +68,7 @@ function SidebarContent({
           );
         })}
       </nav>
+
       <div style={{ padding: "12px 10px", borderTop: "1px solid #EBEBEB", display: "flex", flexDirection: "column", gap: 4 }}>
         <Link
           to="/"
@@ -107,7 +109,7 @@ export default function AdminLayout() {
       const { count } = await supabase
         .from("sellers")
         .select("id", { count: "exact", head: true })
-        .eq("verification_status", "pending");
+        .eq("verification_status", "basic");
       return count ?? 0;
     },
   });
@@ -128,21 +130,37 @@ export default function AdminLayout() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F9FAFB" }}>
+      {/* Responsive styles — no Tailwind needed */}
+      <style>{`
+        .admin-sidebar-desktop { display: flex; }
+        .admin-mobile-header   { display: none; }
+        @media (max-width: 767px) {
+          .admin-sidebar-desktop { display: none !important; }
+          .admin-mobile-header   { display: flex !important; }
+        }
+      `}</style>
+
       {/* Desktop sidebar */}
-      <aside style={{ width: 220, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", flexShrink: 0, display: "flex", flexDirection: "column" }} className="hidden md:flex">
+      <aside
+        className="admin-sidebar-desktop"
+        style={{ width: 220, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", flexShrink: 0, flexDirection: "column" }}
+      >
         <SidebarContent onClose={() => {}} signOut={signOut} pendingSellers={pendingSellers} />
       </aside>
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <>
-          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }} onClick={() => setSidebarOpen(false)} />
-          <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 240, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", zIndex: 50, display: "flex", flexDirection: "column" }}>
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }}
+            onClick={() => setSidebarOpen(false)}
+          />
+          <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 260, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", zIndex: 50, display: "flex", flexDirection: "column" }}>
             <button
               onClick={() => setSidebarOpen(false)}
-              style={{ position: "absolute", top: 16, right: 16, width: 28, height: 28, background: "#F3F4F6", border: "none", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, background: "#F3F4F6", border: "none", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
             >
-              <X style={{ width: 14, height: 14, color: "#6B7280" }} />
+              <X style={{ width: 16, height: 16, color: "#6B7280" }} />
             </button>
             <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} pendingSellers={pendingSellers} />
           </aside>
@@ -150,12 +168,16 @@ export default function AdminLayout() {
       )}
 
       {/* Main content */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
+
         {/* Mobile header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#FFFFFF", borderBottom: "1px solid #EBEBEB" }} className="flex md:hidden">
+        <div
+          className="admin-mobile-header"
+          style={{ alignItems: "center", gap: 12, padding: "12px 16px", background: "#FFFFFF", borderBottom: "1px solid #EBEBEB", position: "sticky", top: 0, zIndex: 30 }}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
-            style={{ width: 36, height: 36, background: "#F3F4F6", border: "none", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ width: 36, height: 36, background: "#F3F4F6", border: "none", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
           >
             <Menu style={{ width: 18, height: 18, color: "#3A3A3A" }} />
           </button>
@@ -166,9 +188,9 @@ export default function AdminLayout() {
               background: "#E8611A", color: "#fff",
               fontSize: 10, fontWeight: 800,
               display: "flex", alignItems: "center", justifyContent: "center",
-              padding: "0 5px", marginLeft: "auto",
+              padding: "0 6px", marginLeft: "auto", whiteSpace: "nowrap",
             }}>
-              {pendingSellers > 99 ? "99+" : pendingSellers} pending
+              {pendingSellers > 99 ? "99+" : pendingSellers} new
             </span>
           )}
         </div>
