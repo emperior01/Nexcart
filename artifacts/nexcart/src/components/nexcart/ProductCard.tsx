@@ -32,8 +32,14 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
       image: img,
       maxStock: product.stock,
     });
-    toast.success("Added to cart", { description: product.title });
-    openCart();
+    toast.success(`${product.title} added to cart!`, {
+      description: "Ready to checkout whenever you are.",
+      action: {
+        label: "View Cart",
+        onClick: () => openCart(),
+      },
+      duration: 3500,
+    });
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
