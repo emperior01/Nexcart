@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ShoppingCart, ArrowLeft, CreditCard } from "lucide-react";
+import { ShoppingCart, ArrowLeft, CreditCard, CheckCircle2, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ declare global {
         amount: number;
         currency: string;
         ref: string;
+        callback_url?: string;
         metadata?: Record<string, unknown>;
         onSuccess: (tx: { reference: string }) => void;
         onCancel: () => void;
@@ -30,6 +31,23 @@ declare global {
 }
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string;
+
+async function verifyAndCreateOrder(
+  reference: string,
+  items: { productId: string; quantity: number; price: number; currency: string }[],
+  shippingAddress: { full_name: string; address: string; city: string; country: string },
+  cartCurrency: string
+) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await supabase.functions.invoke("verify-payment", {
+    body: { reference, currency: cartCurrency, items, shippingAddress },
+    headers: session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {},
+  });
+  if (res.error) throw new Error(res.error.message);
+  return res.data;
+}
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
@@ -42,6 +60,61 @@ export default function CheckoutPage() {
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  // ── Handle Paystack redirect-back (trxref + reference in URL) ──────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const reference = params.get("reference") ?? params.get("trxref");
+    if (!reference) return;
+
+    // Remove params from URL immediately so a refresh doesn't re-trigger
+    window.history.replaceState({}, "", window.location.pathname);
+
+    // Retrieve saved checkout data from sessionStorage
+    const saved = sessionStorage.getItem("nexcart_checkout");
+    if (!saved) {
+      toast.error("Payment received but checkout data was lost. Contact support with ref: " + reference);
+      return;
+    }
+
+    const { savedItems, shippingAddress, cartCurrency } = JSON.parse(saved) as {
+      savedItems: typeof items;
+      shippingAddress: { full_name: string; address: string; city: string; country: string };
+      cartCurrency: string;
+    };
+
+    setVerifying(true);
+    verifyAndCreateOrder(
+      reference,
+      savedItems.map((i) => ({ productId: i.productId, quantity: i.quantity, price: i.price, currency: i.currency })),
+      shippingAddress,
+      cartCurrency
+    )
+      .then(() => {
+        clearCart();
+        sessionStorage.removeItem("nexcart_checkout");
+        void navigate({ to: "/order-success", search: { ref: reference } });
+      })
+      .catch((err) => {
+        toast.error("Order creation failed. Contact support with ref: " + reference + ". Error: " + err.message);
+        setVerifying(false);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (verifying) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <Navbar />
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-[#E8611A]" />
+          <h2 className="text-xl font-bold text-foreground">Confirming your payment…</h2>
+          <p className="text-sm text-muted-foreground">Please wait, do not close this page.</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -59,7 +132,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const cartCurrency = items[0]?.currency ?? "USD";
+  const cartCurrency = items[0]?.currency ?? "NGN";
   const paystackAmount = Math.round(total * 100);
 
   async function loadPaystack(): Promise<void> {
@@ -82,9 +155,20 @@ export default function CheckoutPage() {
       return;
     }
     setLoading(true);
+
+    const shippingAddress = { full_name: fullName, address, city, country };
+
+    // Save checkout data to sessionStorage in case Paystack redirects
+    sessionStorage.setItem("nexcart_checkout", JSON.stringify({
+      savedItems: items,
+      shippingAddress,
+      cartCurrency,
+    }));
+
     try {
       await loadPaystack();
       const ref = `NEXCART_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      const callbackUrl = `${window.location.origin}/checkout`;
 
       const handler = window.PaystackPop.setup({
         key: PAYSTACK_PUBLIC_KEY,
@@ -92,6 +176,7 @@ export default function CheckoutPage() {
         amount: paystackAmount,
         currency: cartCurrency,
         ref,
+        callback_url: callbackUrl,
         metadata: {
           custom_fields: [
             { display_name: "Customer", variable_name: "customer", value: fullName },
@@ -100,35 +185,22 @@ export default function CheckoutPage() {
         },
         onSuccess: async (tx) => {
           try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const res = await supabase.functions.invoke("verify-payment", {
-              body: {
-                reference: tx.reference,
-                currency: cartCurrency,
-                items: items.map((item) => ({
-                  productId: item.productId,
-                  quantity: item.quantity,
-                  price: item.price,
-                  currency: item.currency,
-                })),
-                shippingAddress: { full_name: fullName, address, city, country },
-              },
-              headers: session?.access_token
-                ? { Authorization: `Bearer ${session.access_token}` }
-                : {},
-            });
-
-            if (res.error) throw new Error(res.error.message);
-
+            await verifyAndCreateOrder(
+              tx.reference,
+              items.map((item) => ({ productId: item.productId, quantity: item.quantity, price: item.price, currency: item.currency })),
+              shippingAddress,
+              cartCurrency
+            );
             clearCart();
-            toast.success("Payment confirmed! Order placed. 🎉");
-            void navigate({ to: "/account" });
-          } catch {
+            sessionStorage.removeItem("nexcart_checkout");
+            void navigate({ to: "/order-success", search: { ref: tx.reference } });
+          } catch (err) {
             toast.error("Payment received but order creation failed. Contact support with ref: " + tx.reference);
             setLoading(false);
           }
         },
         onCancel: () => {
+          sessionStorage.removeItem("nexcart_checkout");
           toast.info("Payment cancelled.");
           setLoading(false);
         },

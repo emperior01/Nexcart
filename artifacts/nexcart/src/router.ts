@@ -37,6 +37,7 @@ import SellerReviews from "@/pages/seller/Reviews";
 import SellerSettings from "@/pages/seller/Settings";
 import SellerNotifications from "@/pages/seller/Notifications";
 import BecomeSellerPage from "@/pages/BecomeSeller";
+import OrderSuccessPage from "@/pages/OrderSuccess";
 import StorePage from "@/pages/Store";
 import NotFound from "@/pages/not-found";
 
@@ -94,6 +95,12 @@ const becomeSellerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/become-seller",
   component: BecomeSellerPage,
+});
+
+const orderSuccessRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/order-success",
+  component: OrderSuccessPage,
 });
 
 const storeRoute = createRoute({
@@ -254,6 +261,7 @@ const routeTree = rootRoute.addChildren([
   authRoute,
   wishlistRoute,
   becomeSellerRoute,
+  orderSuccessRoute,
   storeRoute,
   accountRoute.addChildren([
     accountIndexRoute,
