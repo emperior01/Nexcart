@@ -152,6 +152,7 @@ export default function CheckoutPage() {
     }
     if (!PAYSTACK_PUBLIC_KEY) {
       toast.error("Payment is not configured yet.");
+      setLoading(false);
       return;
     }
     setLoading(true);
