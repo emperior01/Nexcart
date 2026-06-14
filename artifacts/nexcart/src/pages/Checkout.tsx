@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ShoppingCart, ArrowLeft, CreditCard, CheckCircle2, Loader2 } from "lucide-react";
+import { ShoppingCart, ArrowLeft, CreditCard, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { Button } from "@/components/ui/button";
@@ -11,24 +11,6 @@ import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-
-declare global {
-  interface Window {
-    PaystackPop: {
-      setup: (config: {
-        key: string;
-        email: string;
-        amount: number;
-        currency: string;
-        ref: string;
-        callback_url?: string;
-        metadata?: Record<string, unknown>;
-        onSuccess: (tx: { reference: string }) => void;
-        onCancel: () => void;
-      }) => { openIframe: () => void };
-    };
-  }
-}
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string;
 
@@ -62,42 +44,55 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
-  // ── Handle Paystack redirect-back (trxref + reference in URL) ──────────────
+  // ── Handle Paystack redirect-back ──────────────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const reference = params.get("reference") ?? params.get("trxref");
+    let reference = params.get("reference") ?? params.get("trxref");
+
+    // If no URL params, check sessionStorage for pendingRef saved before redirect
+    if (!reference) {
+      try {
+        const saved = sessionStorage.getItem("nexcart_checkout");
+        if (saved) reference = JSON.parse(saved).pendingRef ?? null;
+      } catch {}
+    }
+
     if (!reference) return;
 
-    // Remove params from URL immediately so a refresh doesn't re-trigger
+    // Clean URL immediately
     window.history.replaceState({}, "", window.location.pathname);
 
-    // Retrieve saved checkout data from sessionStorage
     const saved = sessionStorage.getItem("nexcart_checkout");
     if (!saved) {
-      toast.error("Payment received but checkout data was lost. Contact support with ref: " + reference);
+      toast.error("Session lost. Contact support with ref: " + reference);
       return;
     }
 
-    const { savedItems, shippingAddress, cartCurrency } = JSON.parse(saved) as {
+    let parsed: {
       savedItems: typeof items;
       shippingAddress: { full_name: string; address: string; city: string; country: string };
       cartCurrency: string;
+      pendingRef?: string;
     };
+    try { parsed = JSON.parse(saved); } catch {
+      toast.error("Session data corrupted. Contact support with ref: " + reference);
+      return;
+    }
 
     setVerifying(true);
     verifyAndCreateOrder(
       reference,
-      savedItems.map((i) => ({ productId: i.productId, quantity: i.quantity, price: i.price, currency: i.currency })),
-      shippingAddress,
-      cartCurrency
+      parsed.savedItems.map((i) => ({ productId: i.productId, quantity: i.quantity, price: i.price, currency: i.currency })),
+      parsed.shippingAddress,
+      parsed.cartCurrency
     )
       .then(() => {
         clearCart();
         sessionStorage.removeItem("nexcart_checkout");
-        void navigate({ to: "/order-success", search: { ref: reference } });
+        void navigate({ to: "/order-success", search: { ref: reference as string } });
       })
       .catch((err) => {
-        toast.error("Order creation failed. Contact support with ref: " + reference + ". Error: " + err.message);
+        toast.error("Order creation failed. Ref: " + reference + " — " + err.message);
         setVerifying(false);
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -135,16 +130,6 @@ export default function CheckoutPage() {
   const cartCurrency = items[0]?.currency ?? "NGN";
   const paystackAmount = Math.round(total * 100);
 
-  async function loadPaystack(): Promise<void> {
-    return new Promise((resolve) => {
-      if (window.PaystackPop) return resolve();
-      const script = document.createElement("script");
-      script.src = "https://js.paystack.co/v1/inline.js";
-      script.onload = () => resolve();
-      document.body.appendChild(script);
-    });
-  }
-
   async function handleCheckout() {
     if (!email || !fullName || !address || !city || !country) {
       toast.error("Please fill in all shipping details.");
@@ -152,66 +137,27 @@ export default function CheckoutPage() {
     }
     if (!PAYSTACK_PUBLIC_KEY) {
       toast.error("Payment is not configured yet.");
-      setLoading(false);
       return;
     }
+
     setLoading(true);
 
     const shippingAddress = { full_name: fullName, address, city, country };
+    const ref = `NEXCART_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
-    // Save checkout data to sessionStorage in case Paystack redirects
+    // Save everything to sessionStorage BEFORE redirecting
     sessionStorage.setItem("nexcart_checkout", JSON.stringify({
       savedItems: items,
       shippingAddress,
       cartCurrency,
+      pendingRef: ref,
     }));
 
-    try {
-      await loadPaystack();
-      const ref = `NEXCART_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-      const callbackUrl = `${window.location.origin}/checkout`;
+    // Build Paystack URL and redirect directly — works reliably on mobile
+    const callbackUrl = encodeURIComponent(`${window.location.origin}/checkout`);
+    const paystackUrl = `https://checkout.paystack.com/pay?key=${PAYSTACK_PUBLIC_KEY}&email=${encodeURIComponent(email)}&amount=${paystackAmount}&currency=${cartCurrency}&ref=${ref}&callback_url=${callbackUrl}`;
 
-      const handler = window.PaystackPop.setup({
-        key: PAYSTACK_PUBLIC_KEY,
-        email,
-        amount: paystackAmount,
-        currency: cartCurrency,
-        ref,
-        callback_url: callbackUrl,
-        metadata: {
-          custom_fields: [
-            { display_name: "Customer", variable_name: "customer", value: fullName },
-            { display_name: "Address", variable_name: "address", value: `${address}, ${city}, ${country}` },
-          ],
-        },
-        onSuccess: async (tx) => {
-          try {
-            await verifyAndCreateOrder(
-              tx.reference,
-              items.map((item) => ({ productId: item.productId, quantity: item.quantity, price: item.price, currency: item.currency })),
-              shippingAddress,
-              cartCurrency
-            );
-            clearCart();
-            sessionStorage.removeItem("nexcart_checkout");
-            void navigate({ to: "/order-success", search: { ref: tx.reference } });
-          } catch (err) {
-            toast.error("Payment received but order creation failed. Contact support with ref: " + tx.reference);
-            setLoading(false);
-          }
-        },
-        onCancel: () => {
-          sessionStorage.removeItem("nexcart_checkout");
-          toast.info("Payment cancelled.");
-          setLoading(false);
-        },
-      });
-
-      handler.openIframe();
-    } catch {
-      toast.error("Failed to initiate payment. Please try again.");
-      setLoading(false);
-    }
+    window.location.href = paystackUrl;
   }
 
   return (
@@ -297,7 +243,7 @@ export default function CheckoutPage() {
                 style={{ background: "linear-gradient(135deg, #E8611A, #F5986A)" }}
               >
                 <CreditCard className="h-5 w-5" />
-                {loading ? "Preparing payment…" : `Pay ${formatPrice(total, cartCurrency, currency)}`}
+                {loading ? "Redirecting to payment…" : `Pay ${formatPrice(total, cartCurrency, currency)}`}
               </Button>
 
               <p className="text-center text-xs text-muted-foreground">
