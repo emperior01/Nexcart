@@ -145,22 +145,24 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
           <span className="text-[11px] text-[#6B6B6B]">4.8 (124)</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span
-            className="text-[16px] font-bold text-[#E8611A]"
-            style={{ fontFamily: "'Inter', sans-serif" }}
-          >
-            {formatPrice(product.price, product.currency, currency)}
-          </span>
-          {onSale && (
-            <span className="text-[12px] text-[#C8C8C8] line-through">
-              {formatPrice(product.compare_at_price!, product.currency, currency)}
+        <div className="flex items-center justify-between gap-1 mt-1">
+          <div className="flex flex-col min-w-0">
+            <span
+              className="text-[16px] font-bold text-[#E8611A] leading-tight"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              {formatPrice(product.price, product.currency, currency)}
             </span>
-          )}
+            {onSale && (
+              <span className="text-[11px] text-[#C8C8C8] line-through leading-tight">
+                {formatPrice(product.compare_at_price!, product.currency, currency)}
+              </span>
+            )}
+          </div>
           <button
             disabled={product.stock === 0}
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAdd(e); }}
-            className="w-7 h-7 bg-[#0D0D0D] hover:bg-[#E8611A] active:bg-[#E8611A] disabled:opacity-40 text-white rounded-full flex items-center justify-center ml-auto transition-colors touch-manipulation"
+            className="w-8 h-8 flex-shrink-0 bg-[#0D0D0D] hover:bg-[#E8611A] active:bg-[#E8611A] disabled:opacity-40 text-white rounded-full flex items-center justify-center transition-colors touch-manipulation"
             aria-label="Add to cart"
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
