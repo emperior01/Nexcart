@@ -115,13 +115,14 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
           />
         </button>
 
-        <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/60 to-transparent p-3 transition-transform duration-300 group-hover:translate-y-0">
+        {/* Desktop hover overlay - hidden on mobile */}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 translate-y-full transition-transform duration-300 group-hover:translate-y-0 hidden sm:block">
           <button
             disabled={product.stock === 0}
             onClick={handleAdd}
             className="w-full bg-[#E8611A] hover:bg-[#C4511A] disabled:opacity-50 text-white text-xs font-semibold py-2.5 rounded-full transition-colors"
           >
-            Add to Cart
+            {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
           </button>
         </div>
       </div>
@@ -158,8 +159,8 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
           )}
           <button
             disabled={product.stock === 0}
-            onClick={handleAdd}
-            className="w-7 h-7 bg-[#0D0D0D] hover:bg-[#E8611A] disabled:opacity-40 text-white rounded-full flex items-center justify-center ml-auto transition-colors"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAdd(e); }}
+            className="w-7 h-7 bg-[#0D0D0D] hover:bg-[#E8611A] active:bg-[#E8611A] disabled:opacity-40 text-white rounded-full flex items-center justify-center ml-auto transition-colors touch-manipulation"
             aria-label="Add to cart"
           >
             <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
