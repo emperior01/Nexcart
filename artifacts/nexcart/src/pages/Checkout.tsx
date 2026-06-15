@@ -49,14 +49,6 @@ export default function CheckoutPage() {
     const params = new URLSearchParams(window.location.search);
     let reference = params.get("reference") ?? params.get("trxref");
 
-    // If no URL params, check sessionStorage for pendingRef saved before redirect
-    if (!reference) {
-      try {
-        const saved = sessionStorage.getItem("nexcart_checkout");
-        if (saved) reference = JSON.parse(saved).pendingRef ?? null;
-      } catch {}
-    }
-
     if (!reference) return;
 
     // Clean URL immediately
@@ -143,19 +135,17 @@ export default function CheckoutPage() {
     setLoading(true);
 
     const shippingAddress = { full_name: fullName, address, city, country };
-    const ref = `NEXCART_${Date.now()}_${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-
     // Save everything to sessionStorage BEFORE redirecting
+    // Do NOT pre-generate a ref — Paystack will generate its own and return it as trxref
     sessionStorage.setItem("nexcart_checkout", JSON.stringify({
       savedItems: items,
       shippingAddress,
       cartCurrency,
-      pendingRef: ref,
     }));
 
     // Build Paystack URL and redirect directly — works reliably on mobile
     const callbackUrl = encodeURIComponent(`${window.location.origin}/checkout`);
-    const paystackUrl = `https://checkout.paystack.com/pay?key=${PAYSTACK_PUBLIC_KEY}&email=${encodeURIComponent(email)}&amount=${paystackAmount}&currency=${cartCurrency}&ref=${ref}&callback_url=${callbackUrl}`;
+    const paystackUrl = `https://checkout.paystack.com/pay?key=${PAYSTACK_PUBLIC_KEY}&email=${encodeURIComponent(email)}&amount=${paystackAmount}&currency=${cartCurrency}&callback_url=${callbackUrl}`;
 
     window.location.href = paystackUrl;
   }
