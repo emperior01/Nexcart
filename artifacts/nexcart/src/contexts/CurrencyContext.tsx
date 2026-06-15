@@ -14,7 +14,7 @@ const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [currency, setCurrencyState] = useState<string>(
-    () => localStorage.getItem("nexcart-currency") ?? "USD"
+    () => localStorage.getItem("nexcart-currency") ?? "NGN"
   );
 
   // Sync from profile on login

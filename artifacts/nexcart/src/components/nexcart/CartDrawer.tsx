@@ -79,9 +79,6 @@ export function CartDrawer() {
                   border: "none", cursor: "pointer",
                   boxShadow: "0 4px 14px rgba(232,97,26,0.35)",
                 }}
-                // @ts-ignore
-                as="span"
-                onClick={() => { closeCart(); }}
               >
                 <ShoppingCart style={{ width: 16, height: 16 }} />
                 Browse Products
