@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Search, ShoppingCart, User, LogIn, Menu, Home, Store,
   LogOut, X, ShoppingBag, Heart, MapPin, Settings, LayoutDashboard,
-  TrendingUp,
+  TrendingUp, ChevronRight, HelpCircle,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,9 +15,11 @@ interface NavbarProps {
   announcementText?: string;
 }
 
-const navLinks = [
+const shoppingLinks = [
   { to: "/",     label: "Home",  icon: Home },
   { to: "/shop", label: "Shop",  icon: Store },
+  { to: "/account/orders",    label: "Orders",   icon: ShoppingBag },
+  { to: "/account/wishlist",  label: "Wishlist", icon: Heart },
 ] as const;
 
 const accountMenuItems = [
@@ -34,6 +36,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
   const { count, openCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -97,7 +100,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         <div className="flex items-center">
           <Logo />
           <nav className="hidden md:flex items-center gap-1 ml-8">
-            {navLinks.map((l) => (
+            {shoppingLinks.slice(0, 2).map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
@@ -291,6 +294,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         <>
           <div className="md:hidden fixed inset-0 z-30 bg-black/40" onClick={() => setMobileOpen(false)} />
           <div className="md:hidden fixed top-0 right-0 bottom-0 z-40 w-72 bg-white flex flex-col shadow-2xl">
+            {/* Header */}
             <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 20, color: "#E8611A", letterSpacing: "-0.03em" }}>Nexcart</span>
               <button onClick={() => setMobileOpen(false)} style={{ width: 32, height: 32, borderRadius: "50%", background: "#F3F4F6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -298,30 +302,40 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
               </button>
             </div>
 
+            {/* Navigation - organized by sections */}
             <nav style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
-              {navLinks.map((l) => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  onClick={() => setMobileOpen(false)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                    borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
-                    color: isActive(l.to) ? "#E8611A" : "#3A3A3A",
-                    background: isActive(l.to) ? "#FEF0E8" : "transparent",
-                  }}
-                >
-                  <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <l.icon style={{ width: 15, height: 15 }} />
-                  </span>
-                  {l.label}
-                </Link>
-              ))}
+              
+              {/* SHOPPING SECTION */}
+              <div style={{ marginTop: "4px" }}>
+                <div style={{ margin: "8px 14px 8px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
+                  Shopping
+                </div>
+                {shoppingLinks.map((l) => (
+                  <Link
+                    key={l.to}
+                    to={l.to}
+                    onClick={() => setMobileOpen(false)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                      borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
+                      color: isActive(l.to) ? "#E8611A" : "#3A3A3A",
+                      background: isActive(l.to) ? "#FEF0E8" : "transparent",
+                    }}
+                  >
+                    <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <l.icon style={{ width: 15, height: 15, color: isActive(l.to) ? "#E8611A" : "#6B6B6B" }} />
+                    </span>
+                    {l.label}
+                  </Link>
+                ))}
+              </div>
 
-              {/* Seller CTA in mobile nav */}
-              {showSellerReady && (
-                isActiveSeller ? (
-                  // User is a seller (basic or verified) → show My Seller Dashboard
+              {/* SELLER SECTION */}
+              {showSellerReady && isActiveSeller && (
+                <div>
+                  <div style={{ margin: "12px 14px 8px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
+                    Seller
+                  </div>
                   <Link
                     to="/seller/dashboard"
                     onClick={() => setMobileOpen(false)}
@@ -335,73 +349,112 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                     <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <TrendingUp style={{ width: 15, height: 15, color: isActive("/seller") ? "#E8611A" : "#6B6B6B" }} />
                     </span>
-                    My Seller Dashboard
+                    Seller Dashboard
                   </Link>
-                ) : !isSeller ? (
-                  // User is not a seller → show Sell on Nexcart
+                </div>
+              )}
+
+              {/* ACCOUNT SECTION - with collapsible submenu */}
+              {user && (
+                <div>
+                  <div style={{ margin: "12px 14px 8px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
+                    Account
+                  </div>
+                  <button
+                    onClick={() => setAccountOpen(!accountOpen)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 14px",
+                      borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none", border: "none", background: "transparent",
+                      color: accountOpen ? "#E8611A" : "#3A3A3A",
+                      cursor: "pointer", width: "100%",
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <User style={{ width: 15, height: 15, color: accountOpen ? "#E8611A" : "#6B6B6B" }} />
+                      </span>
+                      Account
+                    </span>
+                    <ChevronRight style={{ width: 16, height: 16, color: accountOpen ? "#E8611A" : "#6B6B6B", transform: accountOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 200ms ease" }} />
+                  </button>
+
+                  {/* Account submenu */}
+                  {accountOpen && (
+                    <div style={{ paddingLeft: "12px", display: "flex", flexDirection: "column", gap: 2 }}>
+                      {accountMenuItems.map(({ label, icon: Icon, to }) => (
+                        <Link
+                          key={label}
+                          to={to}
+                          onClick={() => {
+                            setMobileOpen(false);
+                            setAccountOpen(false);
+                          }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                            borderRadius: 12, fontSize: 13, fontWeight: 500, textDecoration: "none",
+                            color: isActive(to) ? "#E8611A" : "#3A3A3A",
+                            background: isActive(to) ? "#FEF0E8" : "transparent",
+                          }}
+                        >
+                          <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Icon style={{ width: 15, height: 15, color: "#6B6B6B" }} />
+                          </span>
+                          {label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SUPPORT SECTION */}
+              <div>
+                <div style={{ margin: "12px 14px 8px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
+                  Support
+                </div>
+                <Link
+                  to="/contact"
+                  onClick={() => setMobileOpen(false)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                    borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
+                    color: isActive("/contact") ? "#E8611A" : "#3A3A3A",
+                    background: isActive("/contact") ? "#FEF0E8" : "transparent",
+                  }}
+                >
+                  <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <HelpCircle style={{ width: 15, height: 15, color: isActive("/contact") ? "#E8611A" : "#6B6B6B" }} />
+                  </span>
+                  Contact Us
+                </Link>
+              </div>
+
+              {/* Admin section - if applicable */}
+              {isAdmin && (
+                <div>
                   <Link
-                    to="/sell-on-nexcart"
+                    to="/admin"
                     onClick={() => setMobileOpen(false)}
                     style={{
                       display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                      borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
-                      color: isActive("/sell-on-nexcart") ? "#E8611A" : "#3A3A3A",
-                      background: isActive("/sell-on-nexcart") ? "#FEF0E8" : "transparent",
+                      borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#E8611A",
+                      background: "#FEF0E8", marginTop: "8px"
                     }}
                   >
-                    <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Store style={{ width: 15, height: 15, color: isActive("/sell-on-nexcart") ? "#E8611A" : "#6B6B6B" }} />
+                    <span style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(232,97,26,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <LayoutDashboard style={{ width: 15, height: 15, color: "#E8611A" }} />
                     </span>
-                    Sell on Nexcart
+                    Admin Dashboard
                   </Link>
-                ) : null
-              )}
-
-              {user && (
-                <>
-                  <div style={{ margin: "8px 14px 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
-                    Account
-                  </div>
-                  {accountMenuItems.map(({ label, icon: Icon, to }) => (
-                    <Link
-                      key={label}
-                      to={to}
-                      onClick={() => setMobileOpen(false)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                        borderRadius: 12, fontSize: 14, fontWeight: 500, textDecoration: "none",
-                        color: isActive(to) ? "#E8611A" : "#3A3A3A",
-                        background: isActive(to) ? "#FEF0E8" : "transparent",
-                      }}
-                    >
-                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Icon style={{ width: 15, height: 15, color: "#6B6B6B" }} />
-                      </span>
-                      {label}
-                    </Link>
-                  ))}
-
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      onClick={() => setMobileOpen(false)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                        borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#E8611A",
-                        background: "#FEF0E8",
-                      }}
-                    >
-                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(232,97,26,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <LayoutDashboard style={{ width: 15, height: 15, color: "#E8611A" }} />
-                      </span>
-                      Admin Dashboard
-                    </Link>
-                  )}
-                </>
+                </div>
               )}
             </nav>
 
+            {/* SESSION SECTION - Footer */}
             <div style={{ padding: "12px", borderTop: "1px solid #F3F4F6" }}>
+              <div style={{ margin: "8px 14px 8px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
+                Session
+              </div>
               {user ? (
                 <button
                   onClick={handleSignOut}
