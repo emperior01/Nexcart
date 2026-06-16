@@ -21,7 +21,7 @@ export default function ProductDetailPage() {
   const { slug } = useParams({ strict: false }) as { slug: string };
   const navigate = useNavigate();
   const { currency } = useCurrency();
-  const { addItem, openCart } = useCart();
+  const { addItem } = useCart();
   const { toggle, hasItem } = useWishlist();
   const [selectedImg, setSelectedImg] = useState(0);
   const [qty, setQty] = useState(1);
@@ -84,7 +84,6 @@ export default function ProductDetailPage() {
       });
     }
     toast.success(`${qty} × ${product.title} added to cart`);
-    openCart();
   }
 
   if (isLoading) {
