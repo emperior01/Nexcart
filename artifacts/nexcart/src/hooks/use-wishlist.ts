@@ -37,8 +37,8 @@ export function useWishlist() {
   const local = useLocalWishlist();
 
   const { data: serverItems = [], isLoading } = useQuery({
-    queryKey: QUERY_KEY(user?.id ?? ""),
-    enabled: !!user,
+    queryKey: QUERY_KEY(user?.id ?? "guest"),
+    enabled: !!user?.id,
     queryFn: () => fetchWishlist(user!.id),
     staleTime: 1000 * 60 * 5,
   });
