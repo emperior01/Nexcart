@@ -104,29 +104,15 @@ export const useCart = create<CartState>()(
       },
 
       openCart() {
-        // Push a history entry so the browser/Android back button closes the
-        // drawer and returns to the page underneath instead of skipping past
-        // it to whatever page came before (e.g. /account/wishlist).
-        if (typeof window !== "undefined" && !window.history.state?.nexcartCartOpen) {
-          window.history.pushState({ ...window.history.state, nexcartCartOpen: true }, "");
-        }
         set({ isOpen: true });
       },
 
       closeCart() {
-        // If the cart was opened via a history push (closeCart triggered by
-        // the X button, backdrop click, or a Link inside the drawer), undo
-        // that push so back/forward state stays in sync with isOpen.
-        if (typeof window !== "undefined" && window.history.state?.nexcartCartOpen) {
-          window.history.back();
-          return;
-        }
         set({ isOpen: false });
       },
     }),
     {
       name: "nexcart-cart",
-      // Re-compute derived values when store rehydrates from localStorage
       onRehydrateStorage: () => (state) => {
         if (state) {
           const derived = computeDerived(state.items);
@@ -137,13 +123,3 @@ export const useCart = create<CartState>()(
     }
   )
 );
-
-// Close the drawer when the user presses the browser/Android back button
-// while it's open, instead of letting back navigate past the current page.
-if (typeof window !== "undefined") {
-  window.addEventListener("popstate", () => {
-    if (useCart.getState().isOpen && !window.history.state?.nexcartCartOpen) {
-      useCart.setState({ isOpen: false });
-    }
-  });
-}
