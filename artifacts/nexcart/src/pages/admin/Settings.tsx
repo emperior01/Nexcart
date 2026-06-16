@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Save, ImageIcon, Type, Megaphone, Gift, Star } from "lucide-react";
+import { Plus, Trash2, Save, ImageIcon, Type, Megaphone, Gift, Star, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +56,9 @@ export default function AdminSettings() {
 
   const [badges, setBadges] = useState<TrustBadge[]>([]);
   useEffect(() => { if (settings) setBadges(settings.trust_badges); }, [settings]);
+
+  const [shippingFee, setShippingFee] = useState(0);
+  useEffect(() => { if (settings) setShippingFee(settings.shipping_fee); }, [settings]);
 
   async function save(key: string, value: unknown) {
     setSaving(key);
@@ -287,6 +290,24 @@ export default function AdminSettings() {
         </div>
         <Button className="mt-5 gap-2 text-white" style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }} disabled={saving === "trust_badges"} onClick={() => save("trust_badges", badges)}>
           <Save className="h-4 w-4" /> {saving === "trust_badges" ? "Saving…" : "Save Badges"}
+        </Button>
+      </Section>
+
+      <Section icon={Truck} title="Shipping Fee">
+        <p className="text-xs text-muted-foreground mb-3">Set the shipping fee that will be displayed and charged at checkout.</p>
+        <div className="space-y-1.5">
+          <Label>Shipping Fee Amount</Label>
+          <Input 
+            type="number" 
+            step="0.01" 
+            min="0" 
+            value={shippingFee} 
+            onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)} 
+            placeholder="0.00" 
+          />
+        </div>
+        <Button className="mt-5 gap-2 text-white" style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }} disabled={saving === "shipping_fee"} onClick={() => save("shipping_fee", shippingFee)}>
+          <Save className="h-4 w-4" /> {saving === "shipping_fee" ? "Saving…" : "Save Shipping Fee"}
         </Button>
       </Section>
     </div>

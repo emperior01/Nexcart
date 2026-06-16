@@ -1,19 +1,23 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ShoppingCart, ShoppingBag, Trash2, Plus, Minus,
-  ArrowRight, Tag, X, ChevronLeft,
+  ArrowRight, X, ChevronLeft,
 } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { fetchSiteSettings } from "@/lib/site-settings";
 
 export default function CartPage() {
   const { items, removeItem, updateQty, total, clearCart, closeCart } = useCart();
   const { currency } = useCurrency();
   const navigate = useNavigate();
-  const [coupon, setCoupon] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: fetchSiteSettings,
+  });
 
   useEffect(() => {
     closeCart();
@@ -21,10 +25,6 @@ export default function CartPage() {
 
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
   const baseCurrency = items[0]?.currency ?? "USD";
-
-  function handleApplyCoupon() {
-    if (coupon.trim()) setCouponApplied(true);
-  }
 
   return (
     <div style={{ minHeight: "100vh", background: "#FAFAFA" }}>
@@ -237,53 +237,6 @@ export default function CartPage() {
             {/* ── RIGHT: order summary ── */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
-              {/* Coupon */}
-              <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #F0F0F0", padding: "16px" }}>
-                <p style={{ fontWeight: 700, fontSize: 14, color: "#0D0D0D", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Tag style={{ width: 15, height: 15, color: "#E8611A" }} />
-                  Promo Code
-                </p>
-                {couponApplied ? (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: 10, background: "#F0FDF4", border: "1px solid #BBF7D0" }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#16A34A" }}>"{coupon}" applied!</span>
-                    <button
-                      onClick={() => { setCoupon(""); setCouponApplied(false); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#6B7280" }}
-                    >
-                      <X style={{ width: 13, height: 13 }} />
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <input
-                      type="text"
-                      value={coupon}
-                      onChange={(e) => setCoupon(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") handleApplyCoupon(); }}
-                      placeholder="Enter coupon code"
-                      style={{
-                        flex: 1, padding: "10px 12px", borderRadius: 10,
-                        border: "1.5px solid #E5E7EB", fontSize: 13, outline: "none",
-                        fontFamily: "'Inter',sans-serif",
-                      }}
-                    />
-                    <button
-                      onClick={handleApplyCoupon}
-                      disabled={!coupon.trim()}
-                      style={{
-                        padding: "10px 16px", borderRadius: 10, border: "none",
-                        background: coupon.trim() ? "#E8611A" : "#F3F4F6",
-                        color: coupon.trim() ? "#fff" : "#9B9B9B",
-                        fontWeight: 700, fontSize: 13, cursor: coupon.trim() ? "pointer" : "not-allowed",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      Apply
-                    </button>
-                  </div>
-                )}
-              </div>
-
               {/* Order summary */}
               <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #F0F0F0", padding: "16px" }}>
                 <p style={{ fontWeight: 800, fontSize: 15, color: "#0D0D0D", margin: "0 0 14px" }}>Order Summary</p>
@@ -300,22 +253,17 @@ export default function CartPage() {
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>Shipping</span>
-                    <span style={{ fontSize: 13, color: "#22C55E", fontWeight: 700 }}>Calculated at checkout</span>
+                    <span style={{ fontSize: 13, color: "#22C55E", fontWeight: 700 }}>
+                      {(settings?.shipping_fee ?? 0) > 0 ? formatPrice(settings?.shipping_fee ?? 0, baseCurrency, currency) : "Free"}
+                    </span>
                   </div>
-
-                  {couponApplied && (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 13, color: "#16A34A", fontWeight: 600 }}>Coupon discount</span>
-                      <span style={{ fontSize: 13, color: "#16A34A", fontWeight: 700 }}>–</span>
-                    </div>
-                  )}
 
                   <div style={{ height: 1, background: "#F3F4F6", margin: "4px 0" }} />
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 15, fontWeight: 800, color: "#0D0D0D" }}>Estimated Total</span>
                     <span style={{ fontSize: 20, fontWeight: 900, color: "#E8611A" }}>
-                      {formatPrice(total, baseCurrency, currency)}
+                      {formatPrice(total + (settings?.shipping_fee ?? 0), baseCurrency, currency)}
                     </span>
                   </div>
                 </div>

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ShoppingCart, ArrowLeft, CreditCard, Loader2, Bitcoin, Copy, CheckCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchSiteSettings } from "@/lib/site-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
@@ -152,6 +154,10 @@ export default function CheckoutPage() {
   const { currency } = useCurrency();
   const { data: paymentMethods, isLoading: loadingMethods } = useActivePaymentMethods();
   const { data: preferredMethodId } = useUserPaymentPreference();
+  const { data: settings } = useQuery({
+    queryKey: ["site-settings"],
+    queryFn: fetchSiteSettings,
+  });
 
   const [email, setEmail] = useState(user?.email ?? "");
   const [fullName, setFullName] = useState("");
@@ -245,7 +251,9 @@ export default function CheckoutPage() {
   }
 
   const cartCurrency = items[0]?.currency ?? "NGN";
-  const paystackAmount = Math.round(total * 100);
+  const shippingFee = settings?.shipping_fee ?? 0;
+  const totalWithShipping = total + shippingFee;
+  const paystackAmount = Math.round(totalWithShipping * 100);
 
   function validateForm() {
     if (!email || !fullName || !address || !city || !country) {
@@ -293,7 +301,7 @@ export default function CheckoutPage() {
             <h1 className="text-2xl font-black text-foreground">Checkout</h1>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+          <div className="grid gap-8 lg:grid-cols-2">
             <div className="space-y-6">
               {/* Shipping */}
               <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm space-y-4">
@@ -411,11 +419,11 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="font-semibold text-green-600">Free</span>
+                    <span className="font-semibold">{shippingFee > 0 ? formatPrice(shippingFee, cartCurrency, currency) : "Free"}</span>
                   </div>
                   <div className="flex justify-between text-base font-black border-t border-border/50 pt-2">
                     <span>Total</span>
-                    <span>{formatPrice(total, cartCurrency, currency)}</span>
+                    <span>{formatPrice(totalWithShipping, cartCurrency, currency)}</span>
                   </div>
                 </div>
               </div>
@@ -432,7 +440,7 @@ export default function CheckoutPage() {
                     ? "Redirecting to payment…"
                     : selectedMethod
                     ? `Pay with ${selectedMethod.name}`
-                    : `Pay ${formatPrice(total, cartCurrency, currency)}`}
+                    : `Pay ${formatPrice(totalWithShipping, cartCurrency, currency)}`}
                 </Button>
               )}
 

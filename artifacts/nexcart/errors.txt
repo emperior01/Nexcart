@@ -1,0 +1,5 @@
+src/components/nexcart/Navbar.tsx(403,21): error TS2322: Type '"/contact"' is not assignable to type '"." | ".." | "/checkout" | "/" | "/shop" | "/products/$slug" | "/cart" | "/auth" | "/wishlist" | "/become-seller" | "/sell-on-nexcart" | "/order-success" | "/store/$sellerId" | ... 23 more ... | "/seller/notifications"'.
+src/hooks/use-payment-methods.ts(60,17): error TS2345: Argument of type '{ status: "active" | "inactive"; }' is not assignable to parameter of type 'never'.
+src/hooks/use-payment-methods.ts(79,17): error TS2345: Argument of type 'Partial<PaymentMethod>' is not assignable to parameter of type 'never'.
+src/hooks/use-payment-methods.ts(124,17): error TS2345: Argument of type '{ preferred_payment_method_id: string | null; }' is not assignable to parameter of type 'never'.
+src/pages/ProductDetail.tsx(234,19): error TS2322: Type '`/store/${string}`' is not assignable to type '"." | ".." | "/checkout" | "/" | "/shop" | "/products/$slug" | "/cart" | "/auth" | "/wishlist" | "/become-seller" | "/sell-on-nexcart" | "/order-success" | "/store/$sellerId" | ... 23 more ... | "/seller/notifications"'.

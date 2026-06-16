@@ -30,6 +30,7 @@ export interface SiteSettings {
   hero: HeroSettings;
   promo_banner: PromoBannerSettings;
   trust_badges: TrustBadge[];
+  shipping_fee: number;
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -57,6 +58,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     { icon: "refresh", title: "30-day returns",  sub: "No-fuss return policy." },
     { icon: "chat",    title: "Real support",    sub: "Humans, not bots." },
   ],
+  shipping_fee: 0,
 };
 
 export async function fetchSiteSettings(): Promise<SiteSettings> {
@@ -73,6 +75,7 @@ export async function fetchSiteSettings(): Promise<SiteSettings> {
     hero:         (map.hero as HeroSettings)                  ?? DEFAULT_SETTINGS.hero,
     promo_banner: (map.promo_banner as PromoBannerSettings)   ?? DEFAULT_SETTINGS.promo_banner,
     trust_badges: (map.trust_badges as TrustBadge[])          ?? DEFAULT_SETTINGS.trust_badges,
+    shipping_fee: (map.shipping_fee as number)                ?? DEFAULT_SETTINGS.shipping_fee,
   };
 }
 
