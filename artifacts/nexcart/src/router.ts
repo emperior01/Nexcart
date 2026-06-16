@@ -104,15 +104,11 @@ const sellOnNexcartRoute = createRoute({
   component: BecomeSellerPage,
 });
 
-// Alias: /seller/dashboard → redirect to /seller (index)
+// Alias: /seller/dashboard → same as /seller
 const sellerDashboardAliasRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/seller/dashboard",
-  component: () => {
-    const navigate = useNavigate();
-    useEffect(() => { void navigate({ to: "/seller" }); }, []);
-    return null;
-  },
+  component: SellerLayout,
 });
 
 const orderSuccessRoute = createRoute({
