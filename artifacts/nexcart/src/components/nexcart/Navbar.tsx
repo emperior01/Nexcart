@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Search, ShoppingCart, User, LogIn, Menu, Home, Store,
   LogOut, X, ShoppingBag, Heart, MapPin, Settings, LayoutDashboard,
-  TrendingUp,
+  TrendingUp, ChevronRight, Phone,
 } from "lucide-react";
 import { Logo } from "./Logo";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,6 +27,25 @@ const accountMenuItems = [
   { label: "Addresses",   icon: MapPin,      to: "/account/addresses" },
   { label: "Settings",    icon: Settings,    to: "/account/settings"  },
 ] as const;
+
+const sectionLabel = (text: string) => (
+  <div style={{ margin: "12px 14px 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: "#9B9B9B" }}>
+    {text}
+  </div>
+);
+
+const menuItemStyle = (active: boolean) => ({
+  display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+  borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
+  color: active ? "#E8611A" : "#3A3A3A",
+  background: active ? "#FEF0E8" : "transparent",
+} as const);
+
+const iconWrap = (active = false, danger = false) => ({
+  width: 30, height: 30, borderRadius: 8,
+  background: danger ? "#FEE2E2" : active ? "rgba(232,97,26,0.15)" : "#F3F4F6",
+  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 as const,
+});
 
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
@@ -282,8 +301,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
               </span>
             )}
           </button>
-
-
         </div>
       </div>
 
@@ -292,6 +309,8 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         <>
           <div className="md:hidden fixed inset-0 z-30 bg-black/40" onClick={() => setMobileOpen(false)} />
           <div className="md:hidden fixed top-0 left-0 bottom-0 z-40 w-72 bg-white flex flex-col shadow-2xl">
+
+            {/* Header */}
             <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 20, color: "#E8611A", letterSpacing: "-0.03em" }}>Nexcart</span>
               <button onClick={() => setMobileOpen(false)} style={{ width: 32, height: 32, borderRadius: "50%", background: "#F3F4F6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -299,131 +318,106 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
               </button>
             </div>
 
-            <nav style={{ padding: "12px", display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
-              {navLinks.map((l) => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  onClick={() => setMobileOpen(false)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                    borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
-                    color: isActive(l.to) ? "#E8611A" : "#3A3A3A",
-                    background: isActive(l.to) ? "#FEF0E8" : "transparent",
-                  }}
-                >
-                  <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <l.icon style={{ width: 15, height: 15 }} />
-                  </span>
-                  {l.label}
-                </Link>
-              ))}
+            <nav style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: 2, flex: 1, overflowY: "auto" }}>
 
-              {/* Seller CTA in mobile nav */}
-              {showSellerReady && (
-                isActiveSeller ? (
-                  // User is a seller (basic or verified) → show My Seller Dashboard
+              {/* SHOPPING */}
+              {sectionLabel("Shopping")}
+
+              <Link to="/" onClick={() => setMobileOpen(false)} style={menuItemStyle(isActive("/"))}>
+                <span style={iconWrap(isActive("/"))}><Home style={{ width: 15, height: 15, color: isActive("/") ? "#E8611A" : "#6B6B6B" }} /></span>
+                Home
+              </Link>
+
+              <Link to="/shop" onClick={() => setMobileOpen(false)} style={menuItemStyle(isActive("/shop"))}>
+                <span style={iconWrap(isActive("/shop"))}><Store style={{ width: 15, height: 15, color: isActive("/shop") ? "#E8611A" : "#6B6B6B" }} /></span>
+                Shop
+              </Link>
+
+              <Link to="/account/orders" onClick={() => setMobileOpen(false)} style={menuItemStyle(isActive("/account/orders"))}>
+                <span style={iconWrap(isActive("/account/orders"))}><ShoppingBag style={{ width: 15, height: 15, color: isActive("/account/orders") ? "#E8611A" : "#6B6B6B" }} /></span>
+                Orders
+              </Link>
+
+              <Link to="/account/wishlist" onClick={() => setMobileOpen(false)} style={menuItemStyle(isActive("/account/wishlist"))}>
+                <span style={iconWrap(isActive("/account/wishlist"))}><Heart style={{ width: 15, height: 15, color: isActive("/account/wishlist") ? "#E8611A" : "#6B6B6B" }} /></span>
+                Wishlist
+              </Link>
+
+              {/* SELLER — approved sellers only */}
+              {showSellerReady && isActiveSeller && (
+                <>
+                  {sectionLabel("Seller")}
                   <Link
                     to="/seller/dashboard"
                     onClick={() => setMobileOpen(false)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                      borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
-                      color: isActive("/seller") ? "#E8611A" : "#3A3A3A",
-                      background: isActive("/seller") ? "#FEF0E8" : "transparent",
-                    }}
+                    style={menuItemStyle(isActive("/seller"))}
                   >
-                    <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <TrendingUp style={{ width: 15, height: 15, color: isActive("/seller") ? "#E8611A" : "#6B6B6B" }} />
-                    </span>
-                    My Seller Dashboard
+                    <span style={iconWrap(isActive("/seller"))}><TrendingUp style={{ width: 15, height: 15, color: isActive("/seller") ? "#E8611A" : "#6B6B6B" }} /></span>
+                    Seller Dashboard
                   </Link>
-                ) : !isSeller ? (
-                  // User is not a seller → show Sell on Nexcart
-                  <Link
-                    to="/sell-on-nexcart"
-                    onClick={() => setMobileOpen(false)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                      borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
-                      color: isActive("/sell-on-nexcart") ? "#E8611A" : "#3A3A3A",
-                      background: isActive("/sell-on-nexcart") ? "#FEF0E8" : "transparent",
-                    }}
-                  >
-                    <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Store style={{ width: 15, height: 15, color: isActive("/sell-on-nexcart") ? "#E8611A" : "#6B6B6B" }} />
-                    </span>
-                    Sell on Nexcart
-                  </Link>
-                ) : null
-              )}
-
-              {user && (
-                <>
-                  <div style={{ margin: "8px 14px 4px", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9B9B9B" }}>
-                    Account
-                  </div>
-                  {accountMenuItems.map(({ label, icon: Icon, to }) => (
-                    <Link
-                      key={label}
-                      to={to}
-                      onClick={() => setMobileOpen(false)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                        borderRadius: 12, fontSize: 14, fontWeight: 500, textDecoration: "none",
-                        color: isActive(to) ? "#E8611A" : "#3A3A3A",
-                        background: isActive(to) ? "#FEF0E8" : "transparent",
-                      }}
-                    >
-                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Icon style={{ width: 15, height: 15, color: "#6B6B6B" }} />
-                      </span>
-                      {label}
-                    </Link>
-                  ))}
-
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      onClick={() => setMobileOpen(false)}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                        borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#E8611A",
-                        background: "#FEF0E8",
-                      }}
-                    >
-                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(232,97,26,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <LayoutDashboard style={{ width: 15, height: 15, color: "#E8611A" }} />
-                      </span>
-                      Admin Dashboard
-                    </Link>
-                  )}
                 </>
               )}
-            </nav>
 
-            <div style={{ padding: "12px", borderTop: "1px solid #F3F4F6" }}>
+              {/* ACCOUNT */}
+              {sectionLabel("Account")}
+
               {user ? (
-                <button
-                  onClick={handleSignOut}
-                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#EF4444", background: "#FEF2F2", border: "none", width: "100%", cursor: "pointer" }}
+                <Link
+                  to="/account"
+                  onClick={() => setMobileOpen(false)}
+                  style={{ ...menuItemStyle(isActive("/account")), justifyContent: "space-between" }}
                 >
-                  <span style={{ width: 30, height: 30, borderRadius: 8, background: "#FEE2E2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <LogOut style={{ width: 15, height: 15 }} />
+                  <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={iconWrap(isActive("/account"))}><User style={{ width: 15, height: 15, color: isActive("/account") ? "#E8611A" : "#6B6B6B" }} /></span>
+                    Account
                   </span>
-                  Logout
-                </button>
+                  <ChevronRight style={{ width: 15, height: 15, color: "#9B9B9B" }} />
+                </Link>
               ) : (
                 <Link
                   to="/auth"
                   onClick={() => setMobileOpen(false)}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "14px", borderRadius: 12, fontSize: 14, fontWeight: 700, color: "#fff", background: "#E8611A", textDecoration: "none" }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 700, color: "#fff", background: "#E8611A", textDecoration: "none" }}
                 >
                   <LogIn style={{ width: 16, height: 16 }} />
                   Sign In
                 </Link>
               )}
-            </div>
+
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  onClick={() => setMobileOpen(false)}
+                  style={menuItemStyle(isActive("/admin"))}
+                >
+                  <span style={iconWrap(isActive("/admin"))}><LayoutDashboard style={{ width: 15, height: 15, color: isActive("/admin") ? "#E8611A" : "#6B6B6B" }} /></span>
+                  Admin Dashboard
+                </Link>
+              )}
+
+              {/* SUPPORT */}
+              {sectionLabel("Support")}
+
+              <Link to="/contact" onClick={() => setMobileOpen(false)} style={menuItemStyle(isActive("/contact"))}>
+                <span style={iconWrap(isActive("/contact"))}><Phone style={{ width: 15, height: 15, color: isActive("/contact") ? "#E8611A" : "#6B6B6B" }} /></span>
+                Contact Us
+              </Link>
+
+              {/* SESSION */}
+              {user && (
+                <>
+                  {sectionLabel("Session")}
+                  <button
+                    onClick={handleSignOut}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, fontSize: 14, fontWeight: 600, color: "#EF4444", background: "transparent", border: "none", width: "100%", cursor: "pointer" }}
+                  >
+                    <span style={iconWrap(false, true)}><LogOut style={{ width: 15, height: 15, color: "#EF4444" }} /></span>
+                    Logout
+                  </button>
+                </>
+              )}
+
+            </nav>
           </div>
         </>
       )}
