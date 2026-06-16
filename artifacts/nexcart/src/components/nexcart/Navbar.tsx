@@ -75,11 +75,13 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
     if (!menuOpen) return;
     function onOutsideClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
+        clearCart();
+    setMenuOpen(false);
       }
     }
     function onEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key === "Escape") clearCart();
+    setMenuOpen(false);
     }
     document.addEventListener("mousedown", onOutsideClick);
     document.addEventListener("keydown", onEscape);
@@ -90,6 +92,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
   }, [menuOpen]);
 
   async function handleSignOut() {
+    clearCart();
     clearCart();
     setMenuOpen(false);
     setMobileOpen(false);
