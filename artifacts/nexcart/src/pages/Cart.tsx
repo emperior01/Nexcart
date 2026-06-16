@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ShoppingCart, ShoppingBag, Trash2, Plus, Minus,
   ArrowRight, Tag, X, ChevronLeft,
@@ -9,11 +9,15 @@ import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 export default function CartPage() {
-  const { items, removeItem, updateQty, total, clearCart } = useCart();
+  const { items, removeItem, updateQty, total, clearCart, closeCart } = useCart();
   const { currency } = useCurrency();
   const navigate = useNavigate();
   const [coupon, setCoupon] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
+
+  useEffect(() => {
+    closeCart();
+  }, [closeCart]);
 
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
   const baseCurrency = items[0]?.currency ?? "USD";
