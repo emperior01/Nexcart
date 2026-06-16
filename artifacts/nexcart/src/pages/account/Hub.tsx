@@ -13,48 +13,36 @@ const MENU_ITEMS = [
     label: "My Profile",
     desc: "Name, email, phone, password",
     icon: User,
-    color: "#6366F1",
-    bg: "#EEF2FF",
   },
   {
     to: "/account/orders",
     label: "My Orders",
-    desc: "Order history and status",
+    desc: "Order history and tracking",
     icon: Package,
-    color: "#3B82F6",
-    bg: "#EFF6FF",
   },
   {
     to: "/account/wishlist",
     label: "Wishlist",
     desc: "Saved products",
     icon: Heart,
-    color: "#EC4899",
-    bg: "#FDF2F8",
   },
   {
     to: "/account/addresses",
     label: "Addresses",
     desc: "Manage delivery addresses",
     icon: MapPin,
-    color: "#10B981",
-    bg: "#ECFDF5",
   },
   {
     to: "/account/settings",
     label: "Settings",
-    desc: "Currency and preferences",
+    desc: "Currency, notifications and preferences",
     icon: Settings,
-    color: "#6B7280",
-    bg: "#F9FAFB",
   },
   {
     to: "/account/payment-settings",
     label: "Preferred Payment",
     desc: "Set your checkout payment preference",
     icon: CreditCard,
-    color: "#E8611A",
-    bg: "#FEF0E8",
   },
 ] as const;
 
@@ -109,80 +97,168 @@ export default function AccountHub() {
   const initials = ((fullName?.[0] ?? user?.email?.[0] ?? "?")).toUpperCase();
 
   return (
-    <div className="space-y-5">
-      {/* User card */}
-      <div className="bg-white rounded-2xl border border-[#EBEBEB] p-5 shadow-sm flex items-center gap-4">
-        <div
-          className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-extrabold flex-shrink-0"
-          style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }}
-        >
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+      {/* User identity card */}
+      <div style={{
+        background: "#FFFFFF",
+        borderRadius: 16,
+        border: "1px solid #EBEBEB",
+        padding: "20px",
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+      }}>
+        <div style={{
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
+          background: "linear-gradient(135deg,#E8611A,#C4511A)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#fff",
+          fontSize: 20,
+          fontWeight: 800,
+          flexShrink: 0,
+        }}>
           {initials}
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-extrabold text-[#0D0D0D] text-base truncate">{displayName}</p>
-          <p className="text-sm text-[#6B7280] truncate">{user?.email}</p>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: 800, fontSize: 15, color: "#0D0D0D", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {displayName}
+          </p>
+          <p style={{ fontSize: 13, color: "#6B7280", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {user?.email}
+          </p>
         </div>
-        <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
-          <div className="text-center">
-            <p className="font-extrabold text-[#0D0D0D] text-lg">{ordersCount ?? 0}</p>
-            <p className="text-[11px] text-[#9B9B9B] font-medium">Orders</p>
+        <div style={{ display: "flex", gap: 24, flexShrink: 0 }}>
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontWeight: 800, fontSize: 17, color: "#0D0D0D", margin: 0 }}>{ordersCount ?? 0}</p>
+            <p style={{ fontSize: 11, color: "#9B9B9B", fontWeight: 500, margin: "2px 0 0" }}>Orders</p>
           </div>
-          <div className="w-px h-8 bg-[#F0F0F0]" />
-          <div className="text-center">
-            <p className="font-extrabold text-[#0D0D0D] text-lg">{wishlistCount}</p>
-            <p className="text-[11px] text-[#9B9B9B] font-medium">Wishlist</p>
+          <div style={{ width: 1, background: "#F0F0F0" }} />
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontWeight: 800, fontSize: 17, color: "#0D0D0D", margin: 0 }}>{wishlistCount}</p>
+            <p style={{ fontSize: 11, color: "#9B9B9B", fontWeight: 500, margin: "2px 0 0" }}>Saved</p>
           </div>
         </div>
       </div>
 
-      {/* Menu grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {MENU_ITEMS.map(({ to, label, desc, icon: Icon, color, bg }) => (
+      {/* Menu items */}
+      <div style={{
+        background: "#FFFFFF",
+        borderRadius: 16,
+        border: "1px solid #EBEBEB",
+        overflow: "hidden",
+      }}>
+        {MENU_ITEMS.map(({ to, label, desc, icon: Icon }, index) => (
           <Link
             key={to}
             to={to}
-            className="bg-white rounded-2xl border border-[#EBEBEB] p-4 shadow-sm flex items-center gap-3 hover:border-[#E8611A]/30 hover:shadow-md transition-all group"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "16px 18px",
+              textDecoration: "none",
+              borderBottom: index < MENU_ITEMS.length - 1 ? "1px solid #F5F5F5" : "none",
+              background: "#FFFFFF",
+              transition: "background 0.1s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#FAFAFA")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#FFFFFF")}
           >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: bg }}
-            >
-              <Icon style={{ width: 18, height: 18, color }} />
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: "#F3F4F6",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <Icon style={{ width: 17, height: 17, color: "#6B7280" }} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-[#0D0D0D] text-sm">{label}</p>
-              <p className="text-xs text-[#9B9B9B] mt-0.5 truncate">{desc}</p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "#0D0D0D", margin: 0 }}>{label}</p>
+              <p style={{ fontSize: 12, color: "#9B9B9B", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{desc}</p>
             </div>
-            <ChevronRight className="h-4 w-4 text-[#D1D5DB] group-hover:text-[#E8611A] transition-colors flex-shrink-0" />
+            <ChevronRight style={{ width: 16, height: 16, color: "#D1D5DB", flexShrink: 0 }} />
           </Link>
         ))}
+      </div>
 
-        {/* Admin card - admin only */}
-        {isAdmin && (
+      {/* Admin panel — only visible to admins */}
+      {isAdmin && (
+        <div style={{
+          background: "#FFFFFF",
+          borderRadius: 16,
+          border: "1px solid #EBEBEB",
+          overflow: "hidden",
+        }}>
           <Link
             to="/admin"
-            className="bg-white rounded-2xl border border-[#EBEBEB] p-4 shadow-sm flex items-center gap-3 hover:border-[#E8611A]/30 hover:shadow-md transition-all group"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "16px 18px",
+              textDecoration: "none",
+              background: "#FFFFFF",
+              transition: "background 0.1s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#FAFAFA")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#FFFFFF")}
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "#FEF0E8" }}>
-              <LayoutDashboard style={{ width: 18, height: 18, color: "#E8611A" }} />
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: "#F3F4F6",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <LayoutDashboard style={{ width: 17, height: 17, color: "#6B7280" }} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-[#E8611A] text-sm">Admin Panel</p>
-              <p className="text-xs text-[#9B9B9B] mt-0.5">Manage store</p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "#0D0D0D", margin: 0 }}>Admin Dashboard</p>
+              <p style={{ fontSize: 12, color: "#9B9B9B", margin: "2px 0 0" }}>Seller tools and management</p>
             </div>
-            <ChevronRight className="h-4 w-4 text-[#D1D5DB] group-hover:text-[#E8611A] transition-colors flex-shrink-0" />
+            <ChevronRight style={{ width: 16, height: 16, color: "#D1D5DB", flexShrink: 0 }} />
           </Link>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Sign out */}
       <button
         onClick={signOut}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-[#FECACA] bg-white text-[#EF4444] text-sm font-semibold hover:bg-[#FEF2F2] transition-colors shadow-sm"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          padding: "14px",
+          borderRadius: 16,
+          border: "1px solid #FECACA",
+          background: "#FFFFFF",
+          color: "#EF4444",
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: "pointer",
+          transition: "background 0.1s",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#FEF2F2")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "#FFFFFF")}
       >
-        <LogOut className="h-4 w-4" />
+        <LogOut style={{ width: 16, height: 16 }} />
         Sign Out
       </button>
+
     </div>
   );
 }

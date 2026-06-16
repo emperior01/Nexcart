@@ -131,13 +131,36 @@ export default function AdminLayout() {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F9FAFB" }}>
-      {/* Responsive styles — no Tailwind needed */}
+      {/* Responsive styles */}
       <style>{`
         .admin-sidebar-desktop { display: flex; }
         .admin-mobile-header   { display: none; }
-        @media (max-width: 767px) {
+        @media (max-width: 1023px) {
           .admin-sidebar-desktop { display: none !important; }
           .admin-mobile-header   { display: flex !important; }
+        }
+        /* Make all tables inside admin horizontally scrollable on mobile */
+        .admin-content table {
+          min-width: 600px;
+        }
+        .admin-content .table-wrapper {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          width: 100%;
+        }
+        /* Prevent text overflow in admin content */
+        .admin-content {
+          min-width: 0;
+          overflow-x: hidden;
+        }
+        /* Responsive cards stack on mobile */
+        @media (max-width: 639px) {
+          .admin-stats-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+          .admin-content-padding {
+            padding: 16px !important;
+          }
         }
       `}</style>
 
@@ -196,7 +219,7 @@ export default function AdminLayout() {
           )}
         </div>
 
-        <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+        <div className="admin-content" style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
           <Outlet />
         </div>
       </div>
