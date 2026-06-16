@@ -104,11 +104,11 @@ const sellOnNexcartRoute = createRoute({
   component: BecomeSellerPage,
 });
 
-// /seller/dashboard → redirect to /seller
+// /seller/dashboard → redirect to /seller index
 const sellerDashboardAliasRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/seller/dashboard",
-  beforeLoad: () => { throw redirect({ to: "/seller" }); },
+  getParentRoute: () => sellerRoute,
+  path: "/dashboard",
+  component: SellerDashboard,
 });
 
 const orderSuccessRoute = createRoute({
@@ -276,7 +276,6 @@ const routeTree = rootRoute.addChildren([
   wishlistRoute,
   becomeSellerRoute,
   sellOnNexcartRoute,
-  sellerDashboardAliasRoute,
   orderSuccessRoute,
   storeRoute,
   accountRoute.addChildren([
@@ -298,6 +297,7 @@ const routeTree = rootRoute.addChildren([
   ]),
   sellerRoute.addChildren([
     sellerIndexRoute,
+    sellerDashboardAliasRoute,
     sellerProductsRoute,
     sellerOrdersRoute,
     sellerEarningsRoute,
