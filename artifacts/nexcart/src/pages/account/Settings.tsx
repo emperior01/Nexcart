@@ -1,15 +1,24 @@
-import { useState, useEffect } from "react";
 import {
+  useState, useEffect } from "react";
+import {
+  Cpu, Shirt, Sparkles, Home, Dumbbell,
   Settings, Globe, CreditCard, Truck, ShoppingBag,
   ChevronRight, Check, Loader2,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/index";
-import { CurrencySelector } from "@/components/nexcart/CurrencySelector";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { toast } from "sonner";
+import {
+  Link } from "@tanstack/react-router";
+import {
+  Button } from "@/components/ui/button";
+import {
+  Label } from "@/components/ui/index";
+import {
+  CurrencySelector } from "@/components/nexcart/CurrencySelector";
+import {
+  supabase } from "@/integrations/supabase/client";
+import {
+  useAuth } from "@/hooks/use-auth";
+import {
+  toast } from "sonner";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -26,11 +35,11 @@ const LANGUAGES = [
 ];
 
 const SHOPPING_CATEGORIES = [
-  { id: "electronics",   label: "Electronics",      emoji: "📱" },
-  { id: "fashion",       label: "Fashion",           emoji: "👗" },
-  { id: "beauty",        label: "Beauty",            emoji: "💄" },
-  { id: "home-living",   label: "Home & Living",     emoji: "🏠" },
-  { id: "sports-fitness",label: "Sports & Fitness",  emoji: "🏋️" },
+  { id: "electronics", label: "Electronics", icon: Cpu },
+  { id: "fashion", label: "Fashion", icon: Shirt },
+  { id: "beauty", label: "Beauty", icon: Sparkles },
+  { id: "home-living", label: "Home & Living", icon: Home },
+  { id: "sports-fitness", label: "Sports & Fitness", icon: Dumbbell },
 ];
 
 // ── Section Card wrapper ─────────────────────────────────────────────────────
@@ -331,7 +340,7 @@ export default function AccountSettings() {
                     transition: "all 0.15s",
                   }}
                 >
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{cat.emoji}</span>
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: checked ? "#FEF0E8" : "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><cat.icon style={{ width: 16, height: 16, color: checked ? "#E8611A" : "#6B6B6B", strokeWidth: 1.8 }} /></span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0D", flex: 1 }}>
                     {cat.label}
                   </span>
