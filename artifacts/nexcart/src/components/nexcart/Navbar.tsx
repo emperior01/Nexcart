@@ -30,7 +30,7 @@ const accountMenuItems = [
 
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
-  const { isSeller, isVerified, isLoading: sellerLoading } = useSeller();
+  const { isSeller, isVerified, isActiveSeller, isLoading: sellerLoading } = useSeller();
   const { count, openCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -320,9 +320,10 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
 
               {/* Seller CTA in mobile nav */}
               {showSellerReady && (
-                isVerifiedSeller ? (
+                isActiveSeller ? (
+                  // User is a seller (basic or verified) → show My Seller Dashboard
                   <Link
-                    to="/seller"
+                    to="/seller/dashboard"
                     onClick={() => setMobileOpen(false)}
                     style={{
                       display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
@@ -334,25 +335,26 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                     <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <TrendingUp style={{ width: 15, height: 15, color: isActive("/seller") ? "#E8611A" : "#6B6B6B" }} />
                     </span>
-                    Seller Dashboard
+                    My Seller Dashboard
                   </Link>
-                ) : (
+                ) : !isSeller ? (
+                  // User is not a seller → show Sell on Nexcart
                   <Link
-                    to="/become-seller"
+                    to="/sell-on-nexcart"
                     onClick={() => setMobileOpen(false)}
                     style={{
                       display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
                       borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
-                      color: isActive("/become-seller") ? "#E8611A" : "#3A3A3A",
-                      background: isActive("/become-seller") ? "#FEF0E8" : "transparent",
+                      color: isActive("/sell-on-nexcart") ? "#E8611A" : "#3A3A3A",
+                      background: isActive("/sell-on-nexcart") ? "#FEF0E8" : "transparent",
                     }}
                   >
                     <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <Store style={{ width: 15, height: 15, color: isActive("/become-seller") ? "#E8611A" : "#6B6B6B" }} />
+                      <Store style={{ width: 15, height: 15, color: isActive("/sell-on-nexcart") ? "#E8611A" : "#6B6B6B" }} />
                     </span>
                     Sell on Nexcart
                   </Link>
-                )
+                ) : null
               )}
 
               {user && (
@@ -385,13 +387,12 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
                       onClick={() => setMobileOpen(false)}
                       style={{
                         display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
-                        borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none",
-                        color: isActive("/admin") ? "#E8611A" : "#3A3A3A",
-                        background: isActive("/admin") ? "#FEF0E8" : "transparent",
+                        borderRadius: 12, fontSize: 14, fontWeight: 600, textDecoration: "none", color: "#E8611A",
+                        background: "#FEF0E8",
                       }}
                     >
-                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "#F3F4F6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <LayoutDashboard style={{ width: 15, height: 15, color: isActive("/admin") ? "#E8611A" : "#6B6B6B" }} />
+                      <span style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(232,97,26,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <LayoutDashboard style={{ width: 15, height: 15, color: "#E8611A" }} />
                       </span>
                       Admin Dashboard
                     </Link>

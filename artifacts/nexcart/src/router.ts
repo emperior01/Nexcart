@@ -97,6 +97,24 @@ const becomeSellerRoute = createRoute({
   component: BecomeSellerPage,
 });
 
+// Alias: /sell-on-nexcart → same page as /become-seller
+const sellOnNexcartRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/sell-on-nexcart",
+  component: BecomeSellerPage,
+});
+
+// Alias: /seller/dashboard → redirect to /seller (index)
+const sellerDashboardAliasRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/seller/dashboard",
+  component: () => {
+    const navigate = useNavigate();
+    useEffect(() => { void navigate({ to: "/seller" }); }, []);
+    return null;
+  },
+});
+
 const orderSuccessRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/order-success",
@@ -261,6 +279,8 @@ const routeTree = rootRoute.addChildren([
   authRoute,
   wishlistRoute,
   becomeSellerRoute,
+  sellOnNexcartRoute,
+  sellerDashboardAliasRoute,
   orderSuccessRoute,
   storeRoute,
   accountRoute.addChildren([
