@@ -78,6 +78,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.108.0",
     "@tanstack/react-router": "^1.170.15",
+    "esbuild": "0.27.3",
     "papaparse": "^5.5.3",
     "react-router-dom": "^7.17.0",
     "zustand": "^5.0.14"
