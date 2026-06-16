@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useActivePaymentMethods, type PaymentMethod } from "@/hooks/use-payment-methods";
+import { useActivePaymentMethods, useUserPaymentPreference, type PaymentMethod } from "@/hooks/use-payment-methods";
 import { toast } from "sonner";
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string;
@@ -151,6 +151,7 @@ export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const { currency } = useCurrency();
   const { data: paymentMethods, isLoading: loadingMethods } = useActivePaymentMethods();
+  const { data: preferredMethodId } = useUserPaymentPreference();
 
   const [email, setEmail] = useState(user?.email ?? "");
   const [fullName, setFullName] = useState("");
@@ -162,12 +163,22 @@ export default function CheckoutPage() {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [showCrypto, setShowCrypto] = useState(false);
 
-  // Auto-select first active method when loaded
+  // Auto-select: prefer the customer's saved preference if it is still active,
+  // otherwise fall back to the first active method in the admin-configured list.
   useEffect(() => {
-    if (paymentMethods && paymentMethods.length > 0 && !selectedMethod) {
-      setSelectedMethod(paymentMethods[0]);
+    if (!paymentMethods || paymentMethods.length === 0 || selectedMethod) return;
+
+    if (preferredMethodId) {
+      const preferred = paymentMethods.find((m) => m.id === preferredMethodId);
+      if (preferred) {
+        setSelectedMethod(preferred);
+        return;
+      }
+      // Preferred method was disabled by admin — fall through to default
     }
-  }, [paymentMethods]);
+
+    setSelectedMethod(paymentMethods[0]);
+  }, [paymentMethods, preferredMethodId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Handle Paystack redirect-back ─────────────────────────────────────────
   useEffect(() => {

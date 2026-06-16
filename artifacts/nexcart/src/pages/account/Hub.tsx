@@ -50,8 +50,8 @@ const MENU_ITEMS = [
   },
   {
     to: "/account/payment-settings",
-    label: "Payment Settings",
-    desc: "View accepted payment methods",
+    label: "Preferred Payment",
+    desc: "Set your checkout payment preference",
     icon: CreditCard,
     color: "#E8611A",
     bg: "#FEF0E8",

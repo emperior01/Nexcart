@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export interface PaymentMethod {
@@ -49,7 +50,7 @@ export function useAllPaymentMethods() {
   });
 }
 
-/** Toggle active/inactive */
+/** Toggle active/inactive — admin only */
 export function useTogglePaymentMethod() {
   const qc = useQueryClient();
   return useMutation({
@@ -68,7 +69,7 @@ export function useTogglePaymentMethod() {
   });
 }
 
-/** Update config (wallet addresses, priority, etc.) */
+/** Update config (wallet addresses, priority, etc.) — admin only */
 export function useUpdatePaymentMethod() {
   const qc = useQueryClient();
   return useMutation({
@@ -82,6 +83,51 @@ export function useUpdatePaymentMethod() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payment-methods"] });
       toast.success("Saved.");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
+// ── Customer preference hooks ─────────────────────────────────────────────────
+// These read/write the customer's preferred_payment_method_id on their profile.
+// They do NOT touch the payment_methods table (admin-only territory).
+
+/** Fetch the current user's preferred payment method id */
+export function useUserPaymentPreference() {
+  const { user } = useAuth();
+  return useQuery<string | null>({
+    queryKey: ["user-payment-preference", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("preferred_payment_method_id")
+        .eq("id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as { preferred_payment_method_id: string | null } | null)
+        ?.preferred_payment_method_id ?? null;
+    },
+    staleTime: 60_000,
+  });
+}
+
+/** Save the current user's preferred payment method id */
+export function useSetPaymentPreference() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (preferred_payment_method_id: string | null) => {
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("profiles")
+        .update({ preferred_payment_method_id })
+        .eq("id", user.id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, preferred_payment_method_id) => {
+      qc.setQueryData(["user-payment-preference", user?.id], preferred_payment_method_id);
+      toast.success("Payment preference saved.");
     },
     onError: (err: Error) => toast.error(err.message),
   });

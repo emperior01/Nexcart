@@ -1,178 +1,203 @@
-import { useEffect } from "react";
-import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { User, Package, Heart, MapPin, Settings, LogOut, LayoutDashboard, ChevronLeft } from "lucide-react";
-import { Navbar } from "@/components/nexcart/Navbar";
-import { Footer } from "@/components/nexcart/Footer";
-import { useAuth } from "@/hooks/use-auth";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
+import {
+  LayoutDashboard, Package, ShoppingBag, TrendingUp, Wallet,
+  Star, Settings, Bell, LogOut, Home, Menu, X, ShieldCheck, ShieldOff,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { useSeller } from "@/hooks/use-seller";
 
-const NAV_ITEMS = [
-  { to: "/account/profile",   label: "My Profile",  icon: User },
-  { to: "/account/orders",    label: "My Orders",   icon: Package },
-  { to: "/account/wishlist",  label: "Wishlist",    icon: Heart },
-  { to: "/account/addresses", label: "Addresses",   icon: MapPin },
-  { to: "/account/settings",  label: "Settings",    icon: Settings },
+const navItems = [
+  { to: "",               label: "Dashboard",      icon: LayoutDashboard },
+  { to: "/products",      label: "Products",       icon: Package },
+  { to: "/orders",        label: "Orders",         icon: ShoppingBag },
+  { to: "/earnings",      label: "Earnings",       icon: TrendingUp },
+  { to: "/withdrawals",   label: "Withdrawals",    icon: Wallet },
+  { to: "/reviews",       label: "Reviews",        icon: Star },
+  { to: "/settings",      label: "Store Settings", icon: Settings },
+  { to: "/notifications", label: "Notifications",  icon: Bell },
 ] as const;
 
-const PAGE_TITLES: Record<string, string> = {
-  "/account/profile":   "My Profile",
-  "/account/orders":    "My Orders",
-  "/account/wishlist":  "Wishlist",
-  "/account/addresses": "Addresses",
-  "/account/settings":  "Settings",
-};
+function StatusPill({ status }: { status: string }) {
+  if (status === "verified") {
+    return (
+      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, background: "#D1FAE5", color: "#065F46", padding: "3px 8px", borderRadius: 50, border: "1px solid #A7F3D0", display: "inline-flex", alignItems: "center", gap: 3 }}>
+        <ShieldCheck style={{ width: 9, height: 9 }} /> Verified
+      </span>
+    );
+  }
+  // basic (or legacy pending mapped to basic)
+  return (
+    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, background: "#FEF3C7", color: "#92400E", padding: "3px 8px", borderRadius: 50, border: "1px solid #FDE68A", display: "inline-flex", alignItems: "center", gap: 3 }}>
+      Basic
+    </span>
+  );
+}
 
-export default function AccountLayout() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
+function SidebarContent({ onClose, signOut, storeName, sellerStatus }: {
+  onClose: () => void;
+  signOut: () => void;
+  storeName: string;
+  sellerStatus: string;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const isVerified = sellerStatus === "verified";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #EBEBEB" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 18, color: "#E8611A", letterSpacing: "-0.03em" }}>Nexcart</span>
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" as const, background: "rgba(232,97,26,0.12)", color: "#E8611A", padding: "3px 8px", borderRadius: 50, border: "1px solid rgba(232,97,26,0.25)" }}>Seller</span>
+        </div>
+        <p style={{ fontSize: 12, color: "#6B7280", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, marginBottom: 6 }}>{storeName}</p>
+        <StatusPill status={sellerStatus} />
+      </div>
+
+      <nav style={{ flex: 1, padding: "12px 10px", display: "flex", flexDirection: "column", gap: 2, overflowY: "auto" as const }}>
+        {navItems.map(({ to, label, icon: Icon }) => {
+          const fullPath = "/seller" + to;
+          const isActive = to === "" ? pathname === "/seller" || pathname === "/seller/" : pathname.startsWith("/seller" + to);
+          // Withdrawals link: dim + tooltip for basic sellers
+          const isWithdrawals = to === "/withdrawals";
+          const locked = isWithdrawals && !isVerified;
+
+          return (
+            <Link
+              key={to}
+              to={locked ? "/seller" : fullPath}
+              onClick={locked ? (e) => { e.preventDefault(); } : onClose}
+              title={locked ? "Only Verified sellers can request withdrawals" : undefined}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
+                transition: "background 0.15s",
+                color: isActive ? "#E8611A" : locked ? "#C4C4C4" : "#6B7280",
+                background: isActive ? "rgba(232,97,26,0.10)" : "transparent",
+                cursor: locked ? "not-allowed" : "pointer",
+                opacity: locked ? 0.6 : 1,
+              }}
+            >
+              <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
+              <span style={{ flex: 1 }}>{label}</span>
+              {locked && (
+                <span style={{ fontSize: 9, fontWeight: 700, background: "#FEF3C7", color: "#92400E", padding: "2px 6px", borderRadius: 50 }}>
+                  Verified only
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div style={{ padding: "12px 10px", borderTop: "1px solid #EBEBEB", display: "flex", flexDirection: "column", gap: 4 }}>
+        <Link
+          to="/"
+          onClick={onClose}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#6B7280", textDecoration: "none" }}
+        >
+          <Home style={{ width: 16, height: 16 }} /> Storefront
+        </Link>
+        <button
+          onClick={signOut}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#6B7280", background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left" as const }}
+        >
+          <LogOut style={{ width: 16, height: 16 }} /> Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function SellerLayout() {
+  const { user, loading: authLoading } = useAuth();
+  const { seller, isLoading: sellerLoading } = useSeller();
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) void navigate({ to: "/auth" });
-  }, [user, loading, navigate]);
+    if (authLoading || sellerLoading) return;
+    if (!user) { void navigate({ to: "/auth" }); return; }
+    if (!seller) { void navigate({ to: "/become-seller" }); return; }
 
-  useEffect(() => {
-    if (!user) { setIsAdmin(false); return; }
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle()
-      .then(({ data }) => setIsAdmin(!!data));
-  }, [user]);
+    const status = seller.verification_status as string;
+
+    // Suspended: no dashboard access
+    if (status === "suspended") {
+      void navigate({ to: "/" });
+      return;
+    }
+
+    // Legacy rejected: redirect home
+    if (status === "rejected") {
+      void navigate({ to: "/" });
+      return;
+    }
+
+    // Legacy pending: treat as basic (still gets access)
+    // basic + verified: allow through — no redirect needed
+  }, [user, seller, authLoading, sellerLoading, navigate]);
 
   async function signOut() {
     await supabase.auth.signOut();
     void navigate({ to: "/" });
   }
 
-  if (loading) {
+  if (authLoading || sellerLoading) {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <Navbar />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
-        <Footer />
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F9FAFB" }}>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #E8611A", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
-  const isOnSubRoute = pathname !== "/account" && pathname !== "/account/";
-  const currentTitle = PAGE_TITLES[pathname] ?? "Account";
-  const initials = ((user?.email ?? "?")[0] ?? "?").toUpperCase();
+  const storeName = seller?.store_name ?? "My Store";
+  const sellerStatus = (seller?.verification_status as string) ?? "basic";
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
-      <Navbar />
+    <div style={{ display: "flex", minHeight: "100vh", background: "#F9FAFB" }}>
+      {/* Desktop sidebar */}
+      <aside style={{ width: 224, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", flexShrink: 0, display: "flex", flexDirection: "column" }} className="hidden md:flex">
+        <SidebarContent onClose={() => {}} signOut={signOut} storeName={storeName} sellerStatus={sellerStatus} />
+      </aside>
 
-      <div className="flex-1 w-full max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div className="flex gap-6 items-start">
-
-          {/* Desktop sidebar */}
-          <aside className="hidden md:flex flex-col w-56 flex-shrink-0">
-            <div className="bg-white rounded-2xl border border-[#EBEBEB] overflow-hidden shadow-sm">
-              {/* User identity */}
-              <div className="px-4 py-4 border-b border-[#F0F0F0]">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-extrabold flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }}
-                  >
-                    {initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-[#1A1A1A] truncate">{user?.email}</p>
-                    <p className="text-[11px] text-[#9B9B9B] mt-0.5">My Account</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Nav items */}
-              <nav className="p-2">
-                {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
-                  const active = pathname === to || pathname.startsWith(to + "/");
-                  return (
-                    <Link
-                      key={to}
-                      to={to}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "9px 12px",
-                        borderRadius: 10,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        transition: "background 0.12s",
-                        color: active ? "#E8611A" : "#6B7280",
-                        background: active ? "rgba(232,97,26,0.08)" : "transparent",
-                      }}
-                    >
-                      <Icon style={{ width: 15, height: 15, flexShrink: 0 }} />
-                      {label}
-                    </Link>
-                  );
-                })}
-              </nav>
-
-              {/* Footer links */}
-              <div className="p-2 border-t border-[#F0F0F0]">
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10, padding: "9px 12px",
-                      borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
-                      color: "#E8611A", background: "transparent",
-                    }}
-                  >
-                    <LayoutDashboard style={{ width: 15, height: 15, flexShrink: 0 }} />
-                    Admin Panel
-                  </Link>
-                )}
-                <button
-                  onClick={signOut}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10, padding: "9px 12px",
-                    borderRadius: 10, fontSize: 13, fontWeight: 600, color: "#EF4444",
-                    background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "left",
-                  }}
-                >
-                  <LogOut style={{ width: 15, height: 15, flexShrink: 0 }} />
-                  Sign Out
-                </button>
-              </div>
-            </div>
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <>
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }} onClick={() => setSidebarOpen(false)} />
+          <aside style={{ position: "fixed", left: 0, top: 0, bottom: 0, width: 248, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", zIndex: 50, display: "flex", flexDirection: "column" }}>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              style={{ position: "absolute", top: 16, right: 16, width: 28, height: 28, background: "#F3F4F6", border: "none", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+            >
+              <X style={{ width: 14, height: 14, color: "#6B7280" }} />
+            </button>
+            <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} storeName={storeName} sellerStatus={sellerStatus} />
           </aside>
+        </>
+      )}
 
-          {/* Main content */}
-          <div className="flex-1 min-w-0">
-            {/* Mobile back navigation (shown on sub-routes) */}
-            {isOnSubRoute && (
-              <div className="md:hidden flex items-center gap-3 mb-4 px-1">
-                <Link
-                  to="/account"
-                  className="flex items-center gap-1.5 text-sm font-semibold text-[#6B7280] hover:text-[#E8611A] transition-colors"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Account
-                </Link>
-                <span className="text-[#D1D5DB]">/</span>
-                <span className="text-sm font-semibold text-[#0D0D0D]">{currentTitle}</span>
-              </div>
-            )}
-
-            <Outlet />
+      {/* Main */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        {/* Mobile header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#FFFFFF", borderBottom: "1px solid #EBEBEB" }} className="flex md:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            style={{ width: 36, height: 36, background: "#F3F4F6", border: "none", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <Menu style={{ width: 18, height: 18, color: "#3A3A3A" }} />
+          </button>
+          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 16, color: "#E8611A" }}>Seller Dashboard</span>
+          <div style={{ marginLeft: "auto" }}>
+            <StatusPill status={sellerStatus} />
           </div>
         </div>
+        <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+          <Outlet />
+        </div>
       </div>
-
-      <Footer />
     </div>
   );
 }
