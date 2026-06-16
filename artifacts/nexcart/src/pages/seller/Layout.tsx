@@ -234,7 +234,7 @@ export default function SellerLayout() {
       <style>{`
         .seller-sidebar-desktop { display: flex; }
         .seller-mobile-header   { display: none; }
-        @media (max-width: 767px) {
+        @media (max-width: 1023px) {
           .seller-sidebar-desktop { display: none !important; }
           .seller-mobile-header   { display: flex !important; }
         }

@@ -1,78 +1,39 @@
-import { Link } from "@tanstack/react-router";
-import { User, Package, Heart, MapPin, Settings, LogOut, ChevronRight, LayoutDashboard, CreditCard } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  User, Package, Heart, MapPin, Settings,
+  LogOut, ChevronRight, LayoutDashboard, CreditCard,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useState, useEffect } from "react";
-import { useNavigate } from "@tanstack/react-router";
 
 const MENU_ITEMS = [
-  {
-    to: "/account/profile",
-    label: "My Profile",
-    desc: "Name, email, phone, password",
-    icon: User,
-  },
-  {
-    to: "/account/orders",
-    label: "My Orders",
-    desc: "Order history and tracking",
-    icon: Package,
-  },
-  {
-    to: "/account/wishlist",
-    label: "Wishlist",
-    desc: "Saved products",
-    icon: Heart,
-  },
-  {
-    to: "/account/addresses",
-    label: "Addresses",
-    desc: "Manage delivery addresses",
-    icon: MapPin,
-  },
-  {
-    to: "/account/settings",
-    label: "Settings",
-    desc: "Currency, notifications and preferences",
-    icon: Settings,
-  },
-  {
-    to: "/account/payment-settings",
-    label: "Preferred Payment",
-    desc: "Set your checkout payment preference",
-    icon: CreditCard,
-  },
+  { to: "/account/profile",          label: "My Profile",        desc: "Name, email, phone, password",               icon: User },
+  { to: "/account/orders",           label: "My Orders",         desc: "Order history and tracking",                 icon: Package },
+  { to: "/account/wishlist",         label: "Wishlist",          desc: "Saved products",                             icon: Heart },
+  { to: "/account/addresses",        label: "Addresses",         desc: "Manage delivery addresses",                  icon: MapPin },
+  { to: "/account/settings",         label: "Settings",          desc: "Currency, notifications and preferences",    icon: Settings },
+  { to: "/account/payment-settings", label: "Preferred Payment", desc: "Set your checkout payment preference",       icon: CreditCard },
 ] as const;
 
 export default function AccountHub() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { count: wishlistCount } = useWishlist();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin]   = useState(false);
   const [fullName, setFullName] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setFullName((data as { full_name: string | null }).full_name ?? "");
-      });
+    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle()
+      .then(({ data }) => { if (data) setFullName((data as any).full_name ?? ""); });
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle()
+    supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle()
       .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
@@ -81,9 +42,7 @@ export default function AccountHub() {
     enabled: !!user,
     queryFn: async () => {
       const { count } = await supabase
-        .from("orders")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user!.id);
+        .from("orders").select("id", { count: "exact", head: true }).eq("user_id", user!.id);
       return count ?? 0;
     },
   });
@@ -94,33 +53,21 @@ export default function AccountHub() {
   }
 
   const displayName = fullName || user?.email?.split("@")[0] || "User";
-  const initials = ((fullName?.[0] ?? user?.email?.[0] ?? "?")).toUpperCase();
+  const initials    = (fullName?.[0] ?? user?.email?.[0] ?? "?").toUpperCase();
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-      {/* User identity card */}
+      {/* ── User card ── */}
       <div style={{
-        background: "#FFFFFF",
-        borderRadius: 16,
-        border: "1px solid #EBEBEB",
-        padding: "20px",
-        display: "flex",
-        alignItems: "center",
-        gap: 16,
+        background: "#FFFFFF", borderRadius: 16, border: "1px solid #EBEBEB",
+        padding: "20px", display: "flex", alignItems: "center", gap: 16,
       }}>
         <div style={{
-          width: 52,
-          height: 52,
-          borderRadius: "50%",
+          width: 52, height: 52, borderRadius: "50%", flexShrink: 0,
           background: "linear-gradient(135deg,#E8611A,#C4511A)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#fff",
-          fontSize: 20,
-          fontWeight: 800,
-          flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#fff", fontSize: 20, fontWeight: 800,
         }}>
           {initials}
         </div>
@@ -132,7 +79,7 @@ export default function AccountHub() {
             {user?.email}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 24, flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 20, flexShrink: 0 }}>
           <div style={{ textAlign: "center" }}>
             <p style={{ fontWeight: 800, fontSize: 17, color: "#0D0D0D", margin: 0 }}>{ordersCount ?? 0}</p>
             <p style={{ fontSize: 11, color: "#9B9B9B", fontWeight: 500, margin: "2px 0 0" }}>Orders</p>
@@ -145,39 +92,23 @@ export default function AccountHub() {
         </div>
       </div>
 
-      {/* Menu items */}
-      <div style={{
-        background: "#FFFFFF",
-        borderRadius: 16,
-        border: "1px solid #EBEBEB",
-        overflow: "hidden",
-      }}>
-        {MENU_ITEMS.map(({ to, label, desc, icon: Icon }, index) => (
+      {/* ── Menu list ── */}
+      <div style={{ background: "#FFFFFF", borderRadius: 16, border: "1px solid #EBEBEB", overflow: "hidden" }}>
+        {MENU_ITEMS.map(({ to, label, desc, icon: Icon }, i) => (
           <Link
             key={to}
             to={to}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              padding: "16px 18px",
-              textDecoration: "none",
-              borderBottom: index < MENU_ITEMS.length - 1 ? "1px solid #F5F5F5" : "none",
+              display: "flex", alignItems: "center", gap: 14,
+              padding: "16px 18px", textDecoration: "none",
               background: "#FFFFFF",
-              transition: "background 0.1s",
+              borderBottom: i < MENU_ITEMS.length - 1 ? "1px solid #F5F5F5" : "none",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#FAFAFA")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#FFFFFF")}
           >
             <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
               background: "#F3F4F6",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <Icon style={{ width: 17, height: 17, color: "#6B7280" }} />
             </div>
@@ -190,37 +121,20 @@ export default function AccountHub() {
         ))}
       </div>
 
-      {/* Admin panel — only visible to admins */}
+      {/* ── Admin (admins only) ── */}
       {isAdmin && (
-        <div style={{
-          background: "#FFFFFF",
-          borderRadius: 16,
-          border: "1px solid #EBEBEB",
-          overflow: "hidden",
-        }}>
+        <div style={{ background: "#FFFFFF", borderRadius: 16, border: "1px solid #EBEBEB", overflow: "hidden" }}>
           <Link
             to="/admin"
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              padding: "16px 18px",
-              textDecoration: "none",
-              background: "#FFFFFF",
-              transition: "background 0.1s",
+              display: "flex", alignItems: "center", gap: 14,
+              padding: "16px 18px", textDecoration: "none", background: "#FFFFFF",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#FAFAFA")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#FFFFFF")}
           >
             <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
               background: "#F3F4F6",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               <LayoutDashboard style={{ width: 17, height: 17, color: "#6B7280" }} />
             </div>
@@ -233,27 +147,15 @@ export default function AccountHub() {
         </div>
       )}
 
-      {/* Sign out */}
+      {/* ── Sign out ── */}
       <button
         onClick={signOut}
         style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          padding: "14px",
-          borderRadius: 16,
-          border: "1px solid #FECACA",
-          background: "#FFFFFF",
-          color: "#EF4444",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: "pointer",
-          transition: "background 0.1s",
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+          gap: 8, padding: "15px", borderRadius: 16,
+          border: "1px solid #FECACA", background: "#FFFFFF",
+          color: "#EF4444", fontSize: 14, fontWeight: 600, cursor: "pointer",
         }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "#FEF2F2")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = "#FFFFFF")}
       >
         <LogOut style={{ width: 16, height: 16 }} />
         Sign Out
