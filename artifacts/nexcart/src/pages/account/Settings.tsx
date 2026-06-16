@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Settings, Globe, CreditCard, Truck, ShoppingBag,
   ChevronRight, Check, Loader2,
+  Monitor, Shirt, Sparkles, Home, Dumbbell,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
@@ -26,11 +27,11 @@ const LANGUAGES = [
 ];
 
 const SHOPPING_CATEGORIES = [
-  { id: "electronics",   label: "Electronics",      emoji: "📱" },
-  { id: "fashion",       label: "Fashion",           emoji: "👗" },
-  { id: "beauty",        label: "Beauty",            emoji: "💄" },
-  { id: "home-living",   label: "Home & Living",     emoji: "🏠" },
-  { id: "sports-fitness",label: "Sports & Fitness",  emoji: "🏋️" },
+  { id: "electronics",   label: "Electronics",      icon: Monitor },
+  { id: "fashion",       label: "Fashion",           icon: Shirt },
+  { id: "beauty",        label: "Beauty",            icon: Sparkles },
+  { id: "home-living",   label: "Home & Living",     icon: Home },
+  { id: "sports-fitness",label: "Sports & Fitness",  icon: Dumbbell },
 ];
 
 // ── Section Card wrapper ─────────────────────────────────────────────────────
@@ -331,7 +332,7 @@ export default function AccountSettings() {
                     transition: "all 0.15s",
                   }}
                 >
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{cat.emoji}</span>
+                  <cat.icon style={{ width: 18, height: 18, flexShrink: 0, color: checked ? "#E8611A" : "#6B7280" }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0D", flex: 1 }}>
                     {cat.label}
                   </span>
