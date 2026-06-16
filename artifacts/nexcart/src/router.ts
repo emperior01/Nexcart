@@ -104,11 +104,11 @@ const sellOnNexcartRoute = createRoute({
   component: BecomeSellerPage,
 });
 
-// Alias: /seller/dashboard → same as /seller
+// /seller/dashboard → redirect to /seller
 const sellerDashboardAliasRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/seller/dashboard",
-  component: SellerLayout,
+  beforeLoad: () => { throw redirect({ to: "/seller" }); },
 });
 
 const orderSuccessRoute = createRoute({
