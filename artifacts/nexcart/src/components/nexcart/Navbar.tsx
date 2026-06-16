@@ -95,6 +95,14 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         style={{ background: "#FFFFFF", borderBottom: "1px solid #EFEFEF" }}
       >
         <div className="flex items-center">
+          <button
+            className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-[#F4F4F4] mr-2"
+            style={{ color: "#3A3A3A" }}
+            aria-label="Menu"
+            onClick={() => setMobileOpen(v => !v)}
+          >
+            <Menu className="h-5 w-5" strokeWidth={1.8} />
+          </button>
           <Logo />
           <nav className="hidden md:flex items-center gap-1 ml-8">
             {navLinks.map((l) => (
@@ -275,14 +283,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
             )}
           </button>
 
-          <button
-            className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-colors hover:bg-[#F4F4F4]"
-            style={{ color: "#3A3A3A" }}
-            aria-label="Menu"
-            onClick={() => setMobileOpen(v => !v)}
-          >
-            <Menu className="h-5 w-5" strokeWidth={1.8} />
-          </button>
+
         </div>
       </div>
 
