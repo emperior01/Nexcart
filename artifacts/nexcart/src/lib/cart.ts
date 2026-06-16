@@ -23,6 +23,8 @@ interface CartState {
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
+  saveForUser: (userId: string) => void;
+  restoreForUser: (userId: string) => void;
 }
 
 function computeDerived(items: CartItem[]) {
@@ -78,6 +80,27 @@ export const useCart = create<CartState>()(
 
       clearCart() {
         set({ items: [], count: 0, total: 0 });
+      },
+
+      saveForUser(userId: string) {
+        const { items } = useCart.getState();
+        if (items.length > 0) {
+          localStorage.setItem(`nexcart-cart-${userId}`, JSON.stringify(items));
+        }
+      },
+
+      restoreForUser(userId: string) {
+        const saved = localStorage.getItem(`nexcart-cart-${userId}`);
+        if (!saved) return;
+        try {
+          const items: CartItem[] = JSON.parse(saved);
+          if (items.length > 0) {
+            set({ items, ...computeDerived(items) });
+          }
+          localStorage.removeItem(`nexcart-cart-${userId}`);
+        } catch {
+          localStorage.removeItem(`nexcart-cart-${userId}`);
+        }
       },
 
       openCart() {

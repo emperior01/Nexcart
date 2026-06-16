@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useCart } from "@/lib/cart";
 
 interface AuthState {
   user: User | null;
@@ -15,15 +16,21 @@ export function useAuth(): AuthState {
     loading: true,
   });
 
+  const restoreForUser = useCart((s) => s.restoreForUser);
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setState({ user: session?.user ?? null, session, loading: false });
+      if (session?.user) restoreForUser(session.user.id);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setState({ user: session?.user ?? null, session, loading: false });
+      if (event === "SIGNED_IN" && session?.user) {
+        restoreForUser(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();

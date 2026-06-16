@@ -50,7 +50,7 @@ const iconWrap = (active = false, danger = false) => ({
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
   const { isSeller, isVerified, isActiveSeller, isLoading: sellerLoading } = useSeller();
-  const { count, openCart, clearCart } = useCart();
+  const { count, openCart, clearCart, saveForUser } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -75,13 +75,11 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
     if (!menuOpen) return;
     function onOutsideClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        clearCart();
-    setMenuOpen(false);
+        setMenuOpen(false);
       }
     }
     function onEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") clearCart();
-    setMenuOpen(false);
+      if (e.key === "Escape") setMenuOpen(false);
     }
     document.addEventListener("mousedown", onOutsideClick);
     document.addEventListener("keydown", onEscape);
@@ -92,7 +90,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
   }, [menuOpen]);
 
   async function handleSignOut() {
-    clearCart();
+    if (user) saveForUser(user.id);
     clearCart();
     setMenuOpen(false);
     setMobileOpen(false);

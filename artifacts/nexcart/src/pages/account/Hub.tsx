@@ -22,7 +22,7 @@ export default function AccountHub() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { count: wishlistCount } = useWishlist();
-  const { clearCart } = useCart();
+  const { clearCart, saveForUser } = useCart();
   const [isAdmin, setIsAdmin]   = useState(false);
   const [fullName, setFullName] = useState("");
 
@@ -49,6 +49,7 @@ export default function AccountHub() {
   });
 
   async function signOut() {
+    if (user) saveForUser(user.id);
     clearCart();
     await supabase.auth.signOut();
     void navigate({ to: "/" });
