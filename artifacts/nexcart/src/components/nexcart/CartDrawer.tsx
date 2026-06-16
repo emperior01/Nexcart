@@ -188,7 +188,21 @@ export function CartDrawer() {
               <span style={{ fontSize: 12, color: "#6B7280" }}>Have a promo code? Apply it at checkout.</span>
             </div>
 
-            {/* Checkout button */}
+            {/* View full cart + Checkout button */}
+            <Link
+              to="/cart"
+              onClick={closeCart}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                padding: "12px", borderRadius: 14,
+                border: "2px solid #E8611A",
+                color: "#E8611A", fontWeight: 700, fontSize: 14,
+                textDecoration: "none", background: "#fff",
+              }}
+            >
+              View Full Cart
+            </Link>
+
             <Link
               to="/checkout"
               onClick={closeCart}

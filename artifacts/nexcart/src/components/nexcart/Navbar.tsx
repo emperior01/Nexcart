@@ -288,7 +288,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
           )}
 
           <button
-            onClick={openCart}
+            onClick={() => void navigate({ to: "/cart" })}
             aria-label="Cart"
             className="w-9 h-9 flex items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4] relative"
             style={{ color: "#3A3A3A" }}

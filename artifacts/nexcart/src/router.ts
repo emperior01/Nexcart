@@ -40,8 +40,8 @@ import SellerSettings from "@/pages/seller/Settings";
 import SellerNotifications from "@/pages/seller/Notifications";
 import BecomeSellerPage from "@/pages/BecomeSeller";
 import OrderSuccessPage from "@/pages/OrderSuccess";
-import StorePage from "@/pages/Store";
 import CartPage from "@/pages/Cart";
+import StorePage from "@/pages/Store";
 import NotFound from "@/pages/not-found";
 
 function RootComponent() {
@@ -82,6 +82,12 @@ const checkoutRoute = createRoute({
   component: CheckoutPage,
 });
 
+const cartRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/cart",
+  component: CartPage,
+});
+
 const authRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth",
@@ -118,12 +124,6 @@ const orderSuccessRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/order-success",
   component: OrderSuccessPage,
-});
-
-const cartRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/cart",
-  component: CartPage,
 });
 
 const storeRoute = createRoute({
@@ -293,12 +293,12 @@ const routeTree = rootRoute.addChildren([
   shopRoute,
   productDetailRoute,
   checkoutRoute,
+  cartRoute,
   authRoute,
   wishlistRoute,
   becomeSellerRoute,
   sellOnNexcartRoute,
   orderSuccessRoute,
-  cartRoute,
   storeRoute,
   accountRoute.addChildren([
     accountIndexRoute,
