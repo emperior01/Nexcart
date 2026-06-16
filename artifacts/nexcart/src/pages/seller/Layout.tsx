@@ -219,6 +219,11 @@ export default function SellerLayout() {
     );
   }
 
+  // Redirect is already firing in the useEffect above.
+  // Render nothing while it resolves to prevent the seller layout
+  // from flashing on top of other pages (e.g. /account).
+  if (!user || !seller) return null;
+
   const storeName = seller?.store_name ?? "My Store";
   const sellerStatus = (seller?.verification_status as string) ?? "basic";
   const sellerId = seller?.id ?? "";
