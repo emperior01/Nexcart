@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { User, Package, Heart, MapPin, Settings, LogOut, ChevronRight, LayoutDashboard } from "lucide-react";
+import { User, Package, Heart, MapPin, Settings, LogOut, ChevronRight, LayoutDashboard, CreditCard } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +47,14 @@ const MENU_ITEMS = [
     icon: Settings,
     color: "#6B7280",
     bg: "#F9FAFB",
+  },
+  {
+    to: "/account/payment-settings",
+    label: "Payment Settings",
+    desc: "View accepted payment methods",
+    icon: CreditCard,
+    color: "#E8611A",
+    bg: "#FEF0E8",
   },
 ] as const;
 

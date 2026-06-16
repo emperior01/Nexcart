@@ -18,6 +18,7 @@ import AccountOrders from "@/pages/account/Orders";
 import AccountWishlist from "@/pages/account/Wishlist";
 import AccountAddresses from "@/pages/account/Addresses";
 import AccountSettings from "@/pages/account/Settings";
+import AccountPaymentSettings from "@/pages/account/PaymentSettings";
 import WishlistPage from "@/pages/Wishlist";
 import AdminLayout from "@/pages/admin/Layout";
 import AdminDashboard from "@/pages/admin/Dashboard";
@@ -27,6 +28,7 @@ import AdminUsers from "@/pages/admin/Users";
 import AdminSettings from "@/pages/admin/Settings";
 import AdminSellers from "@/pages/admin/Sellers";
 import AdminWithdrawals from "@/pages/admin/Withdrawals";
+import AdminPayments from "@/pages/admin/Payments";
 import SellerLayout from "@/pages/seller/Layout";
 import SellerDashboard from "@/pages/seller/Dashboard";
 import SellerProducts from "@/pages/seller/Products";
@@ -165,6 +167,12 @@ const accountSettingsRoute = createRoute({
   component: AccountSettings,
 });
 
+const accountPaymentSettingsRoute = createRoute({
+  getParentRoute: () => accountRoute,
+  path: "/payment-settings",
+  component: AccountPaymentSettings,
+});
+
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/admin",
@@ -211,6 +219,12 @@ const adminWithdrawalsRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: "/withdrawals",
   component: AdminWithdrawals,
+});
+
+const adminPaymentsRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: "/payments",
+  component: AdminPayments,
 });
 
 const sellerRoute = createRoute({
@@ -285,6 +299,7 @@ const routeTree = rootRoute.addChildren([
     accountWishlistRoute,
     accountAddressesRoute,
     accountSettingsRoute,
+    accountPaymentSettingsRoute,
   ]),
   adminRoute.addChildren([
     adminIndexRoute,
@@ -294,6 +309,7 @@ const routeTree = rootRoute.addChildren([
     adminSettingsRoute,
     adminSellersRoute,
     adminWithdrawalsRoute,
+    adminPaymentsRoute,
   ]),
   sellerRoute.addChildren([
     sellerIndexRoute,

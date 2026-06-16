@@ -1,6 +1,17 @@
-import { useEffect, useState } from "react";
+#!/usr/bin/env python3
+"""
+Fix admin Layout.tsx mobile responsiveness.
+Run from inside ~/nexcart_scott:
+    python3 fix_admin_layout_mobile.py
+"""
+import os
+
+BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "artifacts/nexcart")
+path = os.path.join(BASE, "src/pages/admin/Layout.tsx")
+
+content = r'''import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet, CreditCard } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,7 +23,6 @@ const navItems = [
   { to: "/users",       label: "Users",             icon: Users },
   { to: "/sellers",     label: "Sellers",           icon: Store },
   { to: "/withdrawals", label: "Withdrawals",       icon: Wallet },
-  { to: "/payments",    label: "Payment Settings",  icon: CreditCard },
   { to: "/settings",    label: "Homepage Settings", icon: Settings },
 ] as const;
 
@@ -203,3 +213,15 @@ export default function AdminLayout() {
     </div>
   );
 }
+'''
+
+os.makedirs(os.path.dirname(path), exist_ok=True)
+with open(path, "w", encoding="utf-8") as f:
+    f.write(content.lstrip("\n"))
+
+print(f"✅ Fixed: {path.replace(os.path.expanduser('~'), '~')}")
+print("\nNow run:")
+print("  cd ~/nexcart_scott")
+print("  git add artifacts/nexcart/src/pages/admin/Layout.tsx")
+print('  git commit -m "fix: admin layout proper mobile responsiveness"')
+print("  git push")

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ShoppingCart, ArrowLeft, CreditCard, Loader2 } from "lucide-react";
+import { ShoppingCart, ArrowLeft, CreditCard, Loader2, Bitcoin, Copy, CheckCircle } from "lucide-react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useActivePaymentMethods, type PaymentMethod } from "@/hooks/use-payment-methods";
 import { toast } from "sonner";
 
 const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string;
@@ -31,11 +32,126 @@ async function verifyAndCreateOrder(
   return res.data;
 }
 
+// ── Crypto Payment Panel ────────────────────────────────────────────────────
+function CryptoPaymentPanel({
+  method,
+  total,
+  cartCurrency,
+  onCancel,
+}: {
+  method: PaymentMethod;
+  total: number;
+  cartCurrency: string;
+  onCancel: () => void;
+}) {
+  const [selectedCoin, setSelectedCoin] = useState<string>(method.supported_currencies[0] ?? "BTC");
+  const [txHash, setTxHash] = useState("");
+  const [copied, setCopied] = useState(false);
+  const wallets = (method.config?.wallets ?? {}) as Record<string, string>;
+  const walletAddress = wallets[selectedCoin] ?? "";
+
+  function copyAddress() {
+    if (!walletAddress) return;
+    navigator.clipboard.writeText(walletAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function submitTxHash() {
+    if (!txHash.trim()) { toast.error("Please enter your transaction hash."); return; }
+    toast.success("Transaction submitted! Your order will be confirmed after verification.");
+    // In a full implementation, this would call a Supabase function to log the pending crypto payment
+  }
+
+  return (
+    <div className="rounded-2xl border border-[#F0F0F0] bg-[#FAFAFA] p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <Bitcoin className="h-4 w-4 text-[#F7931A]" />
+        <p className="font-extrabold text-[#0D0D0D] text-sm">Pay with Crypto</p>
+      </div>
+
+      {/* Coin selector */}
+      <div className="flex gap-2 flex-wrap">
+        {method.supported_currencies.map((coin) => (
+          <button
+            key={coin}
+            onClick={() => setSelectedCoin(coin)}
+            className="px-3 py-1.5 rounded-full text-xs font-bold border transition-all"
+            style={{
+              background: selectedCoin === coin ? "#F7931A" : "#fff",
+              color: selectedCoin === coin ? "#fff" : "#6B7280",
+              borderColor: selectedCoin === coin ? "#F7931A" : "#E5E7EB",
+            }}
+          >
+            {coin}
+          </button>
+        ))}
+      </div>
+
+      {walletAddress ? (
+        <>
+          <div className="bg-white rounded-xl border border-[#EBEBEB] p-4">
+            <p className="text-xs text-[#9B9B9B] mb-1">Send exactly</p>
+            <p className="font-extrabold text-[#0D0D0D] text-base">{total.toFixed(8)} {selectedCoin}</p>
+            <p className="text-xs text-[#9B9B9B] mt-1">(≈ {formatPrice(total, cartCurrency, cartCurrency)} at checkout rate)</p>
+          </div>
+
+          <div className="bg-white rounded-xl border border-[#EBEBEB] p-4">
+            <p className="text-xs text-[#9B9B9B] mb-2">To this {selectedCoin} address:</p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs text-[#0D0D0D] font-mono break-all bg-[#F9FAFB] p-2 rounded-lg">
+                {walletAddress}
+              </code>
+              <button
+                onClick={copyAddress}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] transition-colors flex-shrink-0"
+              >
+                {copied ? <CheckCircle className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-[#6B7280]" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Transaction Hash (after sending)</Label>
+            <Input
+              value={txHash}
+              onChange={(e) => setTxHash(e.target.value)}
+              placeholder="0x... or txid..."
+              className="font-mono text-xs"
+            />
+          </div>
+
+          <Button
+            onClick={submitTxHash}
+            className="w-full text-white font-bold"
+            style={{ background: "linear-gradient(135deg,#F7931A,#E8611A)" }}
+          >
+            I've Sent the Payment
+          </Button>
+        </>
+      ) : (
+        <div className="bg-white rounded-xl border border-[#EBEBEB] p-4 text-center">
+          <p className="text-sm text-[#9B9B9B]">
+            {selectedCoin} wallet not configured yet. Please choose another coin or contact support.
+          </p>
+        </div>
+      )}
+
+      <button onClick={onCancel} className="text-xs text-[#9B9B9B] hover:text-[#6B7280] underline w-full text-center">
+        ← Back to payment methods
+      </button>
+    </div>
+  );
+}
+
+// ── Main Checkout Page ────────────────────────────────────────────────────────
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { items, total, clearCart } = useCart();
   const { currency } = useCurrency();
+  const { data: paymentMethods, isLoading: loadingMethods } = useActivePaymentMethods();
+
   const [email, setEmail] = useState(user?.email ?? "");
   const [fullName, setFullName] = useState("");
   const [address, setAddress] = useState("");
@@ -43,34 +159,32 @@ export default function CheckoutPage() {
   const [country, setCountry] = useState("");
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+  const [showCrypto, setShowCrypto] = useState(false);
 
-  // ── Handle Paystack redirect-back ──────────────────────────────────────────
+  // Auto-select first active method when loaded
+  useEffect(() => {
+    if (paymentMethods && paymentMethods.length > 0 && !selectedMethod) {
+      setSelectedMethod(paymentMethods[0]);
+    }
+  }, [paymentMethods]);
+
+  // ── Handle Paystack redirect-back ─────────────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     let reference = params.get("reference") ?? params.get("trxref");
-
     if (!reference) return;
-
-    // Clean URL immediately
     window.history.replaceState({}, "", window.location.pathname);
-
     const saved = sessionStorage.getItem("nexcart_checkout");
-    if (!saved) {
-      toast.error("Session lost. Contact support with ref: " + reference);
-      return;
-    }
-
+    if (!saved) { toast.error("Session lost. Contact support with ref: " + reference); return; }
     let parsed: {
       savedItems: typeof items;
       shippingAddress: { full_name: string; address: string; city: string; country: string };
       cartCurrency: string;
-      pendingRef?: string;
     };
     try { parsed = JSON.parse(saved); } catch {
-      toast.error("Session data corrupted. Contact support with ref: " + reference);
-      return;
+      toast.error("Session data corrupted. Contact support with ref: " + reference); return;
     }
-
     setVerifying(true);
     verifyAndCreateOrder(
       reference,
@@ -122,33 +236,39 @@ export default function CheckoutPage() {
   const cartCurrency = items[0]?.currency ?? "NGN";
   const paystackAmount = Math.round(total * 100);
 
-  async function handleCheckout() {
+  function validateForm() {
     if (!email || !fullName || !address || !city || !country) {
       toast.error("Please fill in all shipping details.");
-      return;
+      return false;
     }
-    if (!PAYSTACK_PUBLIC_KEY) {
-      toast.error("Payment is not configured yet.");
-      return;
-    }
-
-    setLoading(true);
-
-    const shippingAddress = { full_name: fullName, address, city, country };
-    // Save everything to sessionStorage BEFORE redirecting
-    // Do NOT pre-generate a ref — Paystack will generate its own and return it as trxref
-    sessionStorage.setItem("nexcart_checkout", JSON.stringify({
-      savedItems: items,
-      shippingAddress,
-      cartCurrency,
-    }));
-
-    // Build Paystack URL and redirect directly — works reliably on mobile
-    const callbackUrl = encodeURIComponent(`${window.location.origin}/checkout`);
-    const paystackUrl = `https://checkout.paystack.com/pay?key=${PAYSTACK_PUBLIC_KEY}&email=${encodeURIComponent(email)}&amount=${paystackAmount}&currency=${cartCurrency}&callback_url=${callbackUrl}`;
-
-    window.location.href = paystackUrl;
+    return true;
   }
+
+  async function handlePaystackCheckout() {
+    if (!validateForm()) return;
+    if (!PAYSTACK_PUBLIC_KEY) { toast.error("Paystack is not configured yet."); return; }
+    setLoading(true);
+    const shippingAddress = { full_name: fullName, address, city, country };
+    sessionStorage.setItem("nexcart_checkout", JSON.stringify({ savedItems: items, shippingAddress, cartCurrency }));
+    const callbackUrl = encodeURIComponent(`${window.location.origin}/checkout`);
+    window.location.href = `https://checkout.paystack.com/pay?key=${PAYSTACK_PUBLIC_KEY}&email=${encodeURIComponent(email)}&amount=${paystackAmount}&currency=${cartCurrency}&callback_url=${callbackUrl}`;
+  }
+
+  async function handleCheckout() {
+    if (!selectedMethod) { toast.error("Please select a payment method."); return; }
+    if (selectedMethod.provider === "paystack") { await handlePaystackCheckout(); return; }
+    if (selectedMethod.type === "crypto") {
+      if (!validateForm()) return;
+      setShowCrypto(true);
+      return;
+    }
+    toast.info(`${selectedMethod.name} integration coming soon.`);
+  }
+
+  const PROVIDER_META: Record<string, { emoji: string }> = {
+    paystack: { emoji: "🇳🇬" }, flutterwave: { emoji: "🦋" },
+    stripe: { emoji: "💳" }, paypal: { emoji: "🅿️" }, crypto: { emoji: "₿" },
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -164,6 +284,7 @@ export default function CheckoutPage() {
 
           <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
             <div className="space-y-6">
+              {/* Shipping */}
               <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm space-y-4">
                 <h2 className="font-extrabold text-foreground text-base">Contact & Shipping</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -189,8 +310,70 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Payment Method Selection */}
+              <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm space-y-4">
+                <h2 className="font-extrabold text-foreground text-base">Payment Method</h2>
+
+                {loadingMethods ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Loading payment options…
+                  </div>
+                ) : paymentMethods?.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-muted-foreground">No payment methods available. Please contact support.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {paymentMethods?.map((method) => {
+                      const meta = PROVIDER_META[method.provider] ?? { emoji: "💰" };
+                      const isSelected = selectedMethod?.id === method.id;
+                      return (
+                        <button
+                          key={method.id}
+                          onClick={() => { setSelectedMethod(method); setShowCrypto(false); }}
+                          className="w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all"
+                          style={{
+                            borderColor: isSelected ? "#E8611A" : "#F0F0F0",
+                            background: isSelected ? "#FFF8F5" : "#FAFAFA",
+                          }}
+                        >
+                          <div
+                            className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
+                            style={{ background: isSelected ? "#FEF0E8" : "#F3F4F6" }}
+                          >
+                            {meta.emoji}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-[#0D0D0D] text-sm">{method.name}</p>
+                            <p className="text-xs text-[#9B9B9B] truncate">{method.description}</p>
+                          </div>
+                          <div
+                            className="w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all"
+                            style={{
+                              borderColor: isSelected ? "#E8611A" : "#D1D5DB",
+                              background: isSelected ? "#E8611A" : "transparent",
+                            }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Crypto payment flow */}
+                {showCrypto && selectedMethod?.type === "crypto" && (
+                  <CryptoPaymentPanel
+                    method={selectedMethod}
+                    total={total}
+                    cartCurrency={cartCurrency}
+                    onCancel={() => setShowCrypto(false)}
+                  />
+                )}
+              </div>
             </div>
 
+            {/* Order Summary */}
             <div className="space-y-4">
               <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
                 <h2 className="font-extrabold text-foreground text-base mb-4">Order Summary</h2>
@@ -226,18 +409,24 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <Button
-                onClick={handleCheckout}
-                disabled={loading}
-                className="w-full h-12 gap-2 font-bold text-white text-base"
-                style={{ background: "linear-gradient(135deg, #E8611A, #F5986A)" }}
-              >
-                <CreditCard className="h-5 w-5" />
-                {loading ? "Redirecting to payment…" : `Pay ${formatPrice(total, cartCurrency, currency)}`}
-              </Button>
+              {!showCrypto && (
+                <Button
+                  onClick={handleCheckout}
+                  disabled={loading || loadingMethods || !selectedMethod}
+                  className="w-full h-12 gap-2 font-bold text-white text-base"
+                  style={{ background: "linear-gradient(135deg, #E8611A, #F5986A)" }}
+                >
+                  <CreditCard className="h-5 w-5" />
+                  {loading
+                    ? "Redirecting to payment…"
+                    : selectedMethod
+                    ? `Pay with ${selectedMethod.name}`
+                    : `Pay ${formatPrice(total, cartCurrency, currency)}`}
+                </Button>
+              )}
 
               <p className="text-center text-xs text-muted-foreground">
-                🔒 Secured by Paystack · End-to-end encrypted
+                🔒 Secured · End-to-end encrypted
               </p>
             </div>
           </div>
