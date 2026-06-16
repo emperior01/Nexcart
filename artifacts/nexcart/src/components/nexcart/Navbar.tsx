@@ -50,7 +50,7 @@ const iconWrap = (active = false, danger = false) => ({
 export function Navbar({ announcementText = "Fast delivery · Secure encrypted checkout" }: NavbarProps) {
   const { user, loading } = useAuth();
   const { isSeller, isVerified, isActiveSeller, isLoading: sellerLoading } = useSeller();
-  const { count, openCart } = useCart();
+  const { count, openCart, clearCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -90,6 +90,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
   }, [menuOpen]);
 
   async function handleSignOut() {
+    clearCart();
     setMenuOpen(false);
     setMobileOpen(false);
     await supabase.auth.signOut();
