@@ -4,6 +4,7 @@ import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Home, Settings, M
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { Logo } from "@/components/nexcart/Logo";
 
 const navItems = [
   { to: "",             label: "Dashboard",         icon: LayoutDashboard },
@@ -205,7 +206,7 @@ export default function AdminLayout() {
           >
             <Menu style={{ width: 18, height: 18, color: "#3A3A3A" }} />
           </button>
-          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 16, color: "#E8611A" }}>Nexcart Admin</span>
+          <Logo />
           {pendingSellers > 0 && (
             <span style={{
               minWidth: 20, height: 20, borderRadius: 50,
