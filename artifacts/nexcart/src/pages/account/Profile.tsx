@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Lock, Save, Eye, EyeOff } from "lucide-react";
+import { User, Lock, Save, Eye, EyeOff, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/index";
 import { Skeleton } from "@/components/ui/index";
@@ -20,6 +20,10 @@ export default function AccountProfile() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const [newEmail, setNewEmail] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -50,6 +54,22 @@ export default function AccountProfile() {
     setSaving(false);
     if (error) toast.error(error.message);
     else toast.success("Profile saved!");
+  }
+
+  async function updateEmail() {
+    if (!newEmail.trim()) { toast.error("Enter a new email address."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) { toast.error("Enter a valid email address."); return; }
+    if (newEmail === user?.email) { toast.error("That's already your current email."); return; }
+    setSavingEmail(true);
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    setSavingEmail(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setEmailSent(true);
+      setNewEmail("");
+      toast.success("Verification email sent! Check both your old and new inbox and click the confirmation link.");
+    }
   }
 
   async function updatePassword() {
@@ -118,7 +138,6 @@ export default function AccountProfile() {
               <div className="space-y-1.5">
                 <Label>Email</Label>
                 <Input value={user?.email ?? ""} disabled className="opacity-60" />
-                <p className="text-xs text-[#9B9B9B]">Email cannot be changed here.</p>
               </div>
             </div>
           )}
@@ -132,6 +151,63 @@ export default function AccountProfile() {
             <Save className="h-4 w-4" />
             {saving ? "Saving…" : "Save Profile"}
           </Button>
+        </div>
+      </div>
+
+      {/* Email update section */}
+      <div className="bg-white rounded-2xl border border-[#EBEBEB] shadow-sm overflow-hidden">
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#F0F0F0] bg-[#FAFAFA]">
+          <Mail className="h-4 w-4 text-[#E8611A]" />
+          <h2 className="font-extrabold text-[#0D0D0D] text-sm">Change Email</h2>
+        </div>
+
+        <div className="p-5 space-y-3">
+          {emailSent ? (
+            <div
+              className="rounded-xl p-4 space-y-1"
+              style={{ background: "#F0FDF4", border: "1px solid #BBF7D0" }}
+            >
+              <p className="text-sm font-bold text-[#16A34A]">Verification email sent ✓</p>
+              <p className="text-xs text-[#15803D]">
+                Check your new email inbox (and spam folder) for a confirmation link.
+                Your email will update once you click it.
+              </p>
+              <button
+                onClick={() => setEmailSent(false)}
+                className="text-xs text-[#16A34A] underline mt-1"
+              >
+                Change to a different email
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <Label>Current Email</Label>
+                <Input value={user?.email ?? ""} disabled className="opacity-60" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>New Email</Label>
+                <Input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="Enter new email address"
+                />
+                <p className="text-xs text-[#9B9B9B]">
+                  A verification link will be sent to your new email. Your email updates after you confirm it.
+                </p>
+              </div>
+              <Button
+                onClick={updateEmail}
+                disabled={savingEmail || !newEmail}
+                className="gap-2 text-white w-full sm:w-auto"
+                style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }}
+              >
+                <Mail className="h-4 w-4" />
+                {savingEmail ? "Sending…" : "Send Verification Email"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
