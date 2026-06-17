@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, TrendingUp, Wallet,
   Star, Settings, Bell, LogOut, Home, Menu, X, ShieldCheck, Store,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useSeller } from "@/hooks/use-seller";
@@ -49,13 +50,14 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function SidebarContent({
-  onClose, signOut, storeName, sellerStatus, sellerId,
+  onClose, signOut, storeName, sellerStatus, sellerId, unreadCount,
 }: {
   onClose: () => void;
   signOut: () => void;
   storeName: string;
   sellerStatus: string;
   sellerId: string;
+  unreadCount: number;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isVerified = sellerStatus === "verified";
@@ -63,43 +65,73 @@ function SidebarContent({
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Brand */}
-      <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #EBEBEB" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 18, color: "#E8611A", letterSpacing: "-0.03em" }}>
-            Nexcart
-          </span>
-          <span style={{
-            fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
-            textTransform: "uppercase" as const,
-            background: "rgba(232,97,26,0.12)", color: "#E8611A",
-            padding: "3px 8px", borderRadius: 50,
-            border: "1px solid rgba(232,97,26,0.25)",
+      <div style={{
+        padding: "20px 18px 16px",
+        borderBottom: "1px solid #F3F4F6",
+        background: "linear-gradient(135deg, #fff 0%, #FFF8F5 100%)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: "linear-gradient(135deg,#E8611A,#C4511A)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
           }}>
-            Seller
-          </span>
+            <Store style={{ width: 16, height: 16, color: "#fff" }} />
+          </div>
+          <div>
+            <span style={{
+              fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 15,
+              color: "#E8611A", letterSpacing: "-0.03em", display: "block",
+            }}>
+              Nexcart
+            </span>
+            <span style={{
+              fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
+              textTransform: "uppercase" as const,
+              color: "#9CA3AF",
+            }}>
+              Seller Hub
+            </span>
+          </div>
         </div>
-        <p style={{
-          fontSize: 12, color: "#6B7280", fontWeight: 500,
-          overflow: "hidden", textOverflow: "ellipsis",
-          whiteSpace: "nowrap" as const, marginBottom: 6,
+
+        {/* Store info card */}
+        <div style={{
+          background: "#fff", border: "1px solid #F3F4F6", borderRadius: 10,
+          padding: "10px 12px",
         }}>
-          {storeName}
-        </p>
-        <StatusPill status={sellerStatus} />
+          <p style={{
+            fontSize: 12, color: "#0D0D0D", fontWeight: 700,
+            overflow: "hidden", textOverflow: "ellipsis",
+            whiteSpace: "nowrap" as const, marginBottom: 5,
+          }}>
+            {storeName}
+          </p>
+          <StatusPill status={sellerStatus} />
+        </div>
       </div>
 
       {/* Nav links */}
       <nav style={{
-        flex: 1, padding: "12px 10px",
-        display: "flex", flexDirection: "column", gap: 2,
+        flex: 1, padding: "10px 10px",
+        display: "flex", flexDirection: "column", gap: 1,
         overflowY: "auto" as const,
       }}>
+        <p style={{
+          fontSize: 9, fontWeight: 800, letterSpacing: "0.12em",
+          textTransform: "uppercase" as const, color: "#D1D5DB",
+          padding: "8px 10px 4px",
+        }}>
+          Menu
+        </p>
         {navItems.map(({ to, label, icon: Icon }) => {
           const fullPath = "/seller" + to;
           const isActive = to === ""
             ? pathname === "/seller" || pathname === "/seller/"
             : pathname.startsWith("/seller" + to);
           const isWithdrawals = to === "/withdrawals";
+          const isNotifications = to === "/notifications";
           const locked = isWithdrawals && !isVerified;
 
           return (
@@ -110,23 +142,46 @@ function SidebarContent({
               title={locked ? "Only Verified sellers can request withdrawals" : undefined}
               style={{
                 display: "flex", alignItems: "center", gap: 10,
-                padding: "10px 12px", borderRadius: 10,
-                fontSize: 13, fontWeight: 600, textDecoration: "none",
-                transition: "background 0.15s",
-                color: isActive ? "#E8611A" : locked ? "#C4C4C4" : "#6B7280",
-                background: isActive ? "rgba(232,97,26,0.10)" : "transparent",
+                padding: "9px 12px", borderRadius: 10,
+                fontSize: 13, fontWeight: isActive ? 700 : 500,
+                textDecoration: "none",
+                transition: "all 0.15s",
+                color: isActive ? "#E8611A" : locked ? "#D1D5DB" : "#4B5563",
+                background: isActive
+                  ? "linear-gradient(135deg, rgba(232,97,26,0.12), rgba(232,97,26,0.06))"
+                  : "transparent",
+                borderLeft: isActive ? "3px solid #E8611A" : "3px solid transparent",
                 cursor: locked ? "not-allowed" : "pointer",
-                opacity: locked ? 0.6 : 1,
+                opacity: locked ? 0.5 : 1,
+                position: "relative" as const,
               }}
             >
-              <Icon style={{ width: 16, height: 16, flexShrink: 0 }} />
+              <Icon style={{
+                width: 16, height: 16, flexShrink: 0,
+                color: isActive ? "#E8611A" : locked ? "#D1D5DB" : "#6B7280",
+              }} />
               <span style={{ flex: 1 }}>{label}</span>
+
+              {/* Notification badge */}
+              {isNotifications && unreadCount > 0 && (
+                <span style={{
+                  minWidth: 18, height: 18, borderRadius: 50,
+                  background: "#E8611A", color: "#fff",
+                  fontSize: 10, fontWeight: 800,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "0 4px",
+                }}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+
               {locked && (
                 <span style={{
                   fontSize: 9, fontWeight: 700,
                   background: "#FEF3C7", color: "#92400E",
                   padding: "2px 6px", borderRadius: 50,
                   whiteSpace: "nowrap" as const,
+                  border: "1px solid #FDE68A",
                 }}>
                   Verified only
                 </span>
@@ -136,8 +191,20 @@ function SidebarContent({
         })}
       </nav>
 
-      {/* Bottom links */}
-      <div style={{ padding: "12px 10px", borderTop: "1px solid #EBEBEB", display: "flex", flexDirection: "column", gap: 4 }}>
+      {/* Bottom section */}
+      <div style={{
+        padding: "10px 10px 14px",
+        borderTop: "1px solid #F3F4F6",
+        display: "flex", flexDirection: "column", gap: 2,
+      }}>
+        <p style={{
+          fontSize: 9, fontWeight: 800, letterSpacing: "0.12em",
+          textTransform: "uppercase" as const, color: "#D1D5DB",
+          padding: "4px 10px 4px",
+        }}>
+          Quick Links
+        </p>
+
         {/* View My Store */}
         <Link
           to="/store/$sellerId"
@@ -145,25 +212,28 @@ function SidebarContent({
           onClick={onClose}
           style={{
             display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 12px", borderRadius: 10,
-            fontSize: 13, fontWeight: 700,
+            padding: "9px 12px", borderRadius: 10,
+            fontSize: 13, fontWeight: 600,
             color: "#E8611A", textDecoration: "none",
-            background: "rgba(232,97,26,0.08)",
+            background: "rgba(232,97,26,0.07)",
+            borderLeft: "3px solid transparent",
+            transition: "background 0.15s",
           }}
         >
           <Store style={{ width: 16, height: 16 }} />
           View My Store
         </Link>
 
-        {/* Storefront (homepage) */}
+        {/* Storefront */}
         <Link
           to="/"
           onClick={onClose}
           style={{
             display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 12px", borderRadius: 10,
-            fontSize: 13, fontWeight: 600,
+            padding: "9px 12px", borderRadius: 10,
+            fontSize: 13, fontWeight: 500,
             color: "#6B7280", textDecoration: "none",
+            borderLeft: "3px solid transparent",
           }}
         >
           <Home style={{ width: 16, height: 16 }} />
@@ -175,10 +245,11 @@ function SidebarContent({
           onClick={signOut}
           style={{
             display: "flex", alignItems: "center", gap: 10,
-            padding: "10px 12px", borderRadius: 10,
-            fontSize: 13, fontWeight: 600, color: "#6B7280",
+            padding: "9px 12px", borderRadius: 10,
+            fontSize: 13, fontWeight: 500, color: "#9CA3AF",
             background: "none", border: "none", cursor: "pointer",
             width: "100%", textAlign: "left" as const,
+            borderLeft: "3px solid transparent",
           }}
         >
           <LogOut style={{ width: 16, height: 16 }} />
@@ -194,6 +265,28 @@ export default function SellerLayout() {
   const { seller, isLoading: sellerLoading } = useSeller();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Fetch unread notification count for badge
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ["seller-unread-count", seller?.id],
+    enabled: !!seller?.id,
+    queryFn: async () => {
+      if (!seller?.id) return 0;
+      const { count } = await supabase
+        .from("seller_notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("seller_id", seller.id)
+        .eq("is_read", false);
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
 
   useEffect(() => {
     if (authLoading || sellerLoading) return;
@@ -213,81 +306,89 @@ export default function SellerLayout() {
   if (authLoading || sellerLoading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#F9FAFB" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid #E8611A", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid #E8611A", borderTopColor: "transparent", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
+          <p style={{ fontSize: 13, color: "#9CA3AF", fontWeight: 500 }}>Loading dashboard…</p>
+        </div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
-  // Redirect is already firing in the useEffect above.
-  // Render nothing while it resolves to prevent the seller layout
-  // from flashing on top of other pages (e.g. /account).
   if (!user || !seller) return null;
 
   const storeName = seller?.store_name ?? "My Store";
   const sellerStatus = (seller?.verification_status as string) ?? "basic";
   const sellerId = seller?.id ?? "";
 
+  const sidebarProps = {
+    onClose: () => setSidebarOpen(false),
+    signOut,
+    storeName,
+    sellerStatus,
+    sellerId,
+    unreadCount: unreadCount as number,
+  };
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F9FAFB" }}>
-      {/* Responsive styles */}
       <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         .seller-sidebar-desktop { display: flex; }
         .seller-mobile-header   { display: none; }
         @media (max-width: 1023px) {
           .seller-sidebar-desktop { display: none !important; }
           .seller-mobile-header   { display: flex !important; }
         }
+        .seller-nav-link:hover { background: rgba(232,97,26,0.05) !important; }
       `}</style>
 
       {/* Desktop sidebar */}
       <aside
         className="seller-sidebar-desktop"
         style={{
-          width: 224, background: "#FFFFFF",
-          borderRight: "1px solid #EBEBEB",
+          width: 232, background: "#FFFFFF",
+          borderRight: "1px solid #F3F4F6",
           flexShrink: 0, flexDirection: "column",
+          position: "sticky", top: 0, height: "100vh",
+          overflowY: "auto",
         }}
       >
-        <SidebarContent
-          onClose={() => {}}
-          signOut={signOut}
-          storeName={storeName}
-          sellerStatus={sellerStatus}
-          sellerId={sellerId}
-        />
+        <SidebarContent {...sidebarProps} onClose={() => {}} />
       </aside>
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <>
           <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 40 }}
+            style={{
+              position: "fixed", inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 40, backdropFilter: "blur(2px)",
+            }}
             onClick={() => setSidebarOpen(false)}
           />
           <aside style={{
-            position: "fixed", left: 0, top: 0, bottom: 0, width: 260,
-            background: "#FFFFFF", borderRight: "1px solid #EBEBEB",
+            position: "fixed", left: 0, top: 0, bottom: 0, width: 272,
+            background: "#FFFFFF", borderRight: "1px solid #F3F4F6",
             zIndex: 50, display: "flex", flexDirection: "column",
+            animation: "slideIn 0.22s ease-out",
+            overflowY: "auto",
           }}>
             <button
               onClick={() => setSidebarOpen(false)}
               style={{
-                position: "absolute", top: 16, right: 16,
-                width: 32, height: 32, background: "#F3F4F6",
+                position: "absolute", top: 14, right: 14,
+                width: 30, height: 30, background: "#F3F4F6",
                 border: "none", borderRadius: "50%", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 1,
               }}
             >
-              <X style={{ width: 16, height: 16, color: "#6B7280" }} />
+              <X style={{ width: 14, height: 14, color: "#6B7280" }} />
             </button>
-            <SidebarContent
-              onClose={() => setSidebarOpen(false)}
-              signOut={signOut}
-              storeName={storeName}
-              sellerStatus={sellerStatus}
-              sellerId={sellerId}
-            />
+            <SidebarContent {...sidebarProps} />
           </aside>
         </>
       )}
@@ -299,28 +400,64 @@ export default function SellerLayout() {
         <div
           className="seller-mobile-header"
           style={{
-            alignItems: "center", gap: 12,
-            padding: "12px 16px", background: "#FFFFFF",
-            borderBottom: "1px solid #EBEBEB",
+            alignItems: "center", gap: 10,
+            padding: "10px 14px", background: "#FFFFFF",
+            borderBottom: "1px solid #F3F4F6",
             position: "sticky", top: 0, zIndex: 30,
+            boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
           }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
             style={{
-              width: 36, height: 36, background: "#F3F4F6",
-              border: "none", borderRadius: 8, cursor: "pointer",
+              width: 38, height: 38, background: "#F3F4F6",
+              border: "none", borderRadius: 10, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
             }}
           >
             <Menu style={{ width: 18, height: 18, color: "#3A3A3A" }} />
           </button>
-          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 16, color: "#E8611A" }}>
-            Seller Dashboard
-          </span>
-          <div style={{ marginLeft: "auto" }}>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: 6,
+              background: "linear-gradient(135deg,#E8611A,#C4511A)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Store style={{ width: 12, height: 12, color: "#fff" }} />
+            </div>
+            <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 15, color: "#0D0D0D" }}>
+              Seller <span style={{ color: "#E8611A" }}>Hub</span>
+            </span>
+          </div>
+
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
             <StatusPill status={sellerStatus} />
+            {/* Bell with badge on mobile */}
+            <Link
+              to="/seller/notifications"
+              style={{ position: "relative", display: "flex", alignItems: "center", color: "#6B7280", textDecoration: "none" }}
+            >
+              <div style={{
+                width: 36, height: 36, borderRadius: 9, background: "#F3F4F6",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Bell style={{ width: 16, height: 16 }} />
+              </div>
+              {(unreadCount as number) > 0 && (
+                <span style={{
+                  position: "absolute", top: -2, right: -2,
+                  width: 16, height: 16, borderRadius: "50%",
+                  background: "#E8611A", color: "#fff",
+                  fontSize: 9, fontWeight: 800,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "2px solid #fff",
+                }}>
+                  {(unreadCount as number) > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
 
