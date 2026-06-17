@@ -1,137 +1,114 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Shield, ShieldOff, Users, AlertCircle } from "lucide-react";
+import { Shield, ShieldOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/index";
 import { toast } from "sonner";
 
+type AdminUser = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  role: string | null;
+  status: string;
+  created_at: string;
+};
+
 export default function AdminUsers() {
   const qc = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
-    queryFn: async () => {
-      type Profile = { id: string; full_name: string | null; preferred_currency: string; created_at: string };
-      type Role = { user_id: string; role: string };
-
-      // Use the same query style as the admin dashboard: select with count + head:false
-      // so both the row data AND the exact count come from the same query.
-      const [profilesRes, rolesRes] = await Promise.all([
-        supabase
+    queryFn: async (): Promise<AdminUser[]> => {
+      // Use RPC so SECURITY DEFINER bypasses RLS and joins auth.users for email
+      const { data, error } = await supabase.rpc("admin_get_all_users" as any);
+      if (error) {
+        // Fallback: query profiles directly (works if admin RLS policy exists)
+        const { data: rawProfiles } = await supabase
           .from("profiles")
-          .select("id, full_name, preferred_currency, created_at", { count: "exact" }),
-        supabase.from("user_roles").select("user_id, role"),
-      ]);
-
-      const profiles = (profilesRes.data ?? []) as Profile[];
-      const totalCount = profilesRes.count ?? profiles.length;
-      const roles = (rolesRes.data ?? []) as Role[];
-      const roleMap = new Map(roles.map((r) => [r.user_id, r.role]));
-
-      return {
-        users: profiles.map((p) => ({ ...p, role: roleMap.get(p.id) ?? null })),
-        // Use the DB-level count (same source as the dashboard stat card)
-        totalCount,
-        // Flag if RLS is restricting row visibility
-        rlsRestricted: profiles.length < totalCount,
-      };
+          .select("id, full_name, phone, created_at");
+        const { data: rawRoles } = await supabase
+          .from("user_roles")
+          .select("user_id, role");
+        const profiles = (rawProfiles ?? []) as {
+          id: string;
+          full_name: string | null;
+          phone: string | null;
+          created_at: string;
+        }[];
+        const roles = (rawRoles ?? []) as { user_id: string; role: string }[];
+        const roleMap = new Map(roles.map((r) => [r.user_id, r.role]));
+        return profiles.map((p) => ({
+          id: p.id,
+          full_name: p.full_name,
+          email: null,
+          phone: p.phone,
+          role: roleMap.get(p.id) ?? null,
+          status: "active",
+          created_at: p.created_at,
+        }));
+      }
+      return (data ?? []) as AdminUser[];
     },
   });
 
   async function toggleAdmin(userId: string, currentRole: string | null) {
     if (currentRole === "admin") {
-      const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", "admin");
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId)
+        .eq("role", "admin");
       if (error) toast.error(error.message);
       else toast.success("Admin role removed.");
     } else {
-      const { error } = await supabase.from("user_roles").upsert({ user_id: userId, role: "admin" } as any);
+      const { error } = await supabase
+        .from("user_roles")
+        .upsert({ user_id: userId, role: "admin" } as any);
       if (error) toast.error(error.message);
       else toast.success("Admin role granted.");
     }
     qc.invalidateQueries({ queryKey: ["admin-users"] });
   }
 
-  const users = data?.users ?? [];
-  const totalCount = data?.totalCount ?? 0;
-  const rlsRestricted = data?.rlsRestricted ?? false;
-
   return (
     <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-black text-foreground">Users</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {isLoading ? "Loading…" : (
-            <span>
-              <span style={{ fontWeight: 800, color: "#0D0D0D" }}>{totalCount}</span> registered
-              {users.length !== totalCount && (
-                <span style={{ color: "#9CA3AF" }}> ({users.length} visible)</span>
-              )}
-            </span>
-          )}
+          {users?.length ?? 0} registered
         </p>
       </div>
-
-      {/* RLS warning — shown when DB count > visible rows */}
-      {!isLoading && rlsRestricted && (
-        <div style={{
-          display: "flex", alignItems: "flex-start", gap: 10,
-          background: "#FEF3C7", border: "1px solid #FDE68A",
-          borderRadius: 12, padding: "12px 14px",
-        }}>
-          <AlertCircle style={{ width: 15, height: 15, color: "#D97706", flexShrink: 0, marginTop: 1 }} />
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#92400E" }}>
-              Row-level security is hiding {totalCount - users.length} user profile{totalCount - users.length !== 1 ? "s" : ""}
-            </p>
-            <p style={{ fontSize: 12, color: "#B45309", marginTop: 3, lineHeight: 1.5 }}>
-              The total count ({totalCount}) matches the dashboard. To see all rows here, 
-              add an RLS policy on the <code style={{ background: "#FDE68A", padding: "1px 4px", borderRadius: 3 }}>profiles</code> table 
-              allowing admin-role users to <code style={{ background: "#FDE68A", padding: "1px 4px", borderRadius: 3 }}>SELECT</code> all rows.
-              See the <strong>Supabase migration note</strong> below for the exact SQL.
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-4 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-xl" />)}
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 rounded-xl" />
+            ))}
           </div>
-        ) : users.length === 0 ? (
-          <div style={{ padding: "52px 24px", textAlign: "center" as const }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: "50%",
-              background: "linear-gradient(135deg,#EDE9FE,#DDD6FE)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 12px",
-            }}>
-              <Users style={{ width: 24, height: 24, color: "#7C3AED" }} />
-            </div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 4 }}>
-              {totalCount > 0 ? "Profiles hidden by RLS policy" : "No users yet"}
-            </p>
-            <p style={{ fontSize: 12, color: "#9CA3AF", lineHeight: 1.5 }}>
-              {totalCount > 0
-                ? `${totalCount} user${totalCount !== 1 ? "s" : ""} exist in the database. Add an admin RLS policy to view them here.`
-                : "Registered users will appear here."}
-            </p>
-          </div>
+        ) : (users ?? []).length === 0 ? (
+          <p className="p-12 text-center text-muted-foreground">No users found.</p>
         ) : (
           <div className="overflow-x-auto w-full">
-            <table className="w-full text-sm min-w-[500px]">
+            <table className="w-full text-sm min-w-[700px]">
               <thead className="border-b border-border/50 bg-secondary/30">
                 <tr>
-                  {["User", "Currency", "Joined", "Role", ""].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                  {["User", "Email", "Phone", "Role", "Status", "Joined", ""].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wide"
+                    >
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {users.map((u) => (
+                {users!.map((u) => (
                   <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
+                    {/* Full Name */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div
@@ -140,13 +117,23 @@ export default function AdminUsers() {
                         >
                           {(u.full_name?.[0] ?? "?").toUpperCase()}
                         </div>
-                        <span className="font-medium text-foreground">{u.full_name ?? "—"}</span>
+                        <span className="font-medium text-foreground whitespace-nowrap">
+                          {u.full_name ?? "—"}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{u.preferred_currency}</td>
-                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {new Date(u.created_at).toLocaleDateString()}
+
+                    {/* Email */}
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
+                      {u.email ?? <span className="italic text-muted-foreground/50">—</span>}
                     </td>
+
+                    {/* Phone */}
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
+                      {u.phone ?? <span className="italic text-muted-foreground/50">—</span>}
+                    </td>
+
+                    {/* Role */}
                     <td className="px-4 py-3">
                       {u.role === "admin" ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-bold text-primary">
@@ -156,6 +143,26 @@ export default function AdminUsers() {
                         <span className="text-xs text-muted-foreground">Customer</span>
                       )}
                     </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                          u.status === "active"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {u.status ?? "active"}
+                      </span>
+                    </td>
+
+                    {/* Joined */}
+                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap text-xs">
+                      {new Date(u.created_at).toLocaleDateString()}
+                    </td>
+
+                    {/* Action */}
                     <td className="px-4 py-3">
                       <Button
                         size="sm"
@@ -164,9 +171,13 @@ export default function AdminUsers() {
                         onClick={() => toggleAdmin(u.id, u.role)}
                       >
                         {u.role === "admin" ? (
-                          <><ShieldOff className="h-3.5 w-3.5" /> Remove Admin</>
+                          <>
+                            <ShieldOff className="h-3.5 w-3.5" /> Remove Admin
+                          </>
                         ) : (
-                          <><Shield className="h-3.5 w-3.5" /> Make Admin</>
+                          <>
+                            <Shield className="h-3.5 w-3.5" /> Make Admin
+                          </>
                         )}
                       </Button>
                     </td>
