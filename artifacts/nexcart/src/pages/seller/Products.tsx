@@ -65,19 +65,7 @@ function ImagePicker({
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [urlInput, setUrlInput] = useState(value.startsWith("http") ? value : "");
-  const [tab, setTab] = useState<"upload" | "url">(value.startsWith("http") ? "url" : "upload");
-
-  // Sync urlInput and tab when parent resets the value (e.g. opening edit form)
-  const prevValue = useRef(value);
-  if (prevValue.current !== value) {
-    prevValue.current = value;
-    if (value.startsWith("http")) {
-      setUrlInput(value);
-      setTab("url");
-    } else if (value === "") {
-      setUrlInput("");
-    }
-  }
+  const [tab, setTab] = useState<"upload" | "url">("upload");
 
   // Preview: if we have a real URL (uploaded or typed), show it
   const preview = value.startsWith("http") ? value : null;

@@ -65,19 +65,7 @@ function ImagePicker({
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [urlInput, setUrlInput] = useState(value.startsWith("http") ? value : "");
-  const [tab, setTab] = useState<"upload" | "url">(value.startsWith("http") ? "url" : "upload");
-
-  // Sync urlInput and tab when parent resets the value (e.g. opening edit form)
-  const prevValue = useRef(value);
-  if (prevValue.current !== value) {
-    prevValue.current = value;
-    if (value.startsWith("http")) {
-      setUrlInput(value);
-      setTab("url");
-    } else if (value === "") {
-      setUrlInput("");
-    }
-  }
+  const [tab, setTab] = useState<"upload" | "url">("upload");
 
   const preview = value.startsWith("http") ? value : null;
 
@@ -233,8 +221,6 @@ export default function AdminProducts() {
 
   function openEdit(p: Product) {
     setEditing(p);
-    const imgs = (p as any).product_images ?? [];
-    const existingImg = imgs.find((i: any) => i.is_primary)?.url ?? imgs[0]?.url ?? "";
     setForm({
       title: p.title,
       slug: p.slug,
@@ -246,7 +232,7 @@ export default function AdminProducts() {
       category_id: p.category_id ?? "",
       is_featured: p.is_featured,
       is_active: p.is_active,
-      image_url: existingImg,
+      image_url: "",
     });
     setShowForm(true);
   }
