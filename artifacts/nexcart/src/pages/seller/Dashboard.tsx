@@ -7,6 +7,8 @@ import {
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useSeller } from "@/hooks/use-seller";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { CURRENCIES, convertPrice } from "@/lib/products";
 
 const statusColors: Record<string, { bg: string; color: string }> = {
   pending:    { bg: "#FEF3C7", color: "#92400E" },
@@ -126,8 +128,8 @@ function VerificationBanner({ status }: { status: string }) {
               </span>
             ))}
           </div>
-          <Link
-            to="/seller/settings"
+          <a
+            href="/seller/settings#verification"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               background: "linear-gradient(135deg,#D97706,#B45309)",
@@ -139,7 +141,7 @@ function VerificationBanner({ status }: { status: string }) {
             <ShieldCheck style={{ width: 13, height: 13 }} />
             Complete Verification
             <ArrowRight style={{ width: 12, height: 12 }} />
-          </Link>
+          </a>
         </div>
       </div>
     </div>
@@ -193,13 +195,14 @@ function QuickActions({ sellerId }: { sellerId: string }) {
   );
 }
 
-function PerformanceSection({ stats }: {
+function PerformanceSection({ stats, revenueFormatted }: {
   stats: {
     totalProducts: number;
     totalOrders: number;
     totalRevenue: number;
     completedOrders: number;
   } | null | undefined;
+  revenueFormatted: string;
 }) {
   const convRate = stats && stats.totalOrders > 0
     ? ((stats.completedOrders / stats.totalOrders) * 100).toFixed(1)
@@ -215,7 +218,7 @@ function PerformanceSection({ stats }: {
       unit: "", icon: ShoppingBag, color: "#3B82F6",
     },
     {
-      label: "Revenue", value: `$${((stats?.totalRevenue ?? 0) / 1000).toFixed(1)}k`,
+      label: "Revenue", value: revenueFormatted,
       unit: "", icon: DollarSign, color: "#8B5CF6",
     },
     {
@@ -285,7 +288,18 @@ function PerformanceSection({ stats }: {
 
 export default function SellerDashboard() {
   const { seller } = useSeller();
+  const { currency } = useCurrency();
   const sellerStatus = (seller?.verification_status as string) ?? "basic";
+
+  function fmtRevenue(usdAmount: number): string {
+    const converted = convertPrice(usdAmount, "USD", currency);
+    const sym = CURRENCIES[currency]?.symbol ?? currency;
+    const noDecimals = ["JPY","KES","UGX","XOF","TZS","RWF","ETB"].includes(currency);
+    const n = noDecimals
+      ? `${Math.round(converted / 1000).toLocaleString()}k`
+      : `${(converted / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`;
+    return `${sym}${n}`;
+  }
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["seller-stats", seller?.id],
@@ -398,10 +412,10 @@ export default function SellerDashboard() {
             <div style={{ gridColumn: "span 2" }}>
               <StatCard
                 label="Total Revenue"
-                value={`$${(stats?.totalRevenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                value={fmtRevenue(stats?.totalRevenue ?? 0)}
                 icon={DollarSign}
                 gradient="linear-gradient(135deg,#8B5CF6,#6D28D9)"
-                sub="From delivered orders only"
+                sub={`Delivered orders · ${currency}`}
               />
             </div>
             {(stats?.lowStock?.length ?? 0) + (stats?.outOfStock?.length ?? 0) > 0 && (
@@ -424,7 +438,7 @@ export default function SellerDashboard() {
       <QuickActions sellerId={seller?.id ?? ""} />
 
       {/* Store Performance */}
-      {!isLoading && <PerformanceSection stats={stats} />}
+      {!isLoading && <PerformanceSection stats={stats} revenueFormatted={fmtRevenue(stats?.totalRevenue ?? 0)} />}
 
       {/* Bottom two-column grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
