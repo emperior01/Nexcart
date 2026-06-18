@@ -10,6 +10,8 @@ export default function AdminUsers() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
+    staleTime: 0,
+    gcTime: 0,
     queryFn: async () => {
       type Profile = { id: string; full_name: string | null; preferred_currency: string; created_at: string };
       type Role = { user_id: string; role: string };
