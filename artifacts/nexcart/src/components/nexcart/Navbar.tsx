@@ -54,8 +54,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  // TEMP DEBUG — remove after diagnosing admin-button issue
-  const [debugInfo, setDebugInfo] = useState<string>("debug: effect not yet run");
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const menuRef = useRef<HTMLDivElement>(null);
@@ -63,23 +61,14 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
   const isActive = (to: string) => to === "/" ? pathname === "/" : pathname.startsWith(to);
 
   useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      setDebugInfo("debug: no user (not logged in)");
-      return;
-    }
+    if (!user) { setIsAdmin(false); return; }
     supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "admin")
       .maybeSingle()
-      .then(({ data, error }) => {
-        setIsAdmin(!!data);
-        setDebugInfo(
-          `uid=${user.id} | data=${JSON.stringify(data)} | error=${error ? JSON.stringify(error) : "null"}`
-        );
-      });
+      .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
   useEffect(() => {
@@ -120,11 +109,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         style={{ background: "#0D0D0D" }}
       >
         {announcementText}
-      </div>
-
-      {/* TEMP DEBUG — remove after diagnosing admin-button issue */}
-      <div style={{ background: "#FFF3CD", color: "#000", fontSize: 11, padding: "6px 10px", wordBreak: "break-all", borderBottom: "2px solid #E8611A" }}>
-        {debugInfo}
       </div>
 
       <div
