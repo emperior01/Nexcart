@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Shield, ShieldOff, Users, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,9 @@ import { toast } from "sonner";
 export default function AdminUsers() {
   const qc = useQueryClient();
 
+  // TEMP DEBUG — remove after diagnosing users-page-zero issue
+  const [debugInfo, setDebugInfo] = React.useState<string>("debug: query not yet run");
+
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
     staleTime: 0,
@@ -16,14 +20,17 @@ export default function AdminUsers() {
       type Profile = { id: string; full_name: string | null; preferred_currency: string; created_at: string };
       type Role = { user_id: string; role: string };
 
-      // Use the same query style as the admin dashboard: select with count + head:false
-      // so both the row data AND the exact count come from the same query.
       const [profilesRes, rolesRes] = await Promise.all([
         supabase
           .from("profiles")
           .select("id, full_name, preferred_currency, created_at", { count: "exact" }),
         supabase.from("user_roles").select("user_id, role"),
       ]);
+
+      // TEMP DEBUG
+      setDebugInfo(
+        `profiles: count=${profilesRes.count} rows=${profilesRes.data?.length ?? "null"} err=${profilesRes.error ? JSON.stringify(profilesRes.error) : "null"} | roles: rows=${rolesRes.data?.length ?? "null"} err=${rolesRes.error ? JSON.stringify(rolesRes.error) : "null"}`
+      );
 
       const profiles = (profilesRes.data ?? []) as Profile[];
       const totalCount = profilesRes.count ?? profiles.length;
@@ -32,9 +39,7 @@ export default function AdminUsers() {
 
       return {
         users: profiles.map((p) => ({ ...p, role: roleMap.get(p.id) ?? null })),
-        // Use the DB-level count (same source as the dashboard stat card)
         totalCount,
-        // Flag if RLS is restricting row visibility
         rlsRestricted: profiles.length < totalCount,
       };
     },
@@ -73,6 +78,11 @@ export default function AdminUsers() {
         </p>
       </div>
 
+      {/* TEMP DEBUG — remove after diagnosing users-page-zero issue */}
+      <div style={{ background: "#FFF3CD", color: "#000", fontSize: 11, padding: "6px 10px", wordBreak: "break-all", borderRadius: 8, border: "2px solid #E8611A" }}>
+        {debugInfo}
+      </div>
+
       {/* RLS warning — shown when DB count > visible rows */}
       {!isLoading && rlsRestricted && (
         <div style={{
@@ -86,8 +96,8 @@ export default function AdminUsers() {
               Row-level security is hiding {totalCount - users.length} user profile{totalCount - users.length !== 1 ? "s" : ""}
             </p>
             <p style={{ fontSize: 12, color: "#B45309", marginTop: 3, lineHeight: 1.5 }}>
-              The total count ({totalCount}) matches the dashboard. To see all rows here, 
-              add an RLS policy on the <code style={{ background: "#FDE68A", padding: "1px 4px", borderRadius: 3 }}>profiles</code> table 
+              The total count ({totalCount}) matches the dashboard. To see all rows here,
+              add an RLS policy on the <code style={{ background: "#FDE68A", padding: "1px 4px", borderRadius: 3 }}>profiles</code> table
               allowing admin-role users to <code style={{ background: "#FDE68A", padding: "1px 4px", borderRadius: 3 }}>SELECT</code> all rows.
               See the <strong>Supabase migration note</strong> below for the exact SQL.
             </p>
