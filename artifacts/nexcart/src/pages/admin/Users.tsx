@@ -1,4 +1,3 @@
-import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Shield, ShieldOff, Users, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,28 +8,20 @@ import { toast } from "sonner";
 export default function AdminUsers() {
   const qc = useQueryClient();
 
-  // TEMP DEBUG — remove after diagnosing users-page-zero issue
-  const [debugInfo, setDebugInfo] = React.useState<string>("debug: query not yet run");
-
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
     staleTime: 0,
     gcTime: 0,
     queryFn: async () => {
-      type Profile = { id: string; full_name: string | null; preferred_currency: string; created_at: string };
+      type Profile = { id: string; full_name: string | null; email: string | null; updated_at: string | null };
       type Role = { user_id: string; role: string };
 
       const [profilesRes, rolesRes] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id, full_name, preferred_currency, created_at", { count: "exact" }),
+          .select("id, full_name, email, updated_at", { count: "exact" }),
         supabase.from("user_roles").select("user_id, role"),
       ]);
-
-      // TEMP DEBUG
-      setDebugInfo(
-        `profiles: count=${profilesRes.count} rows=${profilesRes.data?.length ?? "null"} err=${profilesRes.error ? JSON.stringify(profilesRes.error) : "null"} | roles: rows=${rolesRes.data?.length ?? "null"} err=${rolesRes.error ? JSON.stringify(rolesRes.error) : "null"}`
-      );
 
       const profiles = (profilesRes.data ?? []) as Profile[];
       const totalCount = profilesRes.count ?? profiles.length;
@@ -76,11 +67,6 @@ export default function AdminUsers() {
             </span>
           )}
         </p>
-      </div>
-
-      {/* TEMP DEBUG — remove after diagnosing users-page-zero issue */}
-      <div style={{ background: "#FFF3CD", color: "#000", fontSize: 11, padding: "6px 10px", wordBreak: "break-all", borderRadius: 8, border: "2px solid #E8611A" }}>
-        {debugInfo}
       </div>
 
       {/* RLS warning — shown when DB count > visible rows */}
@@ -134,7 +120,7 @@ export default function AdminUsers() {
             <table className="w-full text-sm min-w-[500px]">
               <thead className="border-b border-border/50 bg-secondary/30">
                 <tr>
-                  {["User", "Currency", "Joined", "Role", ""].map((h) => (
+                  {["User", "Email", "Last Updated", "Role", ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wide">
                       {h}
                     </th>
@@ -155,9 +141,9 @@ export default function AdminUsers() {
                         <span className="font-medium text-foreground">{u.full_name ?? "—"}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{u.preferred_currency}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.email ?? "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {new Date(u.created_at).toLocaleDateString()}
+                      {u.updated_at ? new Date(u.updated_at).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-4 py-3">
                       {u.role === "admin" ? (
