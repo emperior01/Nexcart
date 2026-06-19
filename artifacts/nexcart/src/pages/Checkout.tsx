@@ -13,8 +13,6 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { useActivePaymentMethods, useUserPaymentPreference, type PaymentMethod } from "@/hooks/use-payment-methods";
 import { toast } from "sonner";
 
-const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY as string;
-
 async function verifyAndCreateOrder(
   reference: string,
   items: { productId: string; quantity: number; price: number; currency: string }[],
@@ -60,7 +58,6 @@ function CryptoPaymentPanel({
   function submitTxHash() {
     if (!txHash.trim()) { toast.error("Please enter your transaction hash."); return; }
     toast.success("Transaction submitted! Your order will be confirmed after verification.");
-    // In a full implementation, this would call a Supabase function to log the pending crypto payment
   }
 
   return (
@@ -70,7 +67,6 @@ function CryptoPaymentPanel({
         <p className="font-extrabold text-[#0D0D0D] text-sm">Pay with Crypto</p>
       </div>
 
-      {/* Coin selector */}
       <div className="flex gap-2 flex-wrap">
         {method.supported_currencies.map((coin) => (
           <button
@@ -163,20 +159,12 @@ export default function CheckoutPage() {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [showCrypto, setShowCrypto] = useState(false);
 
-  // Auto-select: prefer the customer's saved preference if it is still active,
-  // otherwise fall back to the first active method in the admin-configured list.
   useEffect(() => {
     if (!paymentMethods || paymentMethods.length === 0 || selectedMethod) return;
-
     if (preferredMethodId) {
       const preferred = paymentMethods.find((m) => m.id === preferredMethodId);
-      if (preferred) {
-        setSelectedMethod(preferred);
-        return;
-      }
-      // Preferred method was disabled by admin — fall through to default
+      if (preferred) { setSelectedMethod(preferred); return; }
     }
-
     setSelectedMethod(paymentMethods[0]);
   }, [paymentMethods, preferredMethodId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -257,12 +245,52 @@ export default function CheckoutPage() {
 
   async function handlePaystackCheckout() {
     if (!validateForm()) return;
-    if (!PAYSTACK_PUBLIC_KEY) { toast.error("Paystack is not configured yet."); return; }
     setLoading(true);
+
     const shippingAddress = { full_name: fullName, address, city, country };
-    sessionStorage.setItem("nexcart_checkout", JSON.stringify({ savedItems: items, shippingAddress, cartCurrency }));
-    const callbackUrl = encodeURIComponent(`${window.location.origin}/checkout`);
-    window.location.href = `https://checkout.paystack.com/pay?key=${PAYSTACK_PUBLIC_KEY}&email=${encodeURIComponent(email)}&amount=${paystackAmount}&currency=${cartCurrency}&callback_url=${callbackUrl}`;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("initialize-payment", {
+        body: {
+          email,
+          amount: paystackAmount,
+          currency: cartCurrency,
+        },
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
+      });
+
+      if (res.error) {
+        console.error("[Checkout] initialize-payment error:", res.error);
+        throw new Error(res.error.message ?? "Failed to initialize payment");
+      }
+
+      const { authorization_url, reference } = res.data as {
+        authorization_url: string;
+        reference: string;
+      };
+
+      if (!authorization_url) {
+        console.error("[Checkout] No authorization_url in response:", res.data);
+        throw new Error("Paystack did not return a checkout URL");
+      }
+
+      sessionStorage.setItem(
+        "nexcart_checkout",
+        JSON.stringify({ savedItems: items, shippingAddress, cartCurrency, reference })
+      );
+
+      console.log("[Checkout] Redirecting to Paystack:", authorization_url);
+      window.location.href = authorization_url;
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Payment initialization failed";
+      console.error("[Checkout] error:", err);
+      toast.error(message);
+      setLoading(false);
+    }
   }
 
   async function handleCheckout() {
@@ -372,7 +400,6 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {/* Crypto payment flow */}
                 {showCrypto && selectedMethod?.type === "crypto" && (
                   <CryptoPaymentPanel
                     method={selectedMethod}
