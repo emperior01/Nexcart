@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet, CreditCard } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet, CreditCard, ShieldAlert } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/orders",      label: "Orders",            icon: ShoppingBag },
   { to: "/users",       label: "Users",             icon: Users },
   { to: "/sellers",     label: "Sellers",           icon: Store },
+  { to: "/verifications",label: "Verifications",     icon: ShieldAlert },
   { to: "/withdrawals", label: "Withdrawals",       icon: Wallet },
   { to: "/payments",    label: "Payment Settings",  icon: CreditCard },
   { to: "/settings",    label: "Homepage Settings", icon: Settings },
@@ -21,10 +22,12 @@ function SidebarContent({
   onClose,
   signOut,
   pendingSellers,
+  pendingVerifications,
 }: {
   onClose: () => void;
   signOut: () => void;
   pendingSellers: number;
+  pendingVerifications: number;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
@@ -39,7 +42,9 @@ function SidebarContent({
         {navItems.map(({ to, label, icon: Icon }) => {
           const fullPath = "/admin" + to;
           const isActive = to === "" ? pathname === "/admin" || pathname === "/admin/" : pathname.startsWith("/admin" + to);
-          const badge = to === "/sellers" && pendingSellers > 0 ? pendingSellers : 0;
+          const badge = (to === "/sellers" && pendingSellers > 0) ? pendingSellers
+                       : (to === "/verifications" && pendingVerifications > 0) ? pendingVerifications
+                       : 0;
           return (
             <Link
               key={to}
@@ -116,6 +121,19 @@ export default function AdminLayout() {
     },
   });
 
+  const { data: pendingVerifications = 0 } = useQuery({
+    queryKey: ["admin-pending-verifications-count"],
+    enabled: !!user && !loading,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from("seller_verifications")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "documents_submitted");
+      return count ?? 0;
+    },
+  });
+
   async function signOut() {
     await supabase.auth.signOut();
     void navigate({ to: "/" });
@@ -170,7 +188,7 @@ export default function AdminLayout() {
         className="admin-sidebar-desktop"
         style={{ width: 220, background: "#FFFFFF", borderRight: "1px solid #EBEBEB", flexShrink: 0, flexDirection: "column" }}
       >
-        <SidebarContent onClose={() => {}} signOut={signOut} pendingSellers={pendingSellers} />
+        <SidebarContent onClose={() => {}} signOut={signOut} pendingSellers={pendingSellers} pendingVerifications={pendingVerifications} />
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -187,7 +205,7 @@ export default function AdminLayout() {
             >
               <X style={{ width: 16, height: 16, color: "#6B7280" }} />
             </button>
-            <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} pendingSellers={pendingSellers} />
+            <SidebarContent onClose={() => setSidebarOpen(false)} signOut={signOut} pendingSellers={pendingSellers} pendingVerifications={pendingVerifications} />
           </aside>
         </>
       )}
@@ -207,7 +225,7 @@ export default function AdminLayout() {
             <Menu style={{ width: 18, height: 18, color: "#3A3A3A" }} />
           </button>
           <Logo />
-          {pendingSellers > 0 && (
+          {(pendingSellers + pendingVerifications) > 0 && (
             <span style={{
               minWidth: 20, height: 20, borderRadius: 50,
               background: "#E8611A", color: "#fff",
@@ -215,7 +233,7 @@ export default function AdminLayout() {
               display: "flex", alignItems: "center", justifyContent: "center",
               padding: "0 6px", marginLeft: "auto", whiteSpace: "nowrap",
             }}>
-              {pendingSellers > 99 ? "99+" : pendingSellers} new
+              {(pendingSellers + pendingVerifications) > 99 ? "99+" : pendingSellers + pendingVerifications} new
             </span>
           )}
         </div>

@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, ShoppingBag, TrendingUp, Wallet,
-  Star, Settings, Bell, LogOut, Home, Menu, X, ShieldCheck, Store,
+  Star, Settings, Bell, LogOut, Home, Menu, X, ShieldCheck, Store, ShieldAlert,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useSeller } from "@/hooks/use-seller";
+
+type VerifStatus = "not_started" | "documents_submitted" | "under_review" | "verified" | "rejected";
 
 const navItems = [
   { to: "",               label: "Dashboard",      icon: LayoutDashboard },
@@ -16,12 +18,14 @@ const navItems = [
   { to: "/earnings",      label: "Earnings",       icon: TrendingUp },
   { to: "/withdrawals",   label: "Withdrawals",    icon: Wallet },
   { to: "/reviews",       label: "Reviews",        icon: Star },
+  { to: "/verification",  label: "Verification",   icon: ShieldAlert },
   { to: "/settings",      label: "Store Settings", icon: Settings },
   { to: "/notifications", label: "Notifications",  icon: Bell },
 ] as const;
 
-function StatusPill({ status }: { status: string }) {
-  if (status === "verified") {
+function StatusPill({ sellerStatus, verifStatus }: { sellerStatus: string; verifStatus: VerifStatus }) {
+  // Verified via verifications table takes priority
+  if (verifStatus === "verified" || sellerStatus === "verified") {
     return (
       <span style={{
         fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
@@ -35,6 +39,21 @@ function StatusPill({ status }: { status: string }) {
       </span>
     );
   }
+  if (verifStatus === "under_review" || verifStatus === "documents_submitted") {
+    return (
+      <span style={{
+        fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
+        textTransform: "uppercase" as const,
+        background: "#DBEAFE", color: "#1E40AF",
+        padding: "3px 8px", borderRadius: 50,
+        border: "1px solid #BFDBFE",
+        display: "inline-flex", alignItems: "center", gap: 3,
+      }}>
+        <ShieldAlert style={{ width: 9, height: 9 }} /> Under Review
+      </span>
+    );
+  }
+  // Basic / not_started / rejected
   return (
     <span style={{
       fontSize: 9, fontWeight: 700, letterSpacing: "0.08em",
@@ -50,17 +69,18 @@ function StatusPill({ status }: { status: string }) {
 }
 
 function SidebarContent({
-  onClose, signOut, storeName, sellerStatus, sellerId, unreadCount,
+  onClose, signOut, storeName, sellerStatus, verifStatus, sellerId, unreadCount,
 }: {
   onClose: () => void;
   signOut: () => void;
   storeName: string;
   sellerStatus: string;
+  verifStatus: VerifStatus;
   sellerId: string;
   unreadCount: number;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isVerified = sellerStatus === "verified";
+  const isVerified = sellerStatus === "verified" || verifStatus === "verified";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -108,7 +128,7 @@ function SidebarContent({
           }}>
             {storeName}
           </p>
-          <StatusPill status={sellerStatus} />
+          <StatusPill sellerStatus={sellerStatus} verifStatus={verifStatus} />
         </div>
       </div>
 
@@ -288,12 +308,28 @@ export default function SellerLayout() {
     refetchInterval: 60_000,
   });
 
+  // Fetch verification status from seller_verifications table
+  const { data: verifRow } = useQuery({
+    queryKey: ["seller-verification", seller?.id],
+    enabled: !!seller?.id,
+    queryFn: async () => {
+      if (!seller?.id) return null;
+      const { data } = await (supabase as any)
+        .from("seller_verifications")
+        .select("status")
+        .eq("seller_id", seller.id)
+        .maybeSingle();
+      return data as { status: VerifStatus } | null;
+    },
+    refetchInterval: 120_000,
+  });
+
   useEffect(() => {
     if (authLoading || sellerLoading) return;
     if (!user) { void navigate({ to: "/auth" }); return; }
     if (!seller) { void navigate({ to: "/become-seller" }); return; }
     const status = seller.verification_status as string;
-    if (status === "suspended" || status === "rejected") {
+    if (status === "suspended") {
       void navigate({ to: "/" });
     }
   }, [user, seller, authLoading, sellerLoading, navigate]);
@@ -319,6 +355,7 @@ export default function SellerLayout() {
 
   const storeName = seller?.store_name ?? "My Store";
   const sellerStatus = (seller?.verification_status as string) ?? "basic";
+  const verifStatus: VerifStatus = (verifRow?.status as VerifStatus) ?? "not_started";
   const sellerId = seller?.id ?? "";
 
   const sidebarProps = {
@@ -326,6 +363,7 @@ export default function SellerLayout() {
     signOut,
     storeName,
     sellerStatus,
+    verifStatus,
     sellerId,
     unreadCount: unreadCount as number,
   };
@@ -433,7 +471,7 @@ export default function SellerLayout() {
           </div>
 
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-            <StatusPill status={sellerStatus} />
+            <StatusPill sellerStatus={sellerStatus} verifStatus={verifStatus} />
             {/* Bell with badge on mobile */}
             <Link
               to="/seller/notifications"

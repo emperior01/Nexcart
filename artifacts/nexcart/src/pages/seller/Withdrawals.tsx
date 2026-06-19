@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Wallet, X, ShieldCheck, Lock, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useSeller } from "@/hooks/use-seller";
 import { Button } from "@/components/ui/button";
@@ -181,8 +182,8 @@ export default function SellerWithdrawals() {
               </p>
             </div>
 
-            <a
-              href="/seller/settings#verification"
+            <Link
+              to="/seller/verification"
               style={{
                 display: "inline-flex", alignItems: "center", gap: 8,
                 background: "linear-gradient(135deg,#D97706,#B45309)",
@@ -195,7 +196,7 @@ export default function SellerWithdrawals() {
               <ShieldCheck style={{ width: 16, height: 16 }} />
               Complete Verification
               <ArrowRight style={{ width: 14, height: 14 }} />
-            </a>
+            </Link>
           </div>
         </div>
 

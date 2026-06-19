@@ -29,6 +29,7 @@ import AdminSettings from "@/pages/admin/Settings";
 import AdminSellers from "@/pages/admin/Sellers";
 import AdminWithdrawals from "@/pages/admin/Withdrawals";
 import AdminPayments from "@/pages/admin/Payments";
+import AdminVerifications from "@/pages/admin/Verifications";
 import SellerLayout from "@/pages/seller/Layout";
 import SellerDashboard from "@/pages/seller/Dashboard";
 import SellerProducts from "@/pages/seller/Products";
@@ -38,6 +39,7 @@ import SellerWithdrawals from "@/pages/seller/Withdrawals";
 import SellerReviews from "@/pages/seller/Reviews";
 import SellerSettings from "@/pages/seller/Settings";
 import SellerNotifications from "@/pages/seller/Notifications";
+import SellerVerification from "@/pages/seller/Verification";
 import BecomeSellerPage from "@/pages/BecomeSeller";
 import OrderSuccessPage from "@/pages/OrderSuccess";
 import CartPage from "@/pages/Cart";
@@ -234,6 +236,13 @@ const adminPaymentsRoute = createRoute({
   component: AdminPayments,
 });
 
+// NEW: Admin verifications route
+const adminVerificationsRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: "/verifications",
+  component: AdminVerifications,
+});
+
 const sellerRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/seller",
@@ -288,6 +297,13 @@ const sellerNotificationsRoute = createRoute({
   component: SellerNotifications,
 });
 
+// NEW: Seller verification route
+const sellerVerificationRoute = createRoute({
+  getParentRoute: () => sellerRoute,
+  path: "/verification",
+  component: SellerVerification,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   shopRoute,
@@ -318,6 +334,7 @@ const routeTree = rootRoute.addChildren([
     adminSellersRoute,
     adminWithdrawalsRoute,
     adminPaymentsRoute,
+    adminVerificationsRoute,   // NEW
   ]),
   sellerRoute.addChildren([
     sellerIndexRoute,
@@ -329,6 +346,7 @@ const routeTree = rootRoute.addChildren([
     sellerReviewsRoute,
     sellerSettingsRoute,
     sellerNotificationsRoute,
+    sellerVerificationRoute,   // NEW
   ]),
 ]);
 

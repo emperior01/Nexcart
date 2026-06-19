@@ -2,13 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Package, ShoppingBag, TrendingUp, DollarSign, AlertTriangle, Clock,
   ShieldCheck, Plus, Store, Settings, Bell, BarChart2, ArrowRight,
-  CheckCircle, Lock, Zap, ArrowUpRight,
+  CheckCircle, Lock, Zap, ArrowUpRight, ShieldAlert, ShieldX, Shield,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useSeller } from "@/hooks/use-seller";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { CURRENCIES, convertPrice } from "@/lib/products";
+
+type VerifStatus = "not_started" | "documents_submitted" | "under_review" | "verified" | "rejected";
+type VerifRow = {
+  status: VerifStatus;
+  submitted_at: string | null;
+  rejection_reason: string | null;
+};
 
 const statusColors: Record<string, { bg: string; color: string }> = {
   pending:    { bg: "#FEF3C7", color: "#92400E" },
@@ -68,8 +75,13 @@ function SkeletonCard() {
   );
 }
 
-function VerificationBanner({ status }: { status: string }) {
-  if (status === "verified") {
+// ── Verification Status Card ──────────────────────────────────────────────────
+function VerificationCard({ verif, sellerStatus }: { verif: VerifRow | null | undefined; sellerStatus: string }) {
+  const st: VerifStatus = verif?.status ?? "not_started";
+  const isVerifiedViaSellers = sellerStatus === "verified";
+
+  // Already verified (either via verif table or sellers table)
+  if (st === "verified" || isVerifiedViaSellers) {
     return (
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
@@ -82,17 +94,103 @@ function VerificationBanner({ status }: { status: string }) {
         }}>
           <ShieldCheck style={{ width: 20, height: 20, color: "#059669" }} />
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <p style={{ fontSize: 13, fontWeight: 800, color: "#065F46" }}>Verified Seller</p>
           <p style={{ fontSize: 12, color: "#047857", marginTop: 2 }}>
             You have full access — including withdrawals and advanced features.
           </p>
         </div>
-        <CheckCircle style={{ width: 20, height: 20, color: "#059669", marginLeft: "auto", flexShrink: 0 }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
+          {["Withdrawals", "Verified Badge", "Priority Support"].map((b) => (
+            <div key={b} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <CheckCircle style={{ width: 11, height: 11, color: "#059669" }} />
+              <span style={{ fontSize: 11, color: "#065F46", fontWeight: 600 }}>{b}</span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
+  // Documents submitted / under review
+  if (st === "documents_submitted" || st === "under_review") {
+    return (
+      <div style={{
+        background: "linear-gradient(135deg,#EFF6FF,#DBEAFE)",
+        border: "1px solid #BFDBFE", borderRadius: 14, padding: "14px 16px", marginBottom: 20,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: 10, background: "#fff",
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          }}>
+            <ShieldAlert style={{ width: 20, height: 20, color: "#3B82F6" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, fontWeight: 800, color: "#1E40AF" }}>
+              Verification Under Review
+            </p>
+            <p style={{ fontSize: 12, color: "#1D4ED8", marginTop: 2 }}>
+              Documents submitted
+              {verif?.submitted_at ? ` on ${new Date(verif.submitted_at).toLocaleDateString()}` : ""}.
+              Estimated review: 1–3 business days.
+            </p>
+          </div>
+          <Link
+            to="/seller/verification"
+            style={{ fontSize: 11, color: "#3B82F6", fontWeight: 700, textDecoration: "none", flexShrink: 0 }}
+          >
+            View status →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Rejected
+  if (st === "rejected") {
+    return (
+      <div style={{
+        background: "linear-gradient(135deg,#FEF2F2,#FEE2E2)",
+        border: "1px solid #FECACA", borderRadius: 14, padding: "16px", marginBottom: 20,
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+            background: "#FEE2E2", border: "1px solid #FECACA",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <ShieldX style={{ width: 18, height: 18, color: "#DC2626" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 14, fontWeight: 800, color: "#991B1B", marginBottom: 4 }}>
+              Verification Rejected
+            </p>
+            {verif?.rejection_reason && (
+              <p style={{ fontSize: 12, color: "#B91C1C", lineHeight: 1.6, marginBottom: 12 }}>
+                Reason: {verif.rejection_reason}
+              </p>
+            )}
+            <Link
+              to="/seller/verification"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                background: "linear-gradient(135deg,#DC2626,#B91C1C)",
+                color: "#fff", padding: "8px 16px", borderRadius: 8,
+                fontSize: 12, fontWeight: 700, textDecoration: "none",
+              }}
+            >
+              <ShieldCheck style={{ width: 13, height: 13 }} />
+              Resubmit Documents
+              <ArrowRight style={{ width: 12, height: 12 }} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Not started (default) — matches original banner style exactly
   return (
     <div style={{
       background: "linear-gradient(135deg,#FFFBEB,#FEF3C7)",
@@ -112,7 +210,7 @@ function VerificationBanner({ status }: { status: string }) {
             Complete Your Verification
           </p>
           <p style={{ fontSize: 12, color: "#B45309", lineHeight: 1.6, marginBottom: 12 }}>
-            You're on the <strong>Basic plan</strong>. Verify your store to unlock withdrawals, 
+            You're on the <strong>Basic plan</strong>. Verify your store to unlock withdrawals,
             priority support, and the Verified badge on your listings.
           </p>
           {/* Locked features */}
@@ -128,8 +226,8 @@ function VerificationBanner({ status }: { status: string }) {
               </span>
             ))}
           </div>
-          <a
-            href="/seller/settings#verification"
+          <Link
+            to="/seller/verification"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               background: "linear-gradient(135deg,#D97706,#B45309)",
@@ -139,9 +237,9 @@ function VerificationBanner({ status }: { status: string }) {
             }}
           >
             <ShieldCheck style={{ width: 13, height: 13 }} />
-            Complete Verification
+            Start Verification
             <ArrowRight style={{ width: 12, height: 12 }} />
-          </a>
+          </Link>
         </div>
       </div>
     </div>
@@ -150,10 +248,10 @@ function VerificationBanner({ status }: { status: string }) {
 
 function QuickActions({ sellerId }: { sellerId: string }) {
   const actions = [
-    { label: "Add Product",     icon: Plus,      to: "/seller/products",      color: "#E8611A", bg: "rgba(232,97,26,0.08)" },
-    { label: "View Store",      icon: Store,     to: `/store/${sellerId}`,     color: "#3B82F6", bg: "rgba(59,130,246,0.08)" },
-    { label: "Manage Orders",   icon: ShoppingBag, to: "/seller/orders",       color: "#8B5CF6", bg: "rgba(139,92,246,0.08)" },
-    { label: "Store Settings",  icon: Settings,  to: "/seller/settings",      color: "#10B981", bg: "rgba(16,185,129,0.08)" },
+    { label: "Add Product",    icon: Plus,       to: "/seller/products",   color: "#E8611A", bg: "rgba(232,97,26,0.08)" },
+    { label: "View Store",     icon: Store,      to: `/store/${sellerId}`, color: "#3B82F6", bg: "rgba(59,130,246,0.08)" },
+    { label: "Manage Orders",  icon: ShoppingBag,to: "/seller/orders",     color: "#8B5CF6", bg: "rgba(139,92,246,0.08)" },
+    { label: "Store Settings", icon: Settings,   to: "/seller/settings",   color: "#10B981", bg: "rgba(16,185,129,0.08)" },
   ];
 
   return (
@@ -209,22 +307,10 @@ function PerformanceSection({ stats, revenueFormatted }: {
     : "0.0";
 
   const metrics = [
-    {
-      label: "Products Listed", value: stats?.totalProducts ?? 0,
-      unit: "", icon: Package, color: "#E8611A",
-    },
-    {
-      label: "Total Orders", value: stats?.totalOrders ?? 0,
-      unit: "", icon: ShoppingBag, color: "#3B82F6",
-    },
-    {
-      label: "Revenue", value: revenueFormatted,
-      unit: "", icon: DollarSign, color: "#8B5CF6",
-    },
-    {
-      label: "Completion Rate", value: `${convRate}%`,
-      unit: "", icon: TrendingUp, color: "#10B981",
-    },
+    { label: "Products Listed", value: stats?.totalProducts ?? 0, unit: "", icon: Package,     color: "#E8611A" },
+    { label: "Total Orders",    value: stats?.totalOrders ?? 0,   unit: "", icon: ShoppingBag, color: "#3B82F6" },
+    { label: "Revenue",         value: revenueFormatted,          unit: "", icon: DollarSign,  color: "#8B5CF6" },
+    { label: "Completion Rate", value: `${convRate}%`,            unit: "", icon: TrendingUp,  color: "#10B981" },
   ];
 
   return (
@@ -300,6 +386,21 @@ export default function SellerDashboard() {
       : `${(converted / 1000).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k`;
     return `${sym}${n}`;
   }
+
+  // Fetch verification record
+  const { data: verif } = useQuery({
+    queryKey: ["seller-verification", seller?.id],
+    enabled: !!seller?.id,
+    queryFn: async (): Promise<VerifRow | null> => {
+      if (!seller?.id) return null;
+      const { data } = await (supabase as any)
+        .from("seller_verifications")
+        .select("status, submitted_at, rejection_reason")
+        .eq("seller_id", seller.id)
+        .maybeSingle();
+      return (data as VerifRow | null) ?? null;
+    },
+  });
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["seller-stats", seller?.id],
@@ -396,8 +497,8 @@ export default function SellerDashboard() {
         </p>
       </div>
 
-      {/* Verification banner */}
-      <VerificationBanner status={sellerStatus} />
+      {/* Verification status card — replaces old VerificationBanner */}
+      <VerificationCard verif={verif} sellerStatus={sellerStatus} />
 
       {/* Stats grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 20 }}>
