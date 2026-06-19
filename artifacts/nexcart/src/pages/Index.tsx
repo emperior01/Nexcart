@@ -18,14 +18,6 @@ const ICON_MAP: Record<TrustBadge["icon"], React.ElementType> = {
   chat:    MessageCircle,
 };
 
-const categories = [
-  { label: "Electronics", slug: "electronics", bg: "linear-gradient(135deg,#1a1a2e,#2a2a4e)" },
-  { label: "Beauty",      slug: "beauty",       bg: "linear-gradient(135deg,#2e1a1a,#4e2a2a)" },
-  { label: "Fashion",     slug: "fashion",      bg: "linear-gradient(135deg,#1a2e1a,#2a4e2a)" },
-  { label: "Home",        slug: "home-kitchen", bg: "linear-gradient(135deg,#1e1a2e,#362a4e)" },
-  { label: "Fitness",     slug: "sports",       bg: "linear-gradient(135deg,#2e2a1a,#4e3a10)" },
-];
-
 export default function IndexPage() {
   const { openCart } = useCart();
   const { data: settings = DEFAULT_SETTINGS } = useQuery({
@@ -35,6 +27,7 @@ export default function IndexPage() {
   });
 
   const heroImages = settings.hero.images ?? [];
+  const categories = settings.homepage_categories ?? [];
   const [heroIdx, setHeroIdx] = useState(0);
   useEffect(() => {
     if (heroImages.length <= 1) return;
@@ -181,12 +174,23 @@ export default function IndexPage() {
           <div className="flex gap-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
             {categories.map((c) => (
               <Link
-                key={c.slug}
+                key={c.id ?? c.slug}
                 to="/shop"
                 search={{ category: c.slug }}
                 className="flex-shrink-0 w-[100px] aspect-square rounded-xl overflow-hidden relative transition-all hover:-translate-y-0.5"
-                style={{ background: c.bg }}
+                style={{ background: c.image ? "transparent" : c.bg }}
               >
+                {c.image && (
+                  <img
+                    src={c.image}
+                    alt={c.label}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      (e.currentTarget.parentElement as HTMLElement).style.background = c.bg;
+                    }}
+                  />
+                )}
                 <div className="absolute inset-0 flex items-end p-2.5" style={{ background: "linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 60%)" }}>
                   <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "-0.01em" }}>{c.label}</span>
                 </div>
