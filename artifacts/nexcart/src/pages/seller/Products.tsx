@@ -2,12 +2,13 @@ import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Pencil, Trash2, X, ImageIcon,
-  ToggleLeft, ToggleRight, Upload, Link2,
+  ToggleLeft, ToggleRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSeller } from "@/hooks/use-seller";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea, Select, Skeleton } from "@/components/ui/index";
+import { ImagePicker } from "@/components/nexcart/ImagePicker";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -39,195 +40,6 @@ const emptyForm: ProductForm = {
 
 function toSlug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-}
-
-async function uploadToStorage(file: File, sellerId: string): Promise<string> {
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-  const filename = `sellers/${sellerId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const { error } = await supabase.storage
-    .from("product-images")
-    .upload(filename, file, { upsert: false, contentType: file.type });
-  if (error) throw new Error(error.message);
-  const { data } = supabase.storage.from("product-images").getPublicUrl(filename);
-  return data.publicUrl;
-}
-
-// ─── Image picker sub-component ────────────────────────────────────────────
-function ImagePicker({
-  value,
-  onChange,
-  sellerId,
-}: {
-  value: string;
-  onChange: (url: string) => void;
-  sellerId: string;
-}) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [urlInput, setUrlInput] = useState(value.startsWith("http") ? value : "");
-  const [tab, setTab] = useState<"upload" | "url">("upload");
-
-  // Preview: if we have a real URL (uploaded or typed), show it
-  const preview = value.startsWith("http") ? value : null;
-
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be under 5 MB.");
-      return;
-    }
-    setUploading(true);
-    try {
-      const url = await uploadToStorage(file, sellerId);
-      onChange(url);
-      setUrlInput("");
-      toast.success("Image uploaded!");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Upload failed.");
-    } finally {
-      setUploading(false);
-      // reset input so same file can be reselected
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  }
-
-  const [urlValidating, setUrlValidating] = useState(false);
-
-  function validateImageLoads(url: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      const img = new Image();
-      const timeout = setTimeout(() => resolve(false), 8000);
-      img.onload = () => { clearTimeout(timeout); resolve(true); };
-      img.onerror = () => { clearTimeout(timeout); resolve(false); };
-      img.src = url;
-    });
-  }
-
-  async function handleUrlBlur() {
-    const trimmed = urlInput.trim();
-    if (!trimmed) return;
-    if (!/^https?:\/\//i.test(trimmed)) {
-      toast.error("Enter a valid URL starting with http.");
-      return;
-    }
-    setUrlValidating(true);
-    const loads = await validateImageLoads(trimmed);
-    setUrlValidating(false);
-    if (!loads) {
-      toast.error("Please paste a direct image URL");
-      return;
-    }
-    onChange(trimmed);
-  }
-
-  return (
-    <div className="space-y-3">
-      <Label>Product Image</Label>
-
-      {/* Current image preview */}
-      {preview && (
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <img
-            src={preview}
-            alt="Product"
-            style={{ height: 100, maxWidth: "100%", borderRadius: 10, objectFit: "cover", border: "2px solid #E5E7EB" }}
-          />
-          <button
-            onClick={() => { onChange(""); setUrlInput(""); }}
-            style={{
-              position: "absolute", top: -8, right: -8,
-              width: 22, height: 22, borderRadius: "50%",
-              background: "#EF4444", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <X style={{ width: 12, height: 12, color: "#fff" }} />
-          </button>
-        </div>
-      )}
-
-      {/* Tab switcher */}
-      <div style={{ display: "flex", background: "#F3F4F6", borderRadius: 10, padding: 3, gap: 2 }}>
-        {([["upload", "Upload from Device"], ["url", "Paste Image URL"]] as const).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            style={{
-              flex: 1, padding: "7px 10px", borderRadius: 8, border: "none", cursor: "pointer",
-              fontSize: 12, fontWeight: 700, transition: "all 0.15s",
-              background: tab === key ? "#fff" : "transparent",
-              color: tab === key ? "#E8611A" : "#6B7280",
-              boxShadow: tab === key ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-            }}
-          >
-            {key === "upload" ? <Upload style={{ width: 12, height: 12, display: "inline", marginRight: 4 }} /> : <Link2 style={{ width: 12, height: 12, display: "inline", marginRight: 4 }} />}
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Upload tab */}
-      {tab === "upload" && (
-        <div>
-          <div
-            onClick={() => !uploading && fileRef.current?.click()}
-            style={{
-              border: "2px dashed #E5E7EB", borderRadius: 12, padding: "20px 16px",
-              cursor: uploading ? "wait" : "pointer", textAlign: "center",
-              background: "#FAFAFA", transition: "border-color 0.15s",
-            }}
-            onMouseEnter={(e) => { if (!uploading) e.currentTarget.style.borderColor = "#E8611A"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E5E7EB"; }}
-          >
-            {uploading ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid #E8611A", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-                <p style={{ fontSize: 13, color: "#6B7280", fontWeight: 600 }}>Uploading...</p>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(232,97,26,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Upload style={{ width: 20, height: 20, color: "#E8611A" }} />
-                </div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>
-                  Tap to choose from device
-                </p>
-                <p style={{ fontSize: 11, color: "#9CA3AF" }}>JPG, PNG, WEBP · max 5 MB</p>
-              </div>
-            )}
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            style={{ display: "none" }}
-            onChange={handleFile}
-          />
-        </div>
-      )}
-
-      {/* URL tab */}
-      {tab === "url" && (
-        <div className="space-y-1.5">
-          <Input
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            onBlur={handleUrlBlur}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleUrlBlur(); } }}
-            placeholder="https://example.com/image.jpg"
-            disabled={urlValidating}
-          />
-          <p style={{ fontSize: 11, color: urlValidating ? "#E8611A" : "#9CA3AF" }}>
-            {urlValidating
-              ? "Checking image…"
-              : "Paste a direct image link and press Enter or tap outside to confirm."}
-          </p>
-        </div>
-      )}
-    </div>
-  );
 }
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -606,11 +418,15 @@ export default function SellerProducts() {
 
               {/* Image picker — device upload + URL both available */}
               {seller?.id && (
-                <ImagePicker
-                  value={form.image_url}
-                  onChange={(url) => setForm((f) => ({ ...f, image_url: url }))}
-                  sellerId={seller.id}
-                />
+                <div className="space-y-1.5">
+                  <Label>Product Image</Label>
+                  <ImagePicker
+                    value={form.image_url}
+                    onChange={(url) => setForm((f) => ({ ...f, image_url: url }))}
+                    folder={`sellers/${seller.id}`}
+                    height={100}
+                  />
+                </div>
               )}
 
               <div className="flex items-center gap-6">
