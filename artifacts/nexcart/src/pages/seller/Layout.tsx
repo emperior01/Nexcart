@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useSeller } from "@/hooks/use-seller";
+import { Logo } from "@/components/nexcart/Logo";
 
 type VerifStatus = "not_started" | "documents_submitted" | "under_review" | "verified" | "rejected";
 
@@ -91,29 +92,14 @@ function SidebarContent({
         background: "linear-gradient(135deg, #fff 0%, #FFF8F5 100%)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: "linear-gradient(135deg,#E8611A,#C4511A)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
+          <Logo height={44} />
+          <span style={{
+            fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
+            textTransform: "uppercase" as const,
+            color: "#9CA3AF",
           }}>
-            <Store style={{ width: 16, height: 16, color: "#fff" }} />
-          </div>
-          <div>
-            <span style={{
-              fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 15,
-              color: "#E8611A", letterSpacing: "-0.03em", display: "block",
-            }}>
-              Nexcart
-            </span>
-            <span style={{
-              fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
-              textTransform: "uppercase" as const,
-              color: "#9CA3AF",
-            }}>
-              Seller Hub
-            </span>
-          </div>
+            Seller Hub
+          </span>
         </div>
 
         {/* Store info card */}
@@ -458,15 +444,9 @@ export default function SellerLayout() {
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: 6,
-              background: "linear-gradient(135deg,#E8611A,#C4511A)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Store style={{ width: 12, height: 12, color: "#fff" }} />
-            </div>
-            <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 800, fontSize: 15, color: "#0D0D0D" }}>
-              Seller <span style={{ color: "#E8611A" }}>Hub</span>
+            <Logo height={36} />
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "#9CA3AF" }}>
+              Seller
             </span>
           </div>
 

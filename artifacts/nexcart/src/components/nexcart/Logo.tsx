@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
 
-export function Logo({ className = "" }: { className?: string }) {
+export function Logo({ className = "", height = 52 }: { className?: string; height?: number }) {
   return (
     <Link to="/" className={`flex items-center ${className}`} style={{ textDecoration: "none" }}>
       <img
         src="/logo.png"
         alt="Nexcart"
-        style={{ height: 36, width: "auto", objectFit: "contain" }}
+        style={{ height, width: "auto", objectFit: "contain" }}
       />
     </Link>
   );
