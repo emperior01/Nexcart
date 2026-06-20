@@ -95,10 +95,36 @@ function ImagePicker({
     }
   }
 
-  function handleUrlApply() {
+  const [urlValidating, setUrlValidating] = useState(false);
+
+  function validateImageLoads(url: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const timeout = setTimeout(() => resolve(false), 8000);
+      img.onload = () => { clearTimeout(timeout); resolve(true); };
+      img.onerror = () => { clearTimeout(timeout); resolve(false); };
+      img.src = url;
+    });
+  }
+
+  async function handleUrlApply() {
     const trimmed = urlInput.trim();
     if (!trimmed) { onChange(""); return; }
-    if (!trimmed.startsWith("http")) { toast.error("Enter a valid URL starting with http."); return; }
+    if (!/^https?:\/\//i.test(trimmed)) {
+      toast.error("Enter a valid URL starting with http.");
+      return;
+    }
+
+    // Fast path: recognizable image file extension — still confirm it
+    // actually loads before committing, since the extension alone can lie.
+    setUrlValidating(true);
+    const loads = await validateImageLoads(trimmed);
+    setUrlValidating(false);
+
+    if (!loads) {
+      toast.error("Please paste a direct image URL");
+      return;
+    }
     onChange(trimmed);
   }
 
@@ -163,8 +189,8 @@ function ImagePicker({
             onKeyDown={(e) => e.key === "Enter" && handleUrlApply()}
             style={{ flex: 1 }}
           />
-          <Button type="button" onClick={handleUrlApply} variant="outline" style={{ flexShrink: 0 }}>
-            Apply
+          <Button type="button" onClick={handleUrlApply} variant="outline" disabled={urlValidating} style={{ flexShrink: 0 }}>
+            {urlValidating ? "Checking…" : "Apply"}
           </Button>
         </div>
       )}

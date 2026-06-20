@@ -92,11 +92,33 @@ function ImagePicker({
     }
   }
 
-  function handleUrlBlur() {
+  const [urlValidating, setUrlValidating] = useState(false);
+
+  function validateImageLoads(url: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const timeout = setTimeout(() => resolve(false), 8000);
+      img.onload = () => { clearTimeout(timeout); resolve(true); };
+      img.onerror = () => { clearTimeout(timeout); resolve(false); };
+      img.src = url;
+    });
+  }
+
+  async function handleUrlBlur() {
     const trimmed = urlInput.trim();
-    if (trimmed && trimmed.startsWith("http")) {
-      onChange(trimmed);
+    if (!trimmed) return;
+    if (!/^https?:\/\//i.test(trimmed)) {
+      toast.error("Enter a valid URL starting with http.");
+      return;
     }
+    setUrlValidating(true);
+    const loads = await validateImageLoads(trimmed);
+    setUrlValidating(false);
+    if (!loads) {
+      toast.error("Please paste a direct image URL");
+      return;
+    }
+    onChange(trimmed);
   }
 
   return (
@@ -195,9 +217,12 @@ function ImagePicker({
             onBlur={handleUrlBlur}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleUrlBlur(); } }}
             placeholder="https://example.com/image.jpg"
+            disabled={urlValidating}
           />
-          <p style={{ fontSize: 11, color: "#9CA3AF" }}>
-            Paste a direct image link and press Enter or tap outside to confirm.
+          <p style={{ fontSize: 11, color: urlValidating ? "#E8611A" : "#9CA3AF" }}>
+            {urlValidating
+              ? "Checking image…"
+              : "Paste a direct image link and press Enter or tap outside to confirm."}
           </p>
         </div>
       )}
