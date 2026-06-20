@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Save, ImageIcon, Type, Megaphone, Gift, Star, Truck } from "lucide-react";
+import { Plus, Trash2, Save, ImageIcon, Type, Megaphone, Gift, Star, Truck, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +60,9 @@ export default function AdminSettings() {
   useEffect(() => { if (settings) setBadges(settings.trust_badges); }, [settings]);
 
   const [shippingFee, setShippingFee] = useState(0);
+  const [commissionRate, setCommissionRate] = useState(10);
   useEffect(() => { if (settings) setShippingFee(settings.shipping_fee); }, [settings]);
+  useEffect(() => { if (settings) setCommissionRate(settings.commission_rate); }, [settings]);
 
   async function save(key: string, value: unknown) {
     setSaving(key);
@@ -349,6 +351,28 @@ export default function AdminSettings() {
         </div>
         <Button className="mt-5 gap-2 text-white" style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }} disabled={saving === "shipping_fee"} onClick={() => save("shipping_fee", shippingFee)}>
           <Save className="h-4 w-4" /> {saving === "shipping_fee" ? "Saving…" : "Save Shipping Fee"}
+        </Button>
+      </Section>
+
+      <Section icon={Percent} title="Marketplace Commission">
+        <p className="text-xs text-muted-foreground mb-3">
+          The percentage Nexcart keeps from each seller sale. This does not apply to products sold directly
+          by Nexcart Official Store — those are 100% Nexcart's own revenue already.
+        </p>
+        <div className="space-y-1.5">
+          <Label>Commission Rate (%)</Label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="100"
+            value={commissionRate}
+            onChange={(e) => setCommissionRate(parseFloat(e.target.value) || 0)}
+            placeholder="10"
+          />
+        </div>
+        <Button className="mt-5 gap-2 text-white" style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }} disabled={saving === "commission_rate"} onClick={() => save("commission_rate", commissionRate)}>
+          <Save className="h-4 w-4" /> {saving === "commission_rate" ? "Saving…" : "Save Commission Rate"}
         </Button>
       </Section>
     </div>

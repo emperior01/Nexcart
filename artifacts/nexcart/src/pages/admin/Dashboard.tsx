@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { Package, ShoppingBag, Users, TrendingUp, Store, Wallet } from "lucide-react";
+import { Package, ShoppingBag, Users, TrendingUp, Store, Wallet, Percent } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchSiteSettings, DEFAULT_SETTINGS } from "@/lib/site-settings";
+
+// Same fixed seller_id used everywhere admin-created products are attributed
+// to the Nexcart Official Store, so its sales count as direct Nexcart revenue
+// rather than seller revenue.
+const NEXCART_OFFICIAL_STORE_SELLER_ID = "4e88f29a-9bb5-43af-9421-f142f375fcff";
 
 function StatCard({ label, value, icon: Icon, gradient }: {
   label: string; value: string | number;
@@ -31,22 +37,73 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [products, orders, users, sellers, pendingWithdrawals] = await Promise.all([
+      const [products, orders, users, sellers, pendingWithdrawals, settings, orderItemsRes] = await Promise.all([
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id,total", { count: "exact" }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("sellers").select("id,verification_status", { count: "exact" }),
         supabase.from("withdrawals").select("id,amount").eq("status", "pending"),
+        fetchSiteSettings(),
+        // Pull every line item with its product's seller_id and the
+        // order's buyer user_id, so we can tell Nexcart's own product
+        // sales apart from seller product sales, and exclude a seller
+        // buying their own product (not a real external sale) from the
+        // commission base — consistent with the seller dashboard's rule.
+        supabase
+          .from("order_items")
+          .select("quantity,unit_price,orders(user_id),products(seller_id,sellers(user_id))"),
       ]);
-      const revenue = ((orders.data ?? []) as { id: string; total: number }[]).reduce((sum, o) => sum + Number(o.total), 0);
+
+      const totalMarketplaceVolume = ((orders.data ?? []) as { id: string; total: number }[])
+        .reduce((sum, o) => sum + Number(o.total), 0);
+
       const sellerRows = (sellers.data ?? []) as { id: string; verification_status: string }[];
       const verifiedSellers = sellerRows.filter((s) => s.verification_status === "verified").length;
       const pendingWithdrawalsTotal = ((pendingWithdrawals.data ?? []) as { id: string; amount: number }[]).reduce((s, w) => s + Number(w.amount), 0);
+
+      type OrderItemRow = {
+        quantity: number;
+        unit_price: number;
+        orders: { user_id: string } | null;
+        products: { seller_id: string | null; sellers: { user_id: string } | null } | null;
+      };
+      const items = (orderItemsRes.data ?? []) as unknown as OrderItemRow[];
+
+      let nexcartDirectRevenue = 0;
+      let sellerSalesVolume = 0;
+      for (const item of items) {
+        const lineTotal = Number(item.quantity) * Number(item.unit_price);
+        const sellerId = item.products?.seller_id;
+        const sellerUserId = item.products?.sellers?.user_id;
+        const buyerUserId = item.orders?.user_id;
+
+        if (sellerId === NEXCART_OFFICIAL_STORE_SELLER_ID) {
+          nexcartDirectRevenue += lineTotal;
+        } else if (sellerUserId && buyerUserId && sellerUserId === buyerUserId) {
+          // Seller bought their own product — not a real external sale,
+          // excluded from the commission base entirely.
+          continue;
+        } else {
+          sellerSalesVolume += lineTotal;
+        }
+      }
+      const commissionRate = settings.commission_rate ?? DEFAULT_SETTINGS.commission_rate;
+      const commissionEarnings = sellerSalesVolume * (commissionRate / 100);
+      // Nexcart's true earnings: its own product sales, plus the cut it
+      // takes from seller sales. NOT the same as total marketplace volume,
+      // since most of that volume is sellers' own money passing through.
+      const nexcartEarnings = nexcartDirectRevenue + commissionEarnings;
+
       return {
         products: products.count ?? 0,
         orders: orders.count ?? 0,
         users: users.count ?? 0,
-        revenue,
+        totalMarketplaceVolume,
+        nexcartDirectRevenue,
+        sellerSalesVolume,
+        commissionRate,
+        commissionEarnings,
+        nexcartEarnings,
         totalSellers: sellers.count ?? 0,
         verifiedSellers,
         pendingWithdrawalsTotal,
@@ -86,14 +143,54 @@ export default function AdminDashboard() {
             <StatCard label="Orders"      value={stats!.orders}   icon={ShoppingBag} gradient="linear-gradient(135deg,#3B82F6,#1D4ED8)" />
             <StatCard label="Users"       value={stats!.users}    icon={Users}       gradient="linear-gradient(135deg,#8B5CF6,#6D28D9)" />
             <StatCard
-              label="Revenue"
-              value={`$${stats!.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              label="Nexcart Earnings"
+              value={`$${stats!.nexcartEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               icon={TrendingUp}
               gradient="linear-gradient(135deg,#10B981,#065F46)"
             />
           </>
         )}
       </div>
+
+      {/* Earnings breakdown */}
+      <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 13, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Nexcart Earnings Breakdown</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 24 }}>
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => <div key={i} style={{ height: 80, borderRadius: 16, background: "#EBEBEB" }} />)
+        ) : (
+          <>
+            <StatCard
+              label="Direct Product Sales"
+              value={`$${stats!.nexcartDirectRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              icon={Store}
+              gradient="linear-gradient(135deg,#0EA5E9,#0369A1)"
+            />
+            <StatCard
+              label={`Commission (${stats!.commissionRate}%)`}
+              value={`$${stats!.commissionEarnings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              icon={Percent}
+              gradient="linear-gradient(135deg,#F59E0B,#B45309)"
+            />
+            <StatCard
+              label="Seller Sales Volume"
+              value={`$${stats!.sellerSalesVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              icon={ShoppingBag}
+              gradient="linear-gradient(135deg,#6366F1,#4338CA)"
+            />
+            <StatCard
+              label="Total Marketplace Volume"
+              value={`$${stats!.totalMarketplaceVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              icon={TrendingUp}
+              gradient="linear-gradient(135deg,#64748B,#334155)"
+            />
+          </>
+        )}
+      </div>
+      <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: -16, marginBottom: 20, lineHeight: 1.5 }}>
+        "Seller Sales Volume" is sellers' own revenue passing through the platform — not Nexcart's money.
+        "Total Marketplace Volume" is every order, including seller and Nexcart sales combined.
+        Only "Nexcart Earnings" (direct sales + commission) is actually Nexcart's.
+      </p>
 
       {/* Marketplace stats */}
       <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 13, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Marketplace</p>

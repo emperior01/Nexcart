@@ -6,7 +6,7 @@ export interface HeroSettings {
   subtext: string;
   cta_primary: string;
   cta_secondary: string;
-  images: string[];
+  images: string[]; // up to 4 image URLs
   heading_line1_color: string;
   heading_line2_color: string;
   subtext_color: string;
@@ -25,31 +25,15 @@ export interface TrustBadge {
   sub: string;
 }
 
-export interface HomepageCategory {
-  id: string;       // uuid, client-generated
-  label: string;
-  slug: string;
-  image: string;    // URL — either uploaded or external
-  bg: string;       // fallback gradient if image fails/absent
-  position: number; // display order (0-based); lower = shown first
-}
-
 export interface SiteSettings {
   announcement_bar: string;
   hero: HeroSettings;
   promo_banner: PromoBannerSettings;
   trust_badges: TrustBadge[];
   shipping_fee: number;
-  homepage_categories: HomepageCategory[];
+  /** Marketplace commission rate Nexcart takes on seller sales, as a percentage (e.g. 10 = 10%). */
+  commission_rate: number;
 }
-
-export const DEFAULT_CATEGORIES: HomepageCategory[] = [
-  { id: "c1", label: "Electronics", slug: "electronics", image: "", bg: "linear-gradient(135deg,#1a1a2e,#2a2a4e)", position: 0 },
-  { id: "c2", label: "Beauty",      slug: "beauty",       image: "", bg: "linear-gradient(135deg,#2e1a1a,#4e2a2a)", position: 1 },
-  { id: "c3", label: "Fashion",     slug: "fashion",      image: "", bg: "linear-gradient(135deg,#1a2e1a,#2a4e2a)", position: 2 },
-  { id: "c4", label: "Home",        slug: "home-kitchen", image: "", bg: "linear-gradient(135deg,#1e1a2e,#362a4e)", position: 3 },
-  { id: "c5", label: "Fitness",     slug: "sports",       image: "", bg: "linear-gradient(135deg,#2e2a1a,#4e3a10)", position: 4 },
-];
 
 export const DEFAULT_SETTINGS: SiteSettings = {
   announcement_bar: "Fast delivery · Secure encrypted checkout",
@@ -77,7 +61,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     { icon: "chat",    title: "Real support",    sub: "Humans, not bots." },
   ],
   shipping_fee: 0,
-  homepage_categories: DEFAULT_CATEGORIES,
+  commission_rate: 10,
 };
 
 export async function fetchSiteSettings(): Promise<SiteSettings> {
@@ -90,14 +74,12 @@ export async function fetchSiteSettings(): Promise<SiteSettings> {
 
   const map = Object.fromEntries(data.map((r) => [r.key, r.value]));
   return {
-    announcement_bar:    (map.announcement_bar as string)              ?? DEFAULT_SETTINGS.announcement_bar,
-    hero:                (map.hero as HeroSettings)                    ?? DEFAULT_SETTINGS.hero,
-    promo_banner:        (map.promo_banner as PromoBannerSettings)     ?? DEFAULT_SETTINGS.promo_banner,
-    trust_badges:        (map.trust_badges as TrustBadge[])            ?? DEFAULT_SETTINGS.trust_badges,
-    shipping_fee:        (map.shipping_fee as number)                  ?? DEFAULT_SETTINGS.shipping_fee,
-    homepage_categories: ((map.homepage_categories as HomepageCategory[]) ?? DEFAULT_SETTINGS.homepage_categories)
-      .map((c, i) => ({ position: i, ...c }))          // back-fill position for old records that lack it
-      .sort((a, b) => a.position - b.position),
+    announcement_bar: (map.announcement_bar as string) ?? DEFAULT_SETTINGS.announcement_bar,
+    hero:         (map.hero as HeroSettings)                  ?? DEFAULT_SETTINGS.hero,
+    promo_banner: (map.promo_banner as PromoBannerSettings)   ?? DEFAULT_SETTINGS.promo_banner,
+    trust_badges: (map.trust_badges as TrustBadge[])          ?? DEFAULT_SETTINGS.trust_badges,
+    shipping_fee: (map.shipping_fee as number)                ?? DEFAULT_SETTINGS.shipping_fee,
+    commission_rate: (map.commission_rate as number)          ?? DEFAULT_SETTINGS.commission_rate,
   };
 }
 
