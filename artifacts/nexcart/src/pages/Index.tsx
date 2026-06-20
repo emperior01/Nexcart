@@ -27,7 +27,7 @@ export default function IndexPage() {
   });
 
   const heroImages = settings.hero.images ?? [];
-  const categories = settings.homepage_categories ?? [];
+  const categories = [...(settings.homepage_categories ?? [])].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const [heroIdx, setHeroIdx] = useState(0);
   useEffect(() => {
     if (heroImages.length <= 1) return;

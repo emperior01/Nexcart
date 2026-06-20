@@ -31,6 +31,7 @@ export interface HomepageCategory {
   slug: string;
   image: string;    // URL — either uploaded or external
   bg: string;       // fallback gradient if image fails/absent
+  position: number; // display order (0-based); lower = shown first
 }
 
 export interface SiteSettings {
@@ -43,11 +44,11 @@ export interface SiteSettings {
 }
 
 export const DEFAULT_CATEGORIES: HomepageCategory[] = [
-  { id: "c1", label: "Electronics", slug: "electronics", image: "", bg: "linear-gradient(135deg,#1a1a2e,#2a2a4e)" },
-  { id: "c2", label: "Beauty",      slug: "beauty",       image: "", bg: "linear-gradient(135deg,#2e1a1a,#4e2a2a)" },
-  { id: "c3", label: "Fashion",     slug: "fashion",      image: "", bg: "linear-gradient(135deg,#1a2e1a,#2a4e2a)" },
-  { id: "c4", label: "Home",        slug: "home-kitchen", image: "", bg: "linear-gradient(135deg,#1e1a2e,#362a4e)" },
-  { id: "c5", label: "Fitness",     slug: "sports",       image: "", bg: "linear-gradient(135deg,#2e2a1a,#4e3a10)" },
+  { id: "c1", label: "Electronics", slug: "electronics", image: "", bg: "linear-gradient(135deg,#1a1a2e,#2a2a4e)", position: 0 },
+  { id: "c2", label: "Beauty",      slug: "beauty",       image: "", bg: "linear-gradient(135deg,#2e1a1a,#4e2a2a)", position: 1 },
+  { id: "c3", label: "Fashion",     slug: "fashion",      image: "", bg: "linear-gradient(135deg,#1a2e1a,#2a4e2a)", position: 2 },
+  { id: "c4", label: "Home",        slug: "home-kitchen", image: "", bg: "linear-gradient(135deg,#1e1a2e,#362a4e)", position: 3 },
+  { id: "c5", label: "Fitness",     slug: "sports",       image: "", bg: "linear-gradient(135deg,#2e2a1a,#4e3a10)", position: 4 },
 ];
 
 export const DEFAULT_SETTINGS: SiteSettings = {
@@ -94,7 +95,9 @@ export async function fetchSiteSettings(): Promise<SiteSettings> {
     promo_banner:        (map.promo_banner as PromoBannerSettings)     ?? DEFAULT_SETTINGS.promo_banner,
     trust_badges:        (map.trust_badges as TrustBadge[])            ?? DEFAULT_SETTINGS.trust_badges,
     shipping_fee:        (map.shipping_fee as number)                  ?? DEFAULT_SETTINGS.shipping_fee,
-    homepage_categories: (map.homepage_categories as HomepageCategory[]) ?? DEFAULT_SETTINGS.homepage_categories,
+    homepage_categories: ((map.homepage_categories as HomepageCategory[]) ?? DEFAULT_SETTINGS.homepage_categories)
+      .map((c, i) => ({ position: i, ...c }))          // back-fill position for old records that lack it
+      .sort((a, b) => a.position - b.position),
   };
 }
 

@@ -161,7 +161,16 @@ export default function AdminSettings() {
   useEffect(() => { if (settings) setShippingFee(settings.shipping_fee); }, [settings]);
 
   const [cats, setCats] = useState<HomepageCategory[]>([]);
-  useEffect(() => { if (settings) setCats(settings.homepage_categories ?? []); }, [settings]);
+  useEffect(() => {
+    if (settings) {
+      // back-fill position for any stored cats that pre-date this feature
+      const raw = settings.homepage_categories ?? [];
+      setCats(raw.map((c, i) => ({ position: i, ...c })).sort((a, b) => a.position - b.position));
+    }
+  }, [settings]);
+
+  // drag-and-drop state
+  const dragIdx = useRef<number | null>(null);
 
   async function save(key: string, value: unknown) {
     setSaving(key);
@@ -207,13 +216,22 @@ export default function AdminSettings() {
 
   // ── Category helpers ──────────────────────────────────────────────────────
   function addCategory() {
-    setCats((prev) => [...prev, { id: uuid(), label: "", slug: "", image: "", bg: "linear-gradient(135deg,#1a1a2e,#2a2a4e)" }]);
+    setCats((prev) => [...prev, { id: uuid(), label: "", slug: "", image: "", bg: "linear-gradient(135deg,#1a1a2e,#2a2a4e)", position: prev.length }]);
   }
   function removeCategory(id: string) {
-    setCats((prev) => prev.filter((c) => c.id !== id));
+    setCats((prev) => prev.filter((c) => c.id !== id).map((c, i) => ({ ...c, position: i })));
   }
   function updateCat(id: string, field: keyof HomepageCategory, val: string) {
     setCats((prev) => prev.map((c) => c.id === id ? { ...c, [field]: val } : c));
+  }
+  function moveCat(fromIdx: number, toIdx: number) {
+    if (fromIdx === toIdx) return;
+    setCats((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, moved);
+      return next.map((c, i) => ({ ...c, position: i }));
+    });
   }
 
   function updateBadge(i: number, field: keyof TrustBadge, val: string) {
@@ -348,56 +366,60 @@ export default function AdminSettings() {
             <p className="text-sm text-muted-foreground">No categories yet. Add one below.</p>
           </div>
         ) : (
-          <div className="space-y-4 mb-4">
+          <div className="rounded-xl border border-border/50 overflow-hidden mb-4">
             {cats.map((cat, idx) => (
-              <div key={cat.id} className="rounded-xl border border-border/50 bg-secondary/20 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Category {idx + 1}</span>
-                  <Button size="icon" variant="ghost" onClick={() => removeCategory(cat.id)} className="h-7 w-7 text-destructive hover:text-destructive">
+              <div
+                key={cat.id}
+                draggable
+                onDragStart={() => { dragIdx.current = idx; }}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={() => { if (dragIdx.current !== null) moveCat(dragIdx.current, idx); dragIdx.current = null; }}
+                onDragEnd={() => { dragIdx.current = null; }}
+                className={idx > 0 ? "border-t border-border/50" : ""}
+                style={{ userSelect: "none" }}
+              >
+                {/* ── Row header: grip + label + delete ── */}
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-secondary/20">
+                  <GripVertical className="h-4 w-4 text-muted-foreground/40 cursor-grab active:cursor-grabbing flex-shrink-0" />
+                  <Input
+                    value={cat.label}
+                    onChange={(e) => updateCat(cat.id, "label", e.target.value)}
+                    placeholder="Category name"
+                    className="h-7 text-sm font-semibold border-0 bg-transparent shadow-none p-0 focus-visible:ring-0 flex-1 min-w-0"
+                  />
+                  <Button size="icon" variant="ghost" onClick={() => removeCategory(cat.id)} className="h-6 w-6 text-muted-foreground/50 hover:text-destructive flex-shrink-0">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label>Label</Label>
-                    <Input value={cat.label} onChange={(e) => updateCat(cat.id, "label", e.target.value)} placeholder="Electronics" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Slug</Label>
-                    <Input value={cat.slug} onChange={(e) => updateCat(cat.id, "slug", e.target.value.toLowerCase().replace(/\s+/g, "-"))} placeholder="electronics" />
-                    <p className="text-xs text-muted-foreground">Links to /shop?category=<strong>{cat.slug || "…"}</strong></p>
+                {/* ── Fields: image + slug ── */}
+                <div className="px-9 pb-3 pt-1 space-y-2.5 bg-background/40">
+                  <ImageInput
+                    label="Image"
+                    value={cat.image}
+                    onChange={(url) => updateCat(cat.id, "image", url)}
+                    storagePath="categories"
+                    previewSize={56}
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Slug</Label>
+                    <Input
+                      value={cat.slug}
+                      onChange={(e) => updateCat(cat.id, "slug", e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                      placeholder="electronics"
+                      className="h-8 text-xs"
+                    />
+                    <p className="text-[11px] text-muted-foreground/70">/shop?category=<strong>{cat.slug || "…"}</strong></p>
                   </div>
                 </div>
-
-                {/* Dual-mode image input */}
-                <ImageInput
-                  label="Category Image"
-                  value={cat.image}
-                  onChange={(url) => updateCat(cat.id, "image", url)}
-                  storagePath="categories"
-                  previewSize={72}
-                />
-
-                {/* Live preview chip */}
-                {(cat.label || cat.image) && (
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-muted-foreground">Preview:</span>
-                    <div
-                      className="w-[72px] h-[72px] rounded-xl overflow-hidden relative flex-shrink-0"
-                      style={{ background: cat.image ? "transparent" : cat.bg }}
-                    >
-                      {cat.image && <img src={cat.image} alt={cat.label} className="absolute inset-0 h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; (e.currentTarget.parentElement as HTMLElement).style.background = cat.bg; }} />}
-                      <div className="absolute inset-0 flex items-end p-1.5" style={{ background: "linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 60%)" }}>
-                        <span style={{ fontWeight: 700, fontSize: "10px", color: "#fff" }}>{cat.label || "Label"}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             ))}
           </div>
         )}
+
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-4">
+          <GripVertical className="h-3.5 w-3.5 flex-shrink-0" /> Drag ↑ ↓ to rearrange
+        </p>
 
         <Button variant="outline" onClick={addCategory} className="gap-2 mb-5 w-full">
           <Plus className="h-4 w-4" /> Add Category
