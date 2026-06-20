@@ -244,6 +244,12 @@ export default function SellerProducts() {
   }
 
   function openEdit(p: Product) {
+    // Defense-in-depth: never allow editing a product this seller doesn't own,
+    // even if it somehow rendered in this list.
+    if (p.seller_id !== seller?.id) {
+      toast.error("You can only edit your own products.");
+      return;
+    }
     setEditing(p);
     const imgs = (p as any).product_images ?? [];
     const existingImg = imgs.find((i: any) => i.is_primary)?.url ?? imgs[0]?.url ?? "";
@@ -324,6 +330,11 @@ export default function SellerProducts() {
 
   async function handleDelete(id: string) {
     if (!seller?.id) return;
+    const target = products?.find((p) => p.id === id);
+    if (target && target.seller_id !== seller.id) {
+      toast.error("You can only delete your own products.");
+      return;
+    }
     if (!confirm("Delete this product? This cannot be undone.")) return;
     setDeletingId(id);
     const { error } = await (supabase.from("products") as any)
@@ -338,6 +349,10 @@ export default function SellerProducts() {
 
   async function toggleActive(p: Product) {
     if (!seller?.id) return;
+    if (p.seller_id !== seller.id) {
+      toast.error("You can only modify your own products.");
+      return;
+    }
     const { error } = await (supabase.from("products") as any)
       .update({ is_active: !p.is_active }).eq("id", p.id).eq("seller_id", seller.id);
     if (error) toast.error(error.message);

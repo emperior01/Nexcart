@@ -8,6 +8,11 @@ import { Input, Label, Textarea, Select, Skeleton } from "@/components/ui/index"
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
+// All products created directly by an admin (not through a seller account)
+// are attributed to this fixed "Nexcart Official Store" seller record, so
+// they have a real, queryable owner instead of seller_id = NULL.
+const NEXCART_OFFICIAL_STORE_SELLER_ID = "4e88f29a-9bb5-43af-9421-f142f375fcff";
+
 type Product = Database["public"]["Tables"]["products"]["Row"];
 type Category = Database["public"]["Tables"]["categories"]["Row"];
 
@@ -263,7 +268,11 @@ export default function AdminProducts() {
         const { error } = await (supabase.from("products") as any).update(payload).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { data, error } = await supabase.from("products").insert(payload as any).select().single();
+        const { data, error } = await supabase
+          .from("products")
+          .insert({ ...payload, seller_id: NEXCART_OFFICIAL_STORE_SELLER_ID } as any)
+          .select()
+          .single();
         if (error) throw error;
         productId = (data as { id: string }).id;
       }
@@ -327,6 +336,7 @@ export default function AdminProducts() {
             is_featured: row.is_featured === "true",
             is_active: row.is_active !== "false",
             category_id: null,
+            seller_id: NEXCART_OFFICIAL_STORE_SELLER_ID,
           } as any);
           if (error) failed++;
           else created++;
