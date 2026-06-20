@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/index";
 import { Skeleton } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveCategories } from "@/hooks/use-categories";
 import type { ProductWithImages } from "@/lib/products";
 
 const PAGE_SIZE = 12;
@@ -39,13 +40,7 @@ export default function ShopPage() {
     navigate({ to: "/shop", search: searchObj as Record<string, string> });
   }
 
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data } = await supabase.from("categories").select("id,name,slug").order("sort_order");
-      return (data ?? []) as { id: string; name: string; slug: string }[];
-    },
-  });
+  const { categories } = useActiveCategories();
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", "shop", { category, q, sort, page }],

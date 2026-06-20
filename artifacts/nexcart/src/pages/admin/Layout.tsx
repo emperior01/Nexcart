@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet, CreditCard, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Package, Tags, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet, CreditCard, ShieldAlert } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +9,7 @@ import { Logo } from "@/components/nexcart/Logo";
 const navItems = [
   { to: "",             label: "Dashboard",         icon: LayoutDashboard },
   { to: "/products",    label: "Products",          icon: Package },
+  { to: "/categories",  label: "Categories",        icon: Tags },
   { to: "/orders",      label: "Orders",            icon: ShoppingBag },
   { to: "/users",       label: "Users",             icon: Users },
   { to: "/sellers",     label: "Sellers",           icon: Store },

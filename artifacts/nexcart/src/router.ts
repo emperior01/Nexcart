@@ -23,6 +23,7 @@ import WishlistPage from "@/pages/Wishlist";
 import AdminLayout from "@/pages/admin/Layout";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminProducts from "@/pages/admin/Products";
+import AdminCategories from "@/pages/admin/Categories";
 import AdminOrders from "@/pages/admin/Orders";
 import AdminUsers from "@/pages/admin/Users";
 import AdminSettings from "@/pages/admin/Settings";
@@ -200,6 +201,12 @@ const adminProductsRoute = createRoute({
   component: AdminProducts,
 });
 
+const adminCategoriesRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: "/categories",
+  component: AdminCategories,
+});
+
 const adminOrdersRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: "/orders",
@@ -328,6 +335,7 @@ const routeTree = rootRoute.addChildren([
   adminRoute.addChildren([
     adminIndexRoute,
     adminProductsRoute,
+    adminCategoriesRoute,
     adminOrdersRoute,
     adminUsersRoute,
     adminSettingsRoute,

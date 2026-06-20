@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchSiteSettings, DEFAULT_SETTINGS, type TrustBadge } from "@/lib/site-settings";
 import type { ProductWithImages } from "@/lib/products";
 import { useCart } from "@/lib/cart";
+import { useActiveCategories } from "@/hooks/use-categories";
 
 const ICON_MAP: Record<TrustBadge["icon"], React.ElementType> = {
   truck:   Truck,
@@ -17,6 +18,17 @@ const ICON_MAP: Record<TrustBadge["icon"], React.ElementType> = {
   refresh: RefreshCw,
   chat:    MessageCircle,
 };
+
+// Fallback gradients for categories with no image set yet, picked
+// deterministically by position so the look stays stable across reloads.
+const CATEGORY_FALLBACK_GRADIENTS = [
+  "linear-gradient(135deg,#1a1a2e,#2a2a4e)",
+  "linear-gradient(135deg,#2e1a1a,#4e2a2a)",
+  "linear-gradient(135deg,#1a2e1a,#2a4e2a)",
+  "linear-gradient(135deg,#1e1a2e,#362a4e)",
+  "linear-gradient(135deg,#2e2a1a,#4e3a10)",
+  "linear-gradient(135deg,#1a2a2e,#2a4a4e)",
+];
 
 export default function IndexPage() {
   const { openCart } = useCart();
@@ -27,7 +39,7 @@ export default function IndexPage() {
   });
 
   const heroImages = settings.hero.images ?? [];
-  const categories = [...(settings.homepage_categories ?? [])].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const { categories } = useActiveCategories();
   const [heroIdx, setHeroIdx] = useState(0);
   useEffect(() => {
     if (heroImages.length <= 1) return;
@@ -172,27 +184,23 @@ export default function IndexPage() {
             </Link>
           </div>
           <div className="flex gap-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-            {categories.map((c) => (
+            {categories.map((c, i) => (
               <Link
-                key={c.id ?? c.slug}
+                key={c.id}
                 to="/shop"
                 search={{ category: c.slug }}
                 className="flex-shrink-0 w-[100px] aspect-square rounded-xl overflow-hidden relative transition-all hover:-translate-y-0.5"
-                style={{ background: c.image ? "transparent" : c.bg }}
+                style={c.image_url ? undefined : { background: CATEGORY_FALLBACK_GRADIENTS[i % CATEGORY_FALLBACK_GRADIENTS.length] }}
               >
-                {c.image && (
+                {c.image_url && (
                   <img
-                    src={c.image}
-                    alt={c.label}
+                    src={c.image_url}
+                    alt={c.name}
                     className="absolute inset-0 h-full w-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      (e.currentTarget.parentElement as HTMLElement).style.background = c.bg;
-                    }}
                   />
                 )}
                 <div className="absolute inset-0 flex items-end p-2.5" style={{ background: "linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 60%)" }}>
-                  <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "-0.01em" }}>{c.label}</span>
+                  <span style={{ fontWeight: 700, fontSize: "13px", color: "#fff", letterSpacing: "-0.01em" }}>{c.name}</span>
                 </div>
               </Link>
             ))}

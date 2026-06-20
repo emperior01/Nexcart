@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSeller } from "@/hooks/use-seller";
+import { useActiveCategories } from "@/hooks/use-categories";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea, Select, Skeleton } from "@/components/ui/index";
 import { ImagePicker } from "@/components/nexcart/ImagePicker";
@@ -66,13 +67,7 @@ export default function SellerProducts() {
     },
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data } = await supabase.from("categories").select("*").order("sort_order");
-      return (data ?? []) as Category[];
-    },
-  });
+  const { categories } = useActiveCategories();
 
   function openNew() {
     setEditing(null);

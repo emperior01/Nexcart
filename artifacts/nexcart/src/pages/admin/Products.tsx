@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea, Select, Skeleton } from "@/components/ui/index";
 import { ImagePicker } from "@/components/nexcart/ImagePicker";
+import { useActiveCategories } from "@/hooks/use-categories";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -69,13 +70,7 @@ export default function AdminProducts() {
     },
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ["categories"],
-    queryFn: async () => {
-      const { data } = await supabase.from("categories").select("*").order("sort_order");
-      return (data ?? []) as Category[];
-    },
-  });
+  const { categories } = useActiveCategories();
 
   function openNew() {
     setEditing(null);
