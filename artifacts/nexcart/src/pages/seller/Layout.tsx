@@ -87,18 +87,25 @@ function SidebarContent({
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Brand */}
       <div style={{
-        padding: "20px 18px 16px",
+        padding: "16px 18px 14px",
         borderBottom: "1px solid #F3F4F6",
         background: "linear-gradient(135deg, #fff 0%, #FFF8F5 100%)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <Logo height={48} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 10 }}>
+          <Logo height={34} showTagline={false} />
           <span style={{
-            fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
+            fontSize: 10, fontWeight: 800, letterSpacing: "0.12em",
             textTransform: "uppercase" as const,
             color: "#9CA3AF",
           }}>
             Seller Hub
+          </span>
+          <span style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+            textTransform: "uppercase" as const,
+            color: "#E8611A",
+          }}>
+            Shop the future
           </span>
         </div>
 
@@ -444,7 +451,7 @@ export default function SellerLayout() {
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Logo height={40} />
+            <Logo height={32} showTagline={false} />
             <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "#9CA3AF" }}>
               Seller
             </span>
