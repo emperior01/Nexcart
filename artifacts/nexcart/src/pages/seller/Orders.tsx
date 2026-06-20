@@ -47,11 +47,18 @@ export default function SellerOrders() {
 
       const { data } = await supabase
         .from("order_items")
-        .select("id,product_id,quantity,unit_price,currency,orders!inner(id,status,created_at,currency)")
+        .select("id,product_id,quantity,unit_price,currency,orders!inner(id,status,created_at,currency,user_id)")
         .in("product_id", productIds)
         .order("id", { ascending: false });
 
-      return ((data ?? []) as any[]).map((oi) => ({
+      // Exclude orders the seller placed buying their own product as a customer —
+      // that's not a sale to an external customer and must not count toward
+      // seller order stats or earnings.
+      const rows = ((data ?? []) as any[]).filter(
+        (oi) => oi.orders.user_id !== seller.user_id
+      );
+
+      return rows.map((oi) => ({
         orderId: oi.orders.id,
         orderStatus: oi.orders.status,
         orderCreatedAt: oi.orders.created_at,

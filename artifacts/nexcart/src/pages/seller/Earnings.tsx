@@ -64,13 +64,17 @@ export default function SellerEarnings() {
       const [itemsRes, withdrawalsRes] = await Promise.all([
         supabase
           .from("order_items")
-          .select("id,quantity,unit_price,currency,orders!inner(id,status,created_at)")
+          .select("id,quantity,unit_price,currency,orders!inner(id,status,created_at,user_id)")
           .in("product_id", productIds),
         supabase.from("withdrawals").select("*").eq("seller_id", seller.id).eq("status", "approved"),
       ]);
 
-      type OI = { id: string; quantity: number; unit_price: number; currency: string; orders: { id: string; status: string; created_at: string } };
-      const items = (itemsRes.data ?? []) as OI[];
+      type OI = { id: string; quantity: number; unit_price: number; currency: string; orders: { id: string; status: string; created_at: string; user_id: string } };
+      // Exclude orders the seller placed buying their own product as a customer —
+      // that revenue isn't a real external sale and must not count toward earnings.
+      const items = ((itemsRes.data ?? []) as OI[]).filter(
+        (oi) => oi.orders.user_id !== seller.user_id
+      );
 
       const orderMap = new Map<string, { id: string; status: string; date: string; amount: number }>();
       for (const oi of items) {

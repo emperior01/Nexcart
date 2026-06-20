@@ -411,15 +411,19 @@ export default function SellerDashboard() {
         supabase.from("products").select("id,stock,title", { count: "exact" }).eq("seller_id", seller.id),
         supabase
           .from("order_items")
-          .select("id,quantity,unit_price,currency,orders!inner(id,status,created_at)")
+          .select("id,quantity,unit_price,currency,orders!inner(id,status,created_at,user_id)")
           .in("product_id",
             await supabase.from("products").select("id").eq("seller_id", seller.id)
               .then(r => (r.data ?? []).map((p: { id: string }) => p.id))
           ),
       ]);
 
-      type OI = { id: string; quantity: number; unit_price: number; currency: string; orders: { id: string; status: string; created_at: string } };
-      const orderItems = (orderItemsRes.data ?? []) as OI[];
+      type OI = { id: string; quantity: number; unit_price: number; currency: string; orders: { id: string; status: string; created_at: string; user_id: string } };
+      // Exclude orders the seller placed buying their own product as a customer —
+      // those are not external sales and must not count toward seller stats.
+      const orderItems = ((orderItemsRes.data ?? []) as OI[]).filter(
+        (oi) => oi.orders.user_id !== seller.user_id
+      );
       const productRows = (products.data ?? []) as { id: string; stock: number; title: string }[];
 
       const orderMap = new Map<string, { status: string; created_at: string; total: number }>();
