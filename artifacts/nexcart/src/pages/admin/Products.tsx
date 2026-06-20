@@ -301,15 +301,42 @@ export default function AdminProducts() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this product? This cannot be undone.")) return;
     setDeletingId(id);
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    setDeletingId(null);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Product deleted.");
+    try {
+      // Check if this product has ever been ordered. If it has, a hard delete
+      // would violate the order_items -> products foreign key, and would also
+      // destroy order history and seller earnings tied to it. If it has never
+      // been ordered, there's no such risk, so we can remove it outright.
+      const { count, error: checkError } = await supabase
+        .from("order_items")
+        .select("id", { count: "exact", head: true })
+        .eq("product_id", id);
+      if (checkError) throw checkError;
+
+      const hasOrderHistory = (count ?? 0) > 0;
+
+      if (hasOrderHistory) {
+        if (!confirm("This product has order history and can't be permanently deleted. It will be hidden from the storefront instead, and past orders will still show it correctly. Continue?")) {
+          return;
+        }
+        const { error } = await supabase.from("products").update({ is_active: false } as any).eq("id", id);
+        if (error) throw error;
+        toast.success("Product removed from store (order history preserved).");
+      } else {
+        if (!confirm("Permanently delete this product? It has no order history, so this cannot be undone.")) {
+          return;
+        }
+        const { error } = await supabase.from("products").delete().eq("id", id);
+        if (error) throw error;
+        toast.success("Product deleted.");
+      }
+
       qc.invalidateQueries({ queryKey: ["admin-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed.");
+    } finally {
+      setDeletingId(null);
     }
   }
 

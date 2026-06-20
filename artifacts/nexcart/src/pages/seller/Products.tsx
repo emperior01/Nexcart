@@ -335,15 +335,42 @@ export default function SellerProducts() {
       toast.error("You can only delete your own products.");
       return;
     }
-    if (!confirm("Delete this product? This cannot be undone.")) return;
     setDeletingId(id);
-    const { error } = await (supabase.from("products") as any)
-      .delete().eq("id", id).eq("seller_id", seller.id);
-    setDeletingId(null);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Product deleted.");
+    try {
+      // Check order history before deciding hard vs. soft delete — a product
+      // with past orders can't be hard-deleted (order_items foreign key),
+      // and doing so would destroy that order's history and your own earnings
+      // record for it.
+      const { count, error: checkError } = await supabase
+        .from("order_items")
+        .select("id", { count: "exact", head: true })
+        .eq("product_id", id);
+      if (checkError) throw checkError;
+
+      const hasOrderHistory = (count ?? 0) > 0;
+
+      if (hasOrderHistory) {
+        if (!confirm("This product has order history and can't be permanently deleted. It will be hidden from your store instead, and your past sales records will be preserved. Continue?")) {
+          return;
+        }
+        const { error } = await (supabase.from("products") as any)
+          .update({ is_active: false }).eq("id", id).eq("seller_id", seller.id);
+        if (error) throw error;
+        toast.success("Product removed from your store (sales history preserved).");
+      } else {
+        if (!confirm("Permanently delete this product? It has no order history, so this cannot be undone.")) {
+          return;
+        }
+        const { error } = await (supabase.from("products") as any)
+          .delete().eq("id", id).eq("seller_id", seller.id);
+        if (error) throw error;
+        toast.success("Product deleted.");
+      }
       qc.invalidateQueries({ queryKey: ["seller-products", seller?.id] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delete failed.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
