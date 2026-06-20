@@ -92,7 +92,7 @@ function SidebarContent({
         background: "linear-gradient(135deg, #fff 0%, #FFF8F5 100%)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <Logo height={44} />
+          <Logo height={48} />
           <span style={{
             fontSize: 9, fontWeight: 800, letterSpacing: "0.1em",
             textTransform: "uppercase" as const,
@@ -444,7 +444,7 @@ export default function SellerLayout() {
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <Logo height={36} />
+            <Logo height={40} />
             <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "#9CA3AF" }}>
               Seller
             </span>

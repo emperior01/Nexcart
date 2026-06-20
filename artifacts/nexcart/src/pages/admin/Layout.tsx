@@ -34,7 +34,7 @@ function SidebarContent({
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: "16px 16px 14px", borderBottom: "1px solid #EBEBEB", display: "flex", alignItems: "center", gap: 10 }}>
-        <Logo height={44} />
+        <Logo height={48} />
         <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" as const, background: "rgba(232,97,26,0.12)", color: "#E8611A", padding: "3px 8px", borderRadius: 50, border: "1px solid rgba(232,97,26,0.25)" }}>Admin</span>
       </div>
 
@@ -224,7 +224,7 @@ export default function AdminLayout() {
           >
             <Menu style={{ width: 18, height: 18, color: "#3A3A3A" }} />
           </button>
-          <Logo height={42} />
+          <Logo height={40} />
           {(pendingSellers + pendingVerifications) > 0 && (
             <span style={{
               minWidth: 20, height: 20, borderRadius: 50,

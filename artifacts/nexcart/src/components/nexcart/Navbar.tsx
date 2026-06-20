@@ -124,7 +124,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
           >
             <Menu className="h-5 w-5" strokeWidth={1.8} />
           </button>
-          <Logo />
+          <Logo height={46} />
           <nav className="hidden md:flex items-center gap-1 ml-8">
             {navLinks.map((l) => (
               <Link
@@ -314,7 +314,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
 
             {/* Header */}
             <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Logo />
+              <Logo height={42} />
               <button onClick={() => setMobileOpen(false)} style={{ width: 32, height: 32, borderRadius: "50%", background: "#F3F4F6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <X style={{ width: 16, height: 16, color: "#6B7280" }} />
               </button>
