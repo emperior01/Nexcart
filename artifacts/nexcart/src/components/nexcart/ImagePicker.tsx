@@ -31,9 +31,7 @@ export function ImagePicker({
 
   const preview = value.startsWith("http") ? value : null;
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function uploadAndApply(file: File) {
     setUploading(true);
     try {
       const url = await uploadImageToStorage(file, folder);
@@ -46,6 +44,30 @@ export function ImagePicker({
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadAndApply(file);
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          uploadAndApply(file);
+        }
+        return;
+      }
+    }
+    // No image found in clipboard — if there's text, let it fall through
+    // naturally (e.g. pasting into the URL field still works as normal).
   }
 
   async function handleUrlApply() {
@@ -61,7 +83,11 @@ export function ImagePicker({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div
+      tabIndex={0}
+      onPaste={handlePaste}
+      style={{ display: "flex", flexDirection: "column", gap: 10, outline: "none" }}
+    >
       <div style={{ display: "flex", borderRadius: 10, background: "#F3F4F6", padding: 3, gap: 2 }}>
         {(["upload", "url"] as const).map((t) => (
           <button
@@ -108,6 +134,7 @@ export function ImagePicker({
               </div>
               <p style={{ fontSize: 13, fontWeight: 600, color: "#3A3A3A" }}>Tap to choose photo</p>
               <p style={{ fontSize: 11, color: "#9B9B9B" }}>JPG, PNG, WEBP · max 5 MB</p>
+              <p style={{ fontSize: 11, color: "#9B9B9B" }}>or paste a copied image (Ctrl/Cmd+V)</p>
             </div>
           )}
         </div>

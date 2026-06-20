@@ -116,6 +116,28 @@ export default function AdminSettings() {
     }
   }
 
+  function handleHeroPaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        if (hero.images.length >= 4) {
+          toast.error("Maximum 4 hero images allowed.");
+          return;
+        }
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          uploadHeroImage(file);
+        }
+        return;
+      }
+    }
+    // No image in clipboard — let text paste into whichever URL input
+    // triggered this (e.g. pasting a link) behave normally.
+  }
+
   function updateBadge(i: number, field: keyof TrustBadge, val: string) {
     setBadges((b) => b.map((badge, idx) => idx === i ? { ...badge, [field]: val } : badge));
   }
@@ -213,11 +235,11 @@ export default function AdminSettings() {
           </div>
         </div>
 
-        <div className="border-t border-border/50 pt-5">
+        <div className="border-t border-border/50 pt-5" tabIndex={0} onPaste={handleHeroPaste} style={{ outline: "none" }}>
           <div className="flex items-center justify-between mb-3">
             <div>
               <Label>Background Images</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">Up to 4 images — they cycle as a slideshow.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Up to 4 images — they cycle as a slideshow. You can also paste a copied image (Ctrl/Cmd+V).</p>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <input ref={heroImgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadHeroImage(f); }} />
