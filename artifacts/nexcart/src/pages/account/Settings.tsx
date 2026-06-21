@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import {
   Settings, Globe, CreditCard, Truck, ShoppingBag,
-  ChevronRight, Check, Loader2,
-  Monitor, Shirt, Sparkles, Home, Dumbbell,
+  ChevronRight, Check, Loader2, Tag,
 } from "lucide-react";
+import { useActiveCategories } from "@/hooks/use-categories";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/index";
@@ -24,14 +24,6 @@ const LANGUAGES = [
   { code: "ha", label: "Hausa" },
   { code: "yo", label: "Yoruba" },
   { code: "ig", label: "Igbo" },
-];
-
-const SHOPPING_CATEGORIES = [
-  { id: "electronics",   label: "Electronics",      icon: Monitor },
-  { id: "fashion",       label: "Fashion",           icon: Shirt },
-  { id: "beauty",        label: "Beauty",            icon: Sparkles },
-  { id: "home-living",   label: "Home & Living",     icon: Home },
-  { id: "sports-fitness",label: "Sports & Fitness",  icon: Dumbbell },
 ];
 
 // ── Section Card wrapper ─────────────────────────────────────────────────────
@@ -125,6 +117,7 @@ function ActionCard({
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AccountSettings() {
   const { user } = useAuth();
+  const { categories: activeCategories, isLoading: catsLoading } = useActiveCategories();
 
   // Currency
   const [savingCurrency, setSavingCurrency] = useState(false);
@@ -317,38 +310,52 @@ export default function AccountSettings() {
           label="Interested Categories"
           description="Select categories you're most interested in to personalise your homepage and product discovery."
         >
-          <div className="grid grid-cols-1 gap-2 mt-1">
-            {SHOPPING_CATEGORIES.map((cat) => {
-              const checked = categories.includes(cat.id);
-              return (
-                <label
-                  key={cat.id}
-                  onClick={() => toggleCategory(cat.id)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 12,
-                    padding: "11px 14px", borderRadius: 12, cursor: "pointer",
-                    border: `1.5px solid ${checked ? "#E8611A" : "#F0F0F0"}`,
-                    background: checked ? "#FFF8F5" : "#FAFAFA",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <cat.icon style={{ width: 18, height: 18, flexShrink: 0, color: checked ? "#E8611A" : "#6B7280" }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0D", flex: 1 }}>
-                    {cat.label}
-                  </span>
-                  <div style={{
-                    width: 20, height: 20, borderRadius: 6, flexShrink: 0,
-                    border: `2px solid ${checked ? "#E8611A" : "#D1D5DB"}`,
-                    background: checked ? "#E8611A" : "#fff",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    transition: "all 0.15s",
-                  }}>
-                    {checked && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
-                  </div>
-                </label>
-              );
-            })}
-          </div>
+          {catsLoading ? (
+            <div className="flex items-center gap-2 py-4 text-sm text-[#9B9B9B]">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading categories…
+            </div>
+          ) : activeCategories.length === 0 ? (
+            <div className="flex items-center gap-2 py-4 text-sm text-[#9B9B9B]">
+              <Tag className="h-4 w-4" /> No categories available yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 mt-1">
+              {activeCategories.map((cat) => {
+                const checked = categories.includes(cat.id);
+                return (
+                  <label
+                    key={cat.id}
+                    onClick={() => toggleCategory(cat.id)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "11px 14px", borderRadius: 12, cursor: "pointer",
+                      border: `1.5px solid ${checked ? "#E8611A" : "#F0F0F0"}`,
+                      background: checked ? "#FFF8F5" : "#FAFAFA",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {cat.image_url ? (
+                      <img src={cat.image_url} alt={cat.name} style={{ width: 18, height: 18, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <Tag style={{ width: 18, height: 18, flexShrink: 0, color: checked ? "#E8611A" : "#6B7280" }} />
+                    )}
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#0D0D0D", flex: 1 }}>
+                      {cat.name}
+                    </span>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                      border: `2px solid ${checked ? "#E8611A" : "#D1D5DB"}`,
+                      background: checked ? "#E8611A" : "#fff",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "all 0.15s",
+                    }}>
+                      {checked && <Check style={{ width: 12, height: 12, color: "#fff" }} />}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
           <Button
             onClick={saveCategories}
             disabled={savingCats}
