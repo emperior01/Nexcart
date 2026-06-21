@@ -62,9 +62,15 @@ export default function AdminProducts() {
   const { data: products, isLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
+      // Admin Products shows ONLY Nexcart's own catalogue — products created
+      // through this page or CSV import, which are always attributed to the
+      // Nexcart Official Store. Seller-owned products live in Marketplace →
+      // Sellers instead, since a flat combined list doesn't scale and mixes
+      // two genuinely different ownership types together.
       const { data } = await supabase
         .from("products")
         .select("*, categories(name), product_images(url,is_primary)")
+        .eq("seller_id", NEXCART_OFFICIAL_STORE_SELLER_ID)
         .order("created_at", { ascending: false });
       return (data ?? []) as Product[];
     },
@@ -233,8 +239,8 @@ export default function AdminProducts() {
     <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-foreground">Products</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{products?.length ?? 0} total</p>
+          <h1 className="text-2xl font-black text-foreground">Nexcart Products</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{products?.length ?? 0} products in Nexcart's own catalogue · seller products live in Marketplace</p>
         </div>
         <div className="flex gap-2">
           <input ref={csvRef} type="file" accept=".csv" className="hidden" onChange={handleCSV} />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-router";
-import { LayoutDashboard, Package, Tags, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet, CreditCard, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Package, Tags, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet, CreditCard, ShieldAlert, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,6 +13,7 @@ const navItems = [
   { to: "/orders",      label: "Orders",            icon: ShoppingBag },
   { to: "/users",       label: "Users",             icon: Users },
   { to: "/sellers",     label: "Sellers",           icon: Store },
+  { to: "/marketplace/sellers", label: "Marketplace", icon: TrendingUp },
   { to: "/verifications",label: "Verifications",     icon: ShieldAlert },
   { to: "/withdrawals", label: "Withdrawals",       icon: Wallet },
   { to: "/payments",    label: "Payment Settings",  icon: CreditCard },

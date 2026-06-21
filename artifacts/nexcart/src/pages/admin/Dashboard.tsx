@@ -37,8 +37,9 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [products, orders, users, sellers, pendingWithdrawals, settings, orderItemsRes] = await Promise.all([
-        supabase.from("products").select("id", { count: "exact", head: true }),
+      const [adminProducts, sellerProducts, orders, users, sellers, pendingWithdrawals, settings, orderItemsRes] = await Promise.all([
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("seller_id", NEXCART_OFFICIAL_STORE_SELLER_ID),
+        supabase.from("products").select("id", { count: "exact", head: true }).neq("seller_id", NEXCART_OFFICIAL_STORE_SELLER_ID),
         supabase.from("orders").select("id,total", { count: "exact" }),
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("sellers").select("id,verification_status", { count: "exact" }),
@@ -95,7 +96,9 @@ export default function AdminDashboard() {
       const nexcartEarnings = nexcartDirectRevenue + commissionEarnings;
 
       return {
-        products: products.count ?? 0,
+        adminProductsCount: adminProducts.count ?? 0,
+        sellerProductsCount: sellerProducts.count ?? 0,
+        totalProductsCount: (adminProducts.count ?? 0) + (sellerProducts.count ?? 0),
         orders: orders.count ?? 0,
         users: users.count ?? 0,
         totalMarketplaceVolume,
@@ -139,7 +142,7 @@ export default function AdminDashboard() {
           ))
         ) : (
           <>
-            <StatCard label="Products"    value={stats!.products} icon={Package}     gradient="linear-gradient(135deg,#E8611A,#C4511A)" />
+            <StatCard label="Total Products" value={stats!.totalProductsCount} icon={Package}     gradient="linear-gradient(135deg,#E8611A,#C4511A)" />
             <StatCard label="Orders"      value={stats!.orders}   icon={ShoppingBag} gradient="linear-gradient(135deg,#3B82F6,#1D4ED8)" />
             <StatCard label="Users"       value={stats!.users}    icon={Users}       gradient="linear-gradient(135deg,#8B5CF6,#6D28D9)" />
             <StatCard
@@ -151,6 +154,33 @@ export default function AdminDashboard() {
           </>
         )}
       </div>
+
+      {/* Product ownership breakdown */}
+      <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 13, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Product Ownership</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 24 }}>
+        {isLoading ? (
+          Array.from({ length: 2 }).map((_, i) => <div key={i} style={{ height: 80, borderRadius: 16, background: "#EBEBEB" }} />)
+        ) : (
+          <>
+            <StatCard
+              label="Admin Products"
+              value={stats!.adminProductsCount}
+              icon={Store}
+              gradient="linear-gradient(135deg,#0EA5E9,#0369A1)"
+            />
+            <StatCard
+              label="Marketplace Products"
+              value={stats!.sellerProductsCount}
+              icon={Package}
+              gradient="linear-gradient(135deg,#6366F1,#4338CA)"
+            />
+          </>
+        )}
+      </div>
+      <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: -16, marginBottom: 24, lineHeight: 1.5 }}>
+        "Admin Products" are Nexcart's own catalogue, managed under Products. "Marketplace Products" are
+        seller-owned listings, managed per-seller under Marketplace. Together they make up Total Products above.
+      </p>
 
       {/* Earnings breakdown */}
       <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 13, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Nexcart Earnings Breakdown</p>

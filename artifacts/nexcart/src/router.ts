@@ -24,6 +24,8 @@ import AdminLayout from "@/pages/admin/Layout";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminProducts from "@/pages/admin/Products";
 import AdminCategories from "@/pages/admin/Categories";
+import AdminMarketplaceSellers from "@/pages/admin/MarketplaceSellers";
+import AdminMarketplaceSellerDetail from "@/pages/admin/MarketplaceSellerDetail";
 import AdminOrders from "@/pages/admin/Orders";
 import AdminUsers from "@/pages/admin/Users";
 import AdminSettings from "@/pages/admin/Settings";
@@ -207,6 +209,18 @@ const adminCategoriesRoute = createRoute({
   component: AdminCategories,
 });
 
+const adminMarketplaceSellersRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: "/marketplace/sellers",
+  component: AdminMarketplaceSellers,
+});
+
+const adminMarketplaceSellerDetailRoute = createRoute({
+  getParentRoute: () => adminRoute,
+  path: "/marketplace/sellers/$sellerId",
+  component: AdminMarketplaceSellerDetail,
+});
+
 const adminOrdersRoute = createRoute({
   getParentRoute: () => adminRoute,
   path: "/orders",
@@ -336,6 +350,8 @@ const routeTree = rootRoute.addChildren([
     adminIndexRoute,
     adminProductsRoute,
     adminCategoriesRoute,
+    adminMarketplaceSellersRoute,
+    adminMarketplaceSellerDetailRoute,
     adminOrdersRoute,
     adminUsersRoute,
     adminSettingsRoute,
