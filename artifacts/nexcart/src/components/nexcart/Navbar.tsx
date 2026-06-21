@@ -94,7 +94,17 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
     clearCart();
     setMenuOpen(false);
     setMobileOpen(false);
-    await supabase.auth.signOut();
+    // Reset role immediately — don't wait for re-render
+    setIsAdmin(false);
+    // Sign out from Supabase (clears server session)
+    await supabase.auth.signOut({ scope: "local" });
+    // Clear ALL Supabase localStorage tokens so no cached session
+    // can be picked up by the next user who clicks "Continue with Google"
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("sb-") || key.includes("supabase")) {
+        localStorage.removeItem(key);
+      }
+    });
     void navigate({ to: "/" });
   }
 

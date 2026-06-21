@@ -19,14 +19,32 @@ export function useAuth(): AuthState {
   const restoreForUser = useCart((s) => s.restoreForUser);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setState({ user: session?.user ?? null, session, loading: false });
-      if (session?.user) restoreForUser(session.user.id);
+    // Use getUser() instead of getSession() — getSession() reads from localStorage
+    // and can return a stale session belonging to a previously logged-in user.
+    // getUser() always validates against the Supabase server.
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setState({ user, session, loading: false });
+          restoreForUser(user.id);
+        });
+      } else {
+        setState({ user: null, session: null, loading: false });
+      }
     });
 
-    // Listen for auth changes
+    // Listen for auth state changes — events are always fresh from the server
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        // Clear ALL Supabase-related localStorage keys so no stale tokens linger
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith("sb-") || key.includes("supabase")) {
+            localStorage.removeItem(key);
+          }
+        });
+        setState({ user: null, session: null, loading: false });
+        return;
+      }
       setState({ user: session?.user ?? null, session, loading: false });
       if (event === "SIGNED_IN" && session?.user) {
         restoreForUser(session.user.id);
