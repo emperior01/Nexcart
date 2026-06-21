@@ -5,6 +5,11 @@ import { Search, Store, ShoppingBag, Package, TrendingUp, ShieldCheck, ShieldAle
 import { Input, Select, Skeleton } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
 
+// Same fixed seller_id used everywhere admin-created products are
+// attributed to the Nexcart Official Store — excluded from this directory
+// since it's not a third-party marketplace seller.
+const NEXCART_OFFICIAL_STORE_SELLER_ID = "4e88f29a-9bb5-43af-9421-f142f375fcff";
+
 type SellerRow = {
   id: string;
   store_name: string;
@@ -48,9 +53,14 @@ export default function AdminMarketplaceSellers() {
   const { data: sellers, isLoading: sellersLoading } = useQuery({
     queryKey: ["marketplace-sellers"],
     queryFn: async (): Promise<SellerRow[]> => {
+      // Nexcart Official Store has a sellers row too (needed for the FK
+      // that attributes admin-created products to it), but it's not a
+      // third-party marketplace seller — it must not appear in this
+      // directory alongside real sellers.
       const { data, error } = await supabase
         .from("sellers")
         .select("id,store_name,store_logo,verification_status,created_at")
+        .neq("id", NEXCART_OFFICIAL_STORE_SELLER_ID)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as SellerRow[];
@@ -65,9 +75,10 @@ export default function AdminMarketplaceSellers() {
   const { data: statsMap, isLoading: statsLoading } = useQuery({
     queryKey: ["marketplace-seller-stats"],
     queryFn: async (): Promise<Map<string, SellerStats>> => {
-      const [productsRes, itemsRes] = await Promise.all([
+      const [productsRes, sellersRes, itemsRes] = await Promise.all([
         supabase.from("products").select("id,seller_id"),
-        supabase.from("order_items").select("quantity,unit_price,product_id,products(seller_id)"),
+        supabase.from("sellers").select("id,user_id"),
+        supabase.from("order_items").select("quantity,unit_price,product_id,orders(user_id),products(seller_id)"),
       ]);
 
       const products = (productsRes.data ?? []) as { id: string; seller_id: string | null }[];
@@ -80,11 +91,25 @@ export default function AdminMarketplaceSellers() {
         map.set(p.seller_id, entry);
       }
 
-      type ItemRow = { quantity: number; unit_price: number; product_id: string; products: { seller_id: string | null } | null };
+      const sellerUserIdById = new Map(
+        ((sellersRes.data ?? []) as { id: string; user_id: string }[]).map((s) => [s.id, s.user_id])
+      );
+
+      type ItemRow = {
+        quantity: number; unit_price: number; product_id: string;
+        orders: { user_id: string } | null;
+        products: { seller_id: string | null } | null;
+      };
       const items = (itemsRes.data ?? []) as unknown as ItemRow[];
       for (const item of items) {
         const sellerId = item.products?.seller_id;
         if (!sellerId) continue;
+        // Exclude a seller buying their own product as a customer — not a
+        // real sale, must not inflate their order/sales numbers here either.
+        const sellerUserId = sellerUserIdById.get(sellerId);
+        const buyerUserId = item.orders?.user_id;
+        if (sellerUserId && buyerUserId && sellerUserId === buyerUserId) continue;
+
         const entry = map.get(sellerId) ?? { productCount: 0, orderCount: 0, salesVolume: 0 };
         entry.orderCount += 1;
         entry.salesVolume += Number(item.quantity) * Number(item.unit_price);

@@ -37,7 +37,7 @@ type SellerOrderItem = {
   quantity: number;
   unit_price: number;
   currency: string;
-  orders: { id: string; status: string; created_at: string } | null;
+  orders: { id: string; status: string; created_at: string; user_id: string } | null;
 };
 
 const statusConfig: Record<string, { bg: string; color: string; label: string }> = {
@@ -52,6 +52,7 @@ export default function AdminMarketplaceSellerDetail() {
   const { sellerId } = useParams({ strict: false }) as { sellerId: string };
   const qc = useQueryClient();
   const [actionLoading, setActionLoading] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
 
   const { data: seller, isLoading: sellerLoading } = useQuery({
     queryKey: ["marketplace-seller", sellerId],
@@ -82,13 +83,18 @@ export default function AdminMarketplaceSellerDetail() {
       if (productIds.length === 0) return [];
       const { data, error } = await supabase
         .from("order_items")
-        .select("id,quantity,unit_price,currency,orders(id,status,created_at)")
+        .select("id,quantity,unit_price,currency,orders!inner(id,status,created_at,user_id)")
         .in("product_id", productIds)
         .order("id", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as unknown as SellerOrderItem[];
+      const rows = (data ?? []) as unknown as SellerOrderItem[];
+      // Exclude orders the seller placed buying their own product as a
+      // customer — that's not a real sale and must not count toward this
+      // seller's order count or revenue, consistent with their own
+      // dashboard's rule.
+      return rows.filter((oi) => oi.orders?.user_id !== seller?.user_id);
     },
-    enabled: !!products,
+    enabled: !!products && !!seller,
   });
 
   const { data: reviewStats } = useQuery({
@@ -137,6 +143,61 @@ export default function AdminMarketplaceSellerDetail() {
       invalidateAll();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to restore products.");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function toggleProductActive(product: SellerProduct) {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: !product.is_active } as any)
+        .eq("id", product.id)
+        .eq("seller_id", sellerId); // belt-and-suspenders: never touch a product outside this seller
+      if (error) throw error;
+      toast.success(product.is_active ? "Product hidden." : "Product restored.");
+      invalidateAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update product.");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  function toggleProductSelected(id: string) {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (!products) return;
+    setSelectedProductIds((prev) =>
+      prev.size === products.length ? new Set() : new Set(products.map((p) => p.id))
+    );
+  }
+
+  async function bulkSetActive(active: boolean) {
+    if (selectedProductIds.size === 0) return;
+    const ids = Array.from(selectedProductIds);
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: active } as any)
+        .in("id", ids)
+        .eq("seller_id", sellerId);
+      if (error) throw error;
+      toast.success(`${ids.length} product${ids.length === 1 ? "" : "s"} ${active ? "restored" : "hidden"}.`);
+      setSelectedProductIds(new Set());
+      invalidateAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bulk update failed.");
     } finally {
       setActionLoading(false);
     }
@@ -285,36 +346,75 @@ export default function AdminMarketplaceSellerDetail() {
 
       {/* Products */}
       <div>
-        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-2">Products</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">Products</h2>
+          {selectedProductIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{selectedProductIds.size} selected</span>
+              <Button size="sm" variant="outline" onClick={() => bulkSetActive(false)} disabled={actionLoading} className="gap-1.5 text-xs">
+                <EyeOff className="h-3 w-3" /> Hide
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => bulkSetActive(true)} disabled={actionLoading} className="gap-1.5 text-xs">
+                <Eye className="h-3 w-3" /> Restore
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
           {productsLoading ? (
             <div className="p-4 space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-xl" />)}</div>
           ) : (products?.length ?? 0) === 0 ? (
             <p className="text-sm text-muted-foreground p-6 text-center">No products yet.</p>
           ) : (
-            <div className="divide-y divide-border/50">
-              {products!.map((p) => {
-                const img = p.product_images?.find((i) => i.is_primary) ?? p.product_images?.[0];
-                return (
-                  <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-                    <div className="h-10 w-10 rounded-lg bg-secondary flex-shrink-0 overflow-hidden">
-                      {img && <img src={img.url} alt={p.title} className="h-full w-full object-cover" />}
+            <>
+              <div className="flex items-center gap-3 px-4 py-2 bg-secondary/30 border-b border-border/50">
+                <input
+                  type="checkbox"
+                  checked={selectedProductIds.size === products!.length}
+                  onChange={toggleSelectAll}
+                  className="rounded border-input"
+                />
+                <span className="text-xs font-semibold text-muted-foreground">Select all</span>
+              </div>
+              <div className="divide-y divide-border/50">
+                {products!.map((p) => {
+                  const img = p.product_images?.find((i) => i.is_primary) ?? p.product_images?.[0];
+                  return (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedProductIds.has(p.id)}
+                        onChange={() => toggleProductSelected(p.id)}
+                        className="rounded border-input flex-shrink-0"
+                      />
+                      <div className="h-10 w-10 rounded-lg bg-secondary flex-shrink-0 overflow-hidden">
+                        {img && <img src={img.url} alt={p.title} className="h-full w-full object-cover" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{p.title}</p>
+                        <p className="text-xs text-muted-foreground">{p.currency} {Number(p.price).toFixed(2)} · stock {p.stock}</p>
+                      </div>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 50,
+                        background: p.is_active ? "#D1FAE5" : "#F3F4F6",
+                        color: p.is_active ? "#065F46" : "#6B7280",
+                      }}>
+                        {p.is_active ? "Visible" : "Hidden"}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => toggleProductActive(p)}
+                        disabled={actionLoading}
+                        className="gap-1.5 text-xs shrink-0"
+                      >
+                        {p.is_active ? <><EyeOff className="h-3 w-3" /> Hide</> : <><Eye className="h-3 w-3" /> Restore</>}
+                      </Button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{p.title}</p>
-                      <p className="text-xs text-muted-foreground">{p.currency} {Number(p.price).toFixed(2)} · stock {p.stock}</p>
-                    </div>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 50,
-                      background: p.is_active ? "#D1FAE5" : "#F3F4F6",
-                      color: p.is_active ? "#065F46" : "#6B7280",
-                    }}>
-                      {p.is_active ? "Visible" : "Hidden"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       </div>
