@@ -94,17 +94,29 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
     clearCart();
     setMenuOpen(false);
     setMobileOpen(false);
-    // Reset role immediately — don't wait for re-render
+
+    // Reset role state immediately — don't wait for re-render
     setIsAdmin(false);
-    // Sign out from Supabase (clears server session)
-    await supabase.auth.signOut({ scope: "local" });
-    // Clear ALL Supabase localStorage tokens so no cached session
-    // can be picked up by the next user who clicks "Continue with Google"
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith("sb-") || key.includes("supabase")) {
-        localStorage.removeItem(key);
-      }
-    });
+
+    // scope: "global" invalidates ALL sessions for this user across every
+    // browser/device, not just the current tab. This prevents the old admin
+    // session from being picked up when a different Google account logs in.
+    try {
+      await supabase.auth.signOut({ scope: "global" });
+    } catch (_) {}
+
+    // Wipe every Supabase token from both storages so no stale data lingers.
+    // This is the key fix for Edge / Opera Mini where localStorage persists
+    // across normal browsing sessions even after signOut.
+    try {
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith("sb-") || k.toLowerCase().includes("supabase")) localStorage.removeItem(k);
+      });
+      Object.keys(sessionStorage).forEach((k) => {
+        if (k.startsWith("sb-") || k.toLowerCase().includes("supabase")) sessionStorage.removeItem(k);
+      });
+    } catch (_) {}
+
     void navigate({ to: "/" });
   }
 
