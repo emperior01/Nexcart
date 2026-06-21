@@ -3,13 +3,12 @@ import { useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useSeller } from "@/hooks/use-seller";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { CURRENCIES } from "@/lib/products";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/index";
 import { toast } from "sonner";
 import {
   Store, ShieldCheck, Lock, CheckCircle, AlertCircle,
-  Globe, ChevronDown, Check,
+  Globe,
 } from "lucide-react";
 
 export default function SellerSettings() {
@@ -24,7 +23,6 @@ export default function SellerSettings() {
   const [highlightVerification, setHighlightVerification] = useState(false);
   const [highlightCurrency, setHighlightCurrency] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState(globalCurrency);
-  const [currencyOpen, setCurrencyOpen] = useState(false);
 
   const [form, setForm] = useState({
     store_name: "",
@@ -102,7 +100,8 @@ export default function SellerSettings() {
     try {
       // Persist via CurrencyContext (writes to profiles + localStorage)
       setCurrency(selectedCurrency);
-      toast.success(`Currency set to ${CURRENCIES[selectedCurrency]?.name ?? selectedCurrency}. All financial figures will now display in ${selectedCurrency}.`);
+      const cur = currencyList.find((c) => c.code === selectedCurrency);
+      toast.success(`Currency set to ${cur?.name ?? selectedCurrency}. All financial figures will now display in ${selectedCurrency}.`);
     } catch (err) {
       toast.error("Failed to save currency preference.");
     } finally {
@@ -111,7 +110,7 @@ export default function SellerSettings() {
   }
 
   const isVerified = seller?.verification_status === "verified";
-  const currencyList = Object.entries(CURRENCIES).map(([code, { symbol, name }]) => ({ code, symbol, name }));
+  const { currencies: currencyList } = useCurrencies();
 
   const sectionStyle = (highlighted: boolean): React.CSSProperties => ({
     borderRadius: 16,
@@ -272,55 +271,12 @@ export default function SellerSettings() {
         </p>
 
         {/* Currency selector */}
-        <div style={{ position: "relative" as const, marginBottom: 14 }}>
-          <button
-            type="button"
-            onClick={() => setCurrencyOpen((o) => !o)}
-            style={{
-              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "11px 14px", borderRadius: 10,
-              border: currencyOpen ? "1.5px solid #E8611A" : "1.5px solid #E5E7EB",
-              background: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 600, color: "#0D0D0D",
-              boxShadow: currencyOpen ? "0 0 0 3px rgba(232,97,26,0.1)" : "none",
-              transition: "all 0.15s",
-            }}
-          >
-            <span>
-              <span style={{ color: "#9CA3AF", fontSize: 12, marginRight: 8 }}>{CURRENCIES[selectedCurrency]?.symbol}</span>
-              {selectedCurrency} — {CURRENCIES[selectedCurrency]?.name ?? selectedCurrency}
-            </span>
-            <ChevronDown style={{ width: 16, height: 16, color: "#9CA3AF", transform: currencyOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }} />
-          </button>
-
-          {currencyOpen && (
-            <div style={{
-              position: "absolute" as const, top: "calc(100% + 4px)", left: 0, right: 0,
-              background: "#fff", border: "1.5px solid #E5E7EB", borderRadius: 12,
-              boxShadow: "0 8px 24px rgba(0,0,0,0.12)", zIndex: 100,
-              maxHeight: 240, overflowY: "auto" as const,
-            }}>
-              {currencyList.map(({ code, symbol, name }) => (
-                <button
-                  key={code}
-                  type="button"
-                  className="currency-option"
-                  onClick={() => { setSelectedCurrency(code); setCurrencyOpen(false); }}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "10px 14px", border: "none", background: "transparent",
-                    cursor: "pointer", fontSize: 13, color: "#0D0D0D", textAlign: "left" as const,
-                    borderBottom: "1px solid #F9FAFB",
-                  }}
-                >
-                  <span>
-                    <span style={{ color: "#9CA3AF", marginRight: 8, fontWeight: 600, minWidth: 28, display: "inline-block" }}>{symbol}</span>
-                    {code} — {name}
-                  </span>
-                  {code === selectedCurrency && <Check style={{ width: 14, height: 14, color: "#E8611A" }} />}
-                </button>
-              ))}
-            </div>
-          )}
+        <div style={{ marginBottom: 14 }}>
+          <CurrencyPicker
+            value={selectedCurrency}
+            onChange={setSelectedCurrency}
+            currencies={currencyList}
+          />
         </div>
 
         {/* Info note */}

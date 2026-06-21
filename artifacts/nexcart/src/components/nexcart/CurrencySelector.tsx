@@ -1,21 +1,19 @@
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { Select } from "@/components/ui/index";
+import { CurrencyPicker } from "@/components/nexcart/CurrencyPicker";
 
+/**
+ * Drop-in replacement for the old <select>-based selector.
+ * Now uses the searchable CurrencyPicker backed by the DB.
+ */
 export function CurrencySelector({ className }: { className?: string }) {
   const { currency, setCurrency, currencyList } = useCurrency();
 
   return (
-    <Select
+    <CurrencyPicker
       value={currency}
-      onChange={(e) => setCurrency(e.target.value)}
+      onChange={setCurrency}
+      currencies={currencyList}
       className={className}
-      aria-label="Select currency"
-    >
-      {currencyList.map((c) => (
-        <option key={c.code} value={c.code}>
-          {c.symbol} {c.code} — {c.name}
-        </option>
-      ))}
-    </Select>
+    />
   );
 }

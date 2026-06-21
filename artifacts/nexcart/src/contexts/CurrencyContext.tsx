@@ -1,18 +1,20 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { CURRENCIES } from "@/lib/products";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useCurrencies, type Currency } from "@/hooks/use-currencies";
 
 interface CurrencyContextValue {
   currency: string;
   setCurrency: (code: string) => void;
-  currencyList: Array<{ code: string; symbol: string; name: string }>;
+  currencyList: Currency[];
 }
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { currencies } = useCurrencies();
+
   const [currency, setCurrencyState] = useState<string>(
     () => localStorage.getItem("nexcart-currency") ?? "NGN"
   );
@@ -45,14 +47,8 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const currencyList = Object.entries(CURRENCIES).map(([code, { symbol, name }]) => ({
-    code,
-    symbol,
-    name,
-  }));
-
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, currencyList }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, currencyList: currencies }}>
       {children}
     </CurrencyContext.Provider>
   );
