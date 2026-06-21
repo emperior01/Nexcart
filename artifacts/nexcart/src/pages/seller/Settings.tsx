@@ -110,7 +110,7 @@ export default function SellerSettings() {
   }
 
   const isVerified = seller?.verification_status === "verified";
-  const { currencies: currencyList } = useCurrencies();
+  const { currencies: currencyList, isLoading: currencyListLoading } = useCurrencies();
 
   const sectionStyle = (highlighted: boolean): React.CSSProperties => ({
     borderRadius: 16,
@@ -276,6 +276,7 @@ export default function SellerSettings() {
             value={selectedCurrency}
             onChange={setSelectedCurrency}
             currencies={currencyList}
+            isLoading={currencyListLoading}
           />
         </div>
 

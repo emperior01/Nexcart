@@ -7,13 +7,14 @@ interface CurrencyContextValue {
   currency: string;
   setCurrency: (code: string) => void;
   currencyList: Currency[];
+  currencyListLoading: boolean;
 }
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { currencies } = useCurrencies();
+  const { currencies, isLoading } = useCurrencies();
 
   const [currency, setCurrencyState] = useState<string>(
     () => localStorage.getItem("nexcart-currency") ?? "NGN"
@@ -48,7 +49,9 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, currencyList: currencies }}>
+    <CurrencyContext.Provider
+      value={{ currency, setCurrency, currencyList: currencies, currencyListLoading: isLoading }}
+    >
       {children}
     </CurrencyContext.Provider>
   );
