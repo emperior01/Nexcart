@@ -414,10 +414,10 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
               {/* SUPPORT */}
               {sectionLabel("Support")}
 
-              <Link to="/contact" onClick={() => setMobileOpen(false)} style={menuItemStyle(isActive("/contact"))}>
+              <a href="/contact" onClick={() => setMobileOpen(false)} style={menuItemStyle(isActive("/contact"))}>
                 <span style={iconWrap(isActive("/contact"))}><Phone style={{ width: 15, height: 15, color: isActive("/contact") ? "#E8611A" : "#6B6B6B" }} /></span>
                 Contact Us
-              </Link>
+              </a>
 
               {/* SESSION */}
               {user && (

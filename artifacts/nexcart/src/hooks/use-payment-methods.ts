@@ -23,7 +23,7 @@ export function useActivePaymentMethods() {
   return useQuery<PaymentMethod[]>({
     queryKey: ["payment-methods", "active"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("payment_methods")
         .select("*")
         .eq("status", "active")
@@ -40,7 +40,7 @@ export function useAllPaymentMethods() {
   return useQuery<PaymentMethod[]>({
     queryKey: ["payment-methods", "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("payment_methods")
         .select("*")
         .order("priority", { ascending: true });
@@ -55,7 +55,7 @@ export function useTogglePaymentMethod() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "active" | "inactive" }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("payment_methods")
         .update({ status })
         .eq("id", id);
@@ -74,7 +74,7 @@ export function useUpdatePaymentMethod() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<PaymentMethod> }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("payment_methods")
         .update(patch)
         .eq("id", id);

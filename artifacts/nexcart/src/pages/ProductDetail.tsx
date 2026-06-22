@@ -231,7 +231,8 @@ export default function ProductDetailPage() {
               {/* Seller info */}
               {seller && seller.verification_status === "verified" && (
                 <Link
-                  to={`/store/${seller.id}`}
+                  to="/store/$sellerId"
+                  params={{ sellerId: seller.id }}
                   className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:border-[#E8611A]/40 hover:bg-orange-50/50 transition-all"
                   style={{ textDecoration: "none" }}
                 >
