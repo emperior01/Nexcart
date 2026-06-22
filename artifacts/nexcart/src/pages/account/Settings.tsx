@@ -8,6 +8,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/index";
 import { CurrencySelector } from "@/components/nexcart/CurrencySelector";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -119,8 +120,12 @@ export default function AccountSettings() {
   const { user } = useAuth();
   const { categories: activeCategories, isLoading: catsLoading } = useActiveCategories();
 
-  // Currency
+  const { currency: savedCurrency, setCurrency } = useCurrency();
+  // Pending — only committed to DB when Save is clicked
+  const [pendingCurrency, setPendingCurrency] = useState(savedCurrency);
   const [savingCurrency, setSavingCurrency] = useState(false);
+  // Keep pending in sync when saved value loads from profile on login
+  useEffect(() => { setPendingCurrency(savedCurrency); }, [savedCurrency]);
 
   // Language
   const [language, setLanguage] = useState(
@@ -148,15 +153,15 @@ export default function AccountSettings() {
 
   async function saveCurrency() {
     if (!user) return;
-    const preferredCurrency = document.querySelector<HTMLSelectElement>("[data-currency-selector]")?.value;
-    if (!preferredCurrency) return;
     setSavingCurrency(true);
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({ id: user.id, preferred_currency: preferredCurrency } as any, { onConflict: "id" });
-    setSavingCurrency(false);
-    if (error) toast.error(error.message);
-    else toast.success("Currency preference saved!");
+    try {
+      setCurrency(pendingCurrency);
+      toast.success("Currency preference saved!");
+    } catch {
+      toast.error("Failed to save currency.");
+    } finally {
+      setSavingCurrency(false);
+    }
   }
 
   function saveLanguage(code: string) {
@@ -206,7 +211,7 @@ export default function AccountSettings() {
           description="All prices across the app will be shown in your selected currency."
         >
           <div className="flex gap-2 items-center">
-            <CurrencySelector className="flex-1 rounded-xl" />
+            <CurrencySelector value={pendingCurrency} onChange={setPendingCurrency} className="flex-1 rounded-xl" />
             <Button
               onClick={saveCurrency}
               disabled={savingCurrency}
