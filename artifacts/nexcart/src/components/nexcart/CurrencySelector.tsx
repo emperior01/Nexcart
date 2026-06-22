@@ -2,25 +2,26 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { CurrencyPicker } from "@/components/nexcart/CurrencyPicker";
 
 interface CurrencySelectorProps {
-  /** Pending value controlled by the parent — NOT the committed currency. */
-  value: string;
-  /** Called when user selects a currency. Does NOT commit to DB. */
-  onChange: (code: string) => void;
+  /**
+   * Pending value. If omitted, falls back to the committed currency from context.
+   * Pass this when the parent manages pending state (e.g. account settings).
+   */
+  value?: string;
+  /**
+   * Called when user selects a currency. Does NOT commit to DB.
+   * If omitted, selection immediately commits via context setCurrency.
+   */
+  onChange?: (code: string) => void;
   className?: string;
 }
 
-/**
- * Pulls the currency list from context.
- * The parent owns the pending value and calls context.setCurrency()
- * only when the user clicks Save.
- */
 export function CurrencySelector({ value, onChange, className }: CurrencySelectorProps) {
-  const { currencyList, currencyListLoading } = useCurrency();
+  const { currency, setCurrency, currencyList, currencyListLoading } = useCurrency();
 
   return (
     <CurrencyPicker
-      value={value}
-      onChange={onChange}
+      value={value ?? currency}
+      onChange={onChange ?? setCurrency}
       currencies={currencyList}
       isLoading={currencyListLoading}
       className={className}
