@@ -94,20 +94,13 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
     clearCart();
     setMenuOpen(false);
     setMobileOpen(false);
-
-    // Reset role state immediately — don't wait for re-render
-    setIsAdmin(false);
-
-    // scope: "global" invalidates ALL sessions for this user across every
-    // browser/device, not just the current tab. This prevents the old admin
-    // session from being picked up when a different Google account logs in.
+    setIsAdmin(false); // reset role immediately, don't wait for re-render
     try {
+      // scope: "global" invalidates the session on Supabase server for all devices
       await supabase.auth.signOut({ scope: "global" });
     } catch (_) {}
-
-    // Wipe every Supabase token from both storages so no stale data lingers.
-    // This is the key fix for Edge / Opera Mini where localStorage persists
-    // across normal browsing sessions even after signOut.
+    // Wipe all Supabase tokens from both storages — fixes Edge/Opera Mini
+    // where localStorage persists across sessions even after signOut()
     try {
       Object.keys(localStorage).forEach((k) => {
         if (k.startsWith("sb-") || k.toLowerCase().includes("supabase")) localStorage.removeItem(k);
@@ -116,7 +109,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         if (k.startsWith("sb-") || k.toLowerCase().includes("supabase")) sessionStorage.removeItem(k);
       });
     } catch (_) {}
-
     void navigate({ to: "/" });
   }
 
