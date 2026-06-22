@@ -2,17 +2,14 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useCurrencies, type Currency } from "@/hooks/use-currencies";
+import { formatPrice } from "@/lib/products";
 
 interface CurrencyContextValue {
-  /** The last committed (saved) display currency. */
   currency: string;
-  /**
-   * Commit a currency choice to localStorage + DB profile.
-   * Call ONLY from Save button handlers — never on picker selection change.
-   */
   setCurrency: (code: string) => void;
   currencyList: Currency[];
   currencyListLoading: boolean;
+  fmt: (amount: number) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextValue | null>(null);
@@ -25,7 +22,6 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     () => localStorage.getItem("nexcart-currency") ?? "NGN"
   );
 
-  // On login: pull saved value from profile (does NOT fire on picker change)
   useEffect(() => {
     if (!user) return;
     supabase
@@ -53,9 +49,11 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const fmt = (amount: number) => formatPrice(amount, currency, currency);
+
   return (
     <CurrencyContext.Provider
-      value={{ currency, setCurrency, currencyList: currencies, currencyListLoading: isLoading }}
+      value={{ currency, setCurrency, currencyList: currencies, currencyListLoading: isLoading, fmt }}
     >
       {children}
     </CurrencyContext.Provider>

@@ -76,7 +76,6 @@ export default function AdminDashboard() {
         <p style={{ fontSize: 13, color: "#6B7280", marginTop: 3 }}>Welcome back, Admin. Here's what's happening.</p>
       </div>
 
-      {/* Main stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, width: "100%", marginBottom: 16 }}>
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
@@ -92,7 +91,6 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Marketplace stats */}
       <p style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: 13, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Marketplace</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 24 }}>
         {isLoading ? (
