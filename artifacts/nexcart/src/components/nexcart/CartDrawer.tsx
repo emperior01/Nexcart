@@ -1,13 +1,12 @@
 import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useCart } from "@/lib/cart";
-import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 
 export function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQty, total, clearCart } = useCart();
-  const { currency } = useCurrency();
+  const { fmt } = useCurrency();
 
   if (!isOpen) return null;
 
@@ -117,7 +116,7 @@ export function CartDrawer() {
                       {item.title}
                     </Link>
                     <p style={{ fontSize: 15, fontWeight: 800, color: "#E8611A", margin: 0 }}>
-                      {formatPrice(item.price, item.currency, currency)}
+                      {fmt(item.price)}
                     </p>
 
                     {/* Qty + Remove */}
@@ -166,7 +165,7 @@ export function CartDrawer() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 13, color: "#6B7280", fontWeight: 500 }}>Subtotal ({itemCount} items)</span>
                 <span style={{ fontSize: 16, fontWeight: 800, color: "#0D0D0D" }}>
-                  {formatPrice(total, items[0]?.currency ?? "USD", currency)}
+                  {fmt(total)}
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -177,7 +176,7 @@ export function CartDrawer() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#0D0D0D" }}>Total</span>
                 <span style={{ fontSize: 18, fontWeight: 900, color: "#E8611A" }}>
-                  {formatPrice(total, items[0]?.currency ?? "USD", currency)}
+                  {fmt(total)}
                 </span>
               </div>
             </div>

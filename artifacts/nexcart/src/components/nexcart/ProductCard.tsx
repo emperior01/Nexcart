@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Heart, Plus } from "lucide-react";
-import { formatPrice, primaryImage, type ProductWithImages } from "@/lib/products";
+import { primaryImage, type ProductWithImages } from "@/lib/products";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export function ProductCard({ product }: { product: ProductWithImages }) {
   const img = primaryImage(product);
-  const { currency } = useCurrency();
+  const { fmt } = useCurrency();
   const onSale =
     product.compare_at_price != null &&
     Number(product.compare_at_price) > Number(product.price);
@@ -151,11 +151,11 @@ export function ProductCard({ product }: { product: ProductWithImages }) {
               className="text-[16px] font-bold text-[#E8611A] leading-tight"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              {formatPrice(product.price, product.currency, currency)}
+              {fmt(Number(product.price))}
             </span>
             {onSale && (
               <span className="text-[11px] text-[#C8C8C8] line-through leading-tight">
-                {formatPrice(product.compare_at_price!, product.currency, currency)}
+                {fmt(Number(product.compare_at_price!))}
               </span>
             )}
           </div>
