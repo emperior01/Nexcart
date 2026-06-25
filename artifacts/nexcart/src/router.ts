@@ -44,6 +44,7 @@ import SellerSettings from "@/pages/seller/Settings";
 import SellerNotifications from "@/pages/seller/Notifications";
 import SellerVerification from "@/pages/seller/Verification";
 import AiAssistantPage from "@/pages/AiAssistant";
+import { AiButton } from "@/components/nexcart/AiButton";
 import BecomeSellerPage from "@/pages/BecomeSeller";
 import OrderSuccessPage from "@/pages/OrderSuccess";
 import CartPage from "@/pages/Cart";
@@ -56,6 +57,7 @@ function RootComponent() {
     null,
     createElement(Outlet, null),
     createElement(CartDrawer, null),
+    createElement(AiButton, null),
   );
 }
 
