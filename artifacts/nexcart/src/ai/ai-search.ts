@@ -141,9 +141,6 @@ async function queryByTitle(keyword: string, maxPrice?: number, limit = 8): Prom
   const { data } = await q;
   return (data ?? []) as ProductWithImages[];
 }
-  const { data } = await q;
-  return (data ?? []) as ProductWithImages[];
-}
 
 async function queryByDescription(keyword: string, maxPrice?: number): Promise<ProductWithImages[]> {
   let q = supabase
