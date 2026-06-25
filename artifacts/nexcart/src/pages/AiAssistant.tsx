@@ -9,7 +9,7 @@ import { Footer } from "@/components/nexcart/Footer";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-import { aiProvider, searchProductsByIntent, searchProductsByKeyword } from "@/ai/ai-search";
+import { aiProvider, searchProductsByIntent, searchProductsByKeyword, generateLocalReply } from "@/ai/ai-search";
 import type { ChatMessage, AiProductResult } from "@/ai/ai-types";
 
 const hasAiKey = !!import.meta.env.VITE_OPENAI_API_KEY;
@@ -170,9 +170,7 @@ export default function AiAssistantPage() {
         replyText = await aiProvider.generateReply(text, products);
       } else {
         products = await searchProductsByKeyword(text);
-        replyText = products.length > 0
-          ? "Here are " + products.length + " product" + (products.length > 1 ? "s" : "") + " matching your search. Tap any card to view details or add to cart."
-          : "I could not find products matching that search. Try different keywords or browse the shop.";
+        replyText = generateLocalReply(text, products);
       }
       const assistantMsg: ChatMessage = {
         id: uid(),
