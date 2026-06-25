@@ -43,6 +43,7 @@ import SellerReviews from "@/pages/seller/Reviews";
 import SellerSettings from "@/pages/seller/Settings";
 import SellerNotifications from "@/pages/seller/Notifications";
 import SellerVerification from "@/pages/seller/Verification";
+import AiAssistantPage from "@/pages/AiAssistant";
 import BecomeSellerPage from "@/pages/BecomeSeller";
 import OrderSuccessPage from "@/pages/OrderSuccess";
 import CartPage from "@/pages/Cart";
@@ -325,6 +326,12 @@ const sellerVerificationRoute = createRoute({
   component: SellerVerification,
 });
 
+const aiRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/ai",
+  component: AiAssistantPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   shopRoute,
@@ -332,6 +339,7 @@ const routeTree = rootRoute.addChildren([
   checkoutRoute,
   cartRoute,
   authRoute,
+  aiRoute,
   wishlistRoute,
   becomeSellerRoute,
   sellOnNexcartRoute,
