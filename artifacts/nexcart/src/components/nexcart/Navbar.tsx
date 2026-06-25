@@ -1,11 +1,12 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import {
-  Search, ShoppingCart, User, LogIn, Menu, Home, Store,
+  ShoppingCart, User, LogIn, Menu, Home, Store,
   LogOut, X, ShoppingBag, Heart, MapPin, Settings, LayoutDashboard,
   TrendingUp, ChevronRight, Phone,
 } from "lucide-react";
 import { Logo } from "./Logo";
+import { AISearchBar } from "./AISearchBar";
 import { useAuth } from "@/hooks/use-auth";
 import { useSeller } from "@/hooks/use-seller";
 import { useCart } from "@/lib/cart";
@@ -182,15 +183,6 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         </div>
 
         <div className="flex items-center gap-1">
-          <button
-            className="w-9 h-9 flex items-center justify-center rounded-full transition-colors hover:bg-[#F4F4F4]"
-            style={{ color: "#3A3A3A" }}
-            aria-label="Search"
-            onClick={() => void navigate({ to: "/shop" })}
-          >
-            <Search className="h-5 w-5" strokeWidth={1.8} />
-          </button>
-
           {loading ? null : user ? (
             <div className="relative" ref={menuRef}>
               <button
@@ -317,6 +309,16 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
               </span>
             )}
           </button>
+        </div>
+      </div>
+
+      {/* ── AI Search bar row ── */}
+      <div
+        className="px-4 py-2.5"
+        style={{ background: "#FFFFFF", borderBottom: "1px solid #EFEFEF" }}
+      >
+        <div className="max-w-3xl mx-auto">
+          <AISearchBar />
         </div>
       </div>
 
