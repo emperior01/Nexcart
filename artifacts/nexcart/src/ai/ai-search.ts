@@ -6,6 +6,86 @@ import type { AiProductResult, SearchIntent } from "./ai-types";
 
 export const aiProvider = openAiProvider;
 
+// ---------------------------------------------------------------------------
+// PRODUCT TYPE REGISTRY
+//
+// This is the only place that maps natural language to searchable product
+// types. It has NO knowledge of database category trees or hierarchies.
+//
+// Structure per entry:
+//   triggers  — words the user might say that mean this product type
+//   queryTerms — terms sent to the DB (used in word-boundary title search)
+//   blocks    — product type keys that must NOT appear in results when this
+//               type is requested (e.g. asking for "phone" blocks "headphone")
+// ---------------------------------------------------------------------------
+interface ProductType {
+  triggers:   string[];   // what the user says
+  queryTerms: string[];   // what we search for in product titles
+  blocks:     string[];   // other product type keys to exclude from results
+}
+
+const PRODUCT_TYPES: Record<string, ProductType> = {
+  smartphone: {
+    triggers:   ["phone", "smartphone", "mobile", "android", "iphone", "samsung phone", "tecno phone", "infinix phone"],
+    queryTerms: ["smartphone", "mobile phone", "android", "iphone", "samsung", "tecno", "infinix", "xiaomi", "redmi", "oppo", "vivo"],
+    blocks:     ["headphone", "earphone", "phone_case", "charger"],
+  },
+  laptop: {
+    triggers:   ["laptop", "notebook", "macbook", "chromebook"],
+    queryTerms: ["laptop", "notebook", "macbook", "chromebook", "hp", "dell", "lenovo", "asus", "acer"],
+    blocks:     ["headphone", "earphone", "laptop_bag"],
+  },
+  tablet: {
+    triggers:   ["tablet", "ipad", "tab"],
+    queryTerms: ["tablet", "ipad", "tab"],
+    blocks:     ["headphone", "earphone"],
+  },
+  headphone: {
+    triggers:   ["headphone", "earphone", "earbud", "airpod", "headset", "earpiece"],
+    queryTerms: ["headphone", "earphone", "earbud", "airpod", "headset", "earpiece"],
+    blocks:     [],
+  },
+  tv: {
+    triggers:   ["tv", "television", "smart tv"],
+    queryTerms: ["tv", "television", "smart tv", "led tv", "oled"],
+    blocks:     [],
+  },
+  camera: {
+    triggers:   ["camera", "dslr", "mirrorless"],
+    queryTerms: ["camera", "dslr", "mirrorless", "webcam"],
+    blocks:     [],
+  },
+  speaker: {
+    triggers:   ["speaker", "bluetooth speaker", "subwoofer"],
+    queryTerms: ["speaker", "bluetooth speaker", "subwoofer", "soundbar"],
+    blocks:     [],
+  },
+  shoe: {
+    triggers:   ["shoe", "sneaker", "boot", "sandal", "heel", "loafer", "slipper"],
+    queryTerms: ["shoe", "sneaker", "boot", "sandal", "heel", "loafer", "slipper"],
+    blocks:     [],
+  },
+  clothing: {
+    triggers:   ["shirt", "dress", "trouser", "jean", "cloth", "top", "skirt", "suit", "hoodie", "jacket"],
+    queryTerms: ["shirt", "dress", "trouser", "jean", "top", "skirt", "suit", "hoodie", "jacket"],
+    blocks:     [],
+  },
+  bag: {
+    triggers:   ["bag", "backpack", "handbag", "purse", "luggage"],
+    queryTerms: ["bag", "backpack", "handbag", "purse", "luggage"],
+    blocks:     [],
+  },
+  watch: {
+    triggers:   ["watch", "smartwatch", "wristwatch"],
+    queryTerms: ["watch", "smartwatch", "wristwatch"],
+    blocks:     [],
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function toAiProduct(p: ProductWithImages): AiProductResult {
   return {
     id: p.id,
@@ -54,87 +134,88 @@ export function extractIntent(message: string): SearchIntent {
     .replace(/less\s+than\s+[\w,₦$£€.]+/g, "")
     .replace(/within\s+[\w,₦$£€.]+/g, "")
     .replace(/budget\s+(?:of\s+)?[\w,₦$£€.]+/g, "")
-    .replace(/(find|show|get|recommend|suggest|need|want|looking|search|me|a|an|some|for|good|best|great|nice|cheap|affordable|something|anything)/g, " ")
+    .replace(/(find|show|get|recommend|suggest|need|want|looking|search|me|a|an|some|for|good|best|great|nice|cheap|affordable|something|anything)/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
   return { keywords: keywords || message, maxPrice };
 }
 
-// Word-boundary test: "phone" must not match inside "headphone"
+// Word-boundary match: "phone" must NOT fire inside "headphone" or "earphone".
+// Uses negative lookbehind/lookahead on [a-z] so it works on all ASCII product terms.
 function matchesWord(text: string, word: string): boolean {
-  // \b doesn't work well with non-ASCII but our terms are ASCII-safe
-  const re = new RegExp(`(?<![a-z])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![a-z])`, "i");
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(?<![a-z])${escaped}(?![a-z])`, "i");
   return re.test(text);
 }
 
-// Category synonyms — maps user intent to searchable terms
-// IMPORTANT: terms here are matched with word-boundary rules, not substring.
-const CATEGORY_TERMS: Record<string, string[]> = {
-  phones:      ["smartphone", "mobile phone", "mobile", "iphone", "android phone", "samsung", "tecno", "infinix", "xiaomi", "redmi", "oppo", "vivo"],
-  laptops:     ["laptop", "notebook", "macbook", "chromebook", "hp", "dell", "lenovo", "asus", "acer"],
-  tablets:     ["tablet", "ipad", "tab"],
-  headphones:  ["headphone", "earphone", "earbud", "airpod", "headset"],
-  fashion:     ["shirt", "dress", "trouser", "jean", "cloth", "wear", "top", "skirt", "suit"],
-  shoes:       ["shoe", "sneaker", "boot", "sandal", "heel", "loafer", "slipper"],
-  accessories: ["bag", "watch", "belt", "cap", "hat", "sunglasses", "wallet"],
-  electronics: ["tv", "television", "camera", "speaker", "printer", "router"],
-};
-
-// Accessory/peripheral categories to exclude when user asks for the main product.
-// Key = the main-product category key; value = category keys that must be blocked.
-const ACCESSORY_EXCLUSIONS: Record<string, string[]> = {
-  phones:   ["headphones", "accessories"],
-  laptops:  ["headphones", "accessories"],
-  tablets:  ["headphones", "accessories"],
-};
-
-function getSearchTerms(intent: SearchIntent): { terms: string[]; excludedSynonyms: string[] } {
+// ---------------------------------------------------------------------------
+// Intent → product type resolution
+//
+// Returns:
+//   queryTerms      — terms to run word-boundary title searches against
+//   blockedTitles   — product title substrings that must be excluded post-query
+// ---------------------------------------------------------------------------
+function resolveProductType(intent: SearchIntent): {
+  queryTerms: string[];
+  blockedTitles: string[];
+} {
   const kw = intent.keywords.toLowerCase();
-  const matchedCatKeys = new Set<string>();
-  const terms = new Set<string>();
+  const matched: ProductType[] = [];
 
-  // Match keyword tokens against category synonyms using word boundaries
-  for (const [catKey, synonyms] of Object.entries(CATEGORY_TERMS)) {
-    for (const syn of synonyms) {
-      // User input contains this synonym as a whole word, OR this synonym IS the keyword
-      if (matchesWord(kw, syn) || kw === syn) {
-        matchedCatKeys.add(catKey);
-        synonyms.forEach(s => terms.add(s));
+  for (const pt of Object.values(PRODUCT_TYPES)) {
+    for (const trigger of pt.triggers) {
+      if (matchesWord(kw, trigger)) {
+        matched.push(pt);
         break;
       }
     }
   }
 
-  // Add individual tokens (word-boundary safe: only add if ≥ 3 chars and not a stopword)
-  kw.split(/\s+/).filter(w => w.length > 2).forEach(w => terms.add(w));
-
-  // If no category match found, fall back to raw keyword
-  if (matchedCatKeys.size === 0) terms.add(intent.keywords);
-
-  // Build exclusion list: synonyms of accessory categories for the matched main categories
-  const excludedSynonyms: string[] = [];
-  for (const catKey of matchedCatKeys) {
-    const blockedCatKeys = ACCESSORY_EXCLUSIONS[catKey] ?? [];
-    for (const blocked of blockedCatKeys) {
-      (CATEGORY_TERMS[blocked] ?? []).forEach(s => excludedSynonyms.push(s));
-    }
+  if (matched.length === 0) {
+    // No known product type — use raw keyword tokens as query terms, no blocks
+    const rawTokens = kw.split(/\s+/).filter(w => w.length > 2);
+    return { queryTerms: rawTokens.length > 0 ? rawTokens : [intent.keywords], blockedTitles: [] };
   }
 
-  return { terms: Array.from(terms), excludedSynonyms };
+  const queryTerms: string[] = [];
+  const blockedKeys = new Set<string>();
+
+  for (const pt of matched) {
+    pt.queryTerms.forEach(t => queryTerms.push(t));
+    pt.blocks.forEach(b => blockedKeys.add(b));
+  }
+
+  // Collect all queryTerms of blocked product types — used to filter results by title
+  const blockedTitles: string[] = [];
+  for (const key of blockedKeys) {
+    const blocked = PRODUCT_TYPES[key];
+    if (blocked) blocked.queryTerms.forEach(t => blockedTitles.push(t));
+  }
+
+  // Also add intent modifiers (gaming, travel, work) as extra query terms
+  const INTENT_MODIFIERS = ["gaming", "game", "work", "office", "travel", "portable", "student", "professional"];
+  for (const mod of INTENT_MODIFIERS) {
+    if (matchesWord(kw, mod)) queryTerms.push(mod);
+  }
+
+  return { queryTerms: [...new Set(queryTerms)], blockedTitles: [...new Set(blockedTitles)] };
 }
 
-async function queryByTitle(keyword: string, maxPrice?: number, limit = 8): Promise<ProductWithImages[]> {
-  // Use a word-boundary pattern: \y is Postgres' word boundary marker.
-  // This prevents "phone" matching "headphone" or "earphone".
-  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// ---------------------------------------------------------------------------
+// DB queries — word-boundary only, no ilike substring fallback
+// ---------------------------------------------------------------------------
+
+async function queryByTitleWordBoundary(term: string, maxPrice?: number, limit = 8): Promise<ProductWithImages[]> {
+  // \y is Postgres' word boundary marker — prevents "phone" matching "headphone"
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = `\\y${escaped}\\y`;
 
   let q = supabase
     .from("products")
     .select("*, product_images(*), categories(id,name,slug)")
     .eq("is_active", true)
-    .or(`title.ilike.%${keyword}%,title.~*.${pattern}`)
+    .filter("title", "~*", pattern)
     .order("is_featured", { ascending: false })
     .limit(limit);
   if (maxPrice) q = q.lte("price", maxPrice);
@@ -142,12 +223,15 @@ async function queryByTitle(keyword: string, maxPrice?: number, limit = 8): Prom
   return (data ?? []) as ProductWithImages[];
 }
 
-async function queryByDescription(keyword: string, maxPrice?: number): Promise<ProductWithImages[]> {
+async function queryByDescription(term: string, maxPrice?: number): Promise<ProductWithImages[]> {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = `\\y${escaped}\\y`;
+
   let q = supabase
     .from("products")
     .select("*, product_images(*), categories(id,name,slug)")
     .eq("is_active", true)
-    .ilike("description", `%${keyword}%`)
+    .filter("description", "~*", pattern)
     .order("is_featured", { ascending: false })
     .limit(8);
   if (maxPrice) q = q.lte("price", maxPrice);
@@ -160,96 +244,115 @@ function dedup(products: ProductWithImages[]): ProductWithImages[] {
   return products.filter(p => seen.has(p.id) ? false : (seen.add(p.id), true));
 }
 
-function scoreProduct(p: AiProductResult, message: string, intent: SearchIntent): number {
-  const lower = message.toLowerCase();
+// ---------------------------------------------------------------------------
+// Scoring — based on product type match + intent tokens + constraints only.
+// No category tree traversal.
+// ---------------------------------------------------------------------------
+
+function scoreProduct(p: AiProductResult, intent: SearchIntent, queryTerms: string[]): number {
   const title = p.title.toLowerCase();
-  const desc = (p.description ?? "").toLowerCase();
-  const category = (p.category ?? "").toLowerCase();
+  const desc  = (p.description ?? "").toLowerCase();
   let score = 0;
 
-  const words = intent.keywords.toLowerCase().split(/\s+/).filter(w => w.length > 1);
-  for (const w of words) {
-    if (matchesWord(title, w)) score += 12;
-    if (matchesWord(desc, w))  score += 4;
+  // Score each query term that appears in title/description (word-boundary)
+  for (const term of queryTerms) {
+    if (matchesWord(title, term)) score += 10;
+    if (matchesWord(desc,  term)) score += 3;
   }
 
-  // Exact phrase match bonus (whole-word)
-  if (matchesWord(title, intent.keywords.toLowerCase())) score += 30;
-
-  // Category match bonus
-  if (category) {
-    if (matchesWord(lower, category)) score += 20;
-    for (const [cat, synonyms] of Object.entries(CATEGORY_TERMS)) {
-      if (matchesWord(category, cat) || matchesWord(cat, category)) {
-        for (const syn of synonyms) {
-          if (matchesWord(lower, syn)) { score += 15; break; }
-        }
-      }
+  // Exact product type phrase in title gets a strong bonus
+  for (const pt of Object.values(PRODUCT_TYPES)) {
+    for (const qt of pt.queryTerms) {
+      if (matchesWord(title, qt)) { score += 8; break; }
     }
   }
 
-  if (intent.maxPrice) {
-    if (p.price <= intent.maxPrice) score += 15;
-    else score -= 50;
+  // Intent modifier bonuses
+  const kw = intent.keywords.toLowerCase();
+  const INTENT_MODIFIERS: Record<string, string[]> = {
+    gaming:      ["gaming", "game", "gamer"],
+    work:        ["work", "office", "business", "professional"],
+    travel:      ["travel", "portable", "lightweight", "compact"],
+    student:     ["student", "school", "education"],
+  };
+  for (const [mod, triggers] of Object.entries(INTENT_MODIFIERS)) {
+    const userWantsThis = triggers.some(t => matchesWord(kw, t));
+    if (userWantsThis) {
+      if (matchesWord(title, mod) || matchesWord(desc, mod)) score += 15;
+    }
   }
 
+  // Budget fit
+  if (intent.maxPrice) {
+    if (p.price <= intent.maxPrice) score += 10;
+    else score -= 60;
+  }
+
+  // In stock
   if (p.stock > 0) score += 5;
 
   return score;
 }
 
+// ---------------------------------------------------------------------------
+// Post-query filter: hard-block results whose titles contain blocked terms
+// ---------------------------------------------------------------------------
+
+function applyBlockedTitles(products: ProductWithImages[], blockedTitles: string[]): ProductWithImages[] {
+  if (blockedTitles.length === 0) return products;
+  return products.filter(p => {
+    const title = p.title.toLowerCase();
+    return !blockedTitles.some(blocked => matchesWord(title, blocked));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Public search API
+// ---------------------------------------------------------------------------
+
 export async function searchProductsByIntent(intent: SearchIntent): Promise<AiProductResult[]> {
-  const { terms, excludedSynonyms } = getSearchTerms(intent);
+  const { queryTerms, blockedTitles } = resolveProductType(intent);
   const allRaw: ProductWithImages[] = [];
 
-  for (const term of terms.slice(0, 5)) {
-    const r = await queryByTitle(term, intent.maxPrice);
+  for (const term of queryTerms.slice(0, 6)) {
+    const r = await queryByTitleWordBoundary(term, intent.maxPrice);
     allRaw.push(...r);
     if (allRaw.length >= 12) break;
   }
 
-  let deduped = dedup(allRaw);
+  let pool = applyBlockedTitles(dedup(allRaw), blockedTitles);
 
-  // Hard-exclude accessory categories
-  if (excludedSynonyms.length > 0) {
-    deduped = deduped.filter(p => {
-      const catName = ((p.categories as { name?: string } | null)?.name ?? "").toLowerCase();
-      const catSlug = ((p.categories as { slug?: string } | null)?.slug ?? "").toLowerCase();
-      return !excludedSynonyms.some(ex => matchesWord(catName, ex) || matchesWord(catSlug, ex));
-    });
+  if (pool.length === 0) {
+    for (const term of queryTerms.slice(0, 3)) {
+      const r = await queryByDescription(term, intent.maxPrice);
+      pool = applyBlockedTitles(dedup(r), blockedTitles);
+      if (pool.length > 0) break;
+    }
   }
 
-  if (deduped.length > 0) {
-    const scored = deduped
-      .map(p => ({ p: toAiProduct(p), score: scoreProduct(toAiProduct(p), intent.keywords, intent) }))
-      .sort((a, b) => b.score - a.score);
-    return scored.slice(0, 6).map(x => x.p);
-  }
+  if (pool.length === 0) return [];
 
-  // Fallback: description search
-  for (const term of terms.slice(0, 3)) {
-    const r = await queryByDescription(term, intent.maxPrice);
-    if (r.length > 0) return dedup(r).slice(0, 6).map(toAiProduct);
-  }
-
-  return [];
+  return pool
+    .map(p => ({ p: toAiProduct(p), score: scoreProduct(toAiProduct(p), intent, queryTerms) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6)
+    .map(x => x.p);
 }
 
 export async function searchProductsByKeyword(message: string): Promise<AiProductResult[]> {
   const intent = extractIntent(message);
-  const { terms, excludedSynonyms } = getSearchTerms(intent);
+  const { queryTerms, blockedTitles } = resolveProductType(intent);
   const allRaw: ProductWithImages[] = [];
 
-  // Try with price filter first
-  for (const term of terms.slice(0, 6)) {
-    const r = await queryByTitle(term, intent.maxPrice);
+  for (const term of queryTerms.slice(0, 6)) {
+    const r = await queryByTitleWordBoundary(term, intent.maxPrice);
     allRaw.push(...r);
   }
 
-  // If no results, drop price filter
+  // Drop price filter if empty
   if (allRaw.length === 0) {
-    for (const term of terms.slice(0, 6)) {
-      const r = await queryByTitle(term, undefined);
+    for (const term of queryTerms.slice(0, 6)) {
+      const r = await queryByTitleWordBoundary(term, undefined);
       allRaw.push(...r);
       if (allRaw.length >= 10) break;
     }
@@ -257,7 +360,7 @@ export async function searchProductsByKeyword(message: string): Promise<AiProduc
 
   // Fallback: description
   if (allRaw.length === 0) {
-    for (const term of terms.slice(0, 3)) {
+    for (const term of queryTerms.slice(0, 3)) {
       const r = await queryByDescription(term, intent.maxPrice);
       allRaw.push(...r);
     }
@@ -265,22 +368,14 @@ export async function searchProductsByKeyword(message: string): Promise<AiProduc
 
   if (allRaw.length === 0) return [];
 
-  let deduped = dedup(allRaw);
+  const pool = applyBlockedTitles(dedup(allRaw), blockedTitles);
+  if (pool.length === 0) return [];
 
-  // Hard-exclude accessory categories
-  if (excludedSynonyms.length > 0) {
-    deduped = deduped.filter(p => {
-      const catName = ((p.categories as { name?: string } | null)?.name ?? "").toLowerCase();
-      const catSlug = ((p.categories as { slug?: string } | null)?.slug ?? "").toLowerCase();
-      return !excludedSynonyms.some(ex => matchesWord(catName, ex) || matchesWord(catSlug, ex));
-    });
-  }
-
-  const scored = deduped
-    .map(p => ({ p: toAiProduct(p), score: scoreProduct(toAiProduct(p), message, intent) }))
-    .sort((a, b) => b.score - a.score);
-
-  return scored.slice(0, 6).map(x => x.p);
+  return pool
+    .map(p => ({ p: toAiProduct(p), score: scoreProduct(toAiProduct(p), intent, queryTerms) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6)
+    .map(x => x.p);
 }
 
 export function generateLocalReply(message: string, products: AiProductResult[]): string {
@@ -289,18 +384,18 @@ export function generateLocalReply(message: string, products: AiProductResult[])
 
   if (products.length === 0) {
     return intent.maxPrice
-      ? "I searched for " + intent.keywords + " within your budget but found no exact match. Try browsing the shop or adjusting your budget."
+      ? `I searched for ${intent.keywords} within your budget but found no exact match. Try browsing the shop or adjusting your budget.`
       : "I could not find products matching your request. Try a simpler keyword like a brand name or product type.";
   }
 
   const count = products.length;
   const budgetNote = intent.maxPrice ? " within your budget" : "";
 
-  if (lower.match(/gaming|game/)) return "Found " + count + " product" + (count > 1 ? "s" : "") + " suitable for gaming" + budgetNote + ". Check specs for the best performance.";
-  if (lower.match(/program|cod|dev|work|office/)) return "Here are " + count + " option" + (count > 1 ? "s" : "") + " good for productivity and work" + budgetNote + ".";
-  if (lower.match(/portable|travel|carry|light/)) return "Found " + count + " portable option" + (count > 1 ? "s" : "") + budgetNote + ". Great for use on the go.";
-  if (lower.match(/wedding|party|event|occasion/)) return "Here are " + count + " great pick" + (count > 1 ? "s" : "") + " for your occasion" + budgetNote + ".";
-  if (lower.match(/best|top|recommend/)) return "Here are my top " + count + " recommendation" + (count > 1 ? "s" : "") + " for you" + budgetNote + ".";
+  if (lower.match(/gaming|game/))            return `Found ${count} product${count > 1 ? "s" : ""} suitable for gaming${budgetNote}. Check specs for the best performance.`;
+  if (lower.match(/program|cod|dev|work|office/)) return `Here are ${count} option${count > 1 ? "s" : ""} good for productivity and work${budgetNote}.`;
+  if (lower.match(/portable|travel|carry|light/)) return `Found ${count} portable option${count > 1 ? "s" : ""}${budgetNote}. Great for use on the go.`;
+  if (lower.match(/wedding|party|event|occasion/)) return `Here are ${count} great pick${count > 1 ? "s" : ""} for your occasion${budgetNote}.`;
+  if (lower.match(/best|top|recommend/))      return `Here are my top ${count} recommendation${count > 1 ? "s" : ""} for you${budgetNote}.`;
 
-  return "Found " + count + " product" + (count > 1 ? "s" : "") + " matching your request" + budgetNote + ". Tap any card to view details or add to cart.";
+  return `Found ${count} product${count > 1 ? "s" : ""} matching your request${budgetNote}. Tap any card to view details or add to cart.`;
 }
