@@ -166,6 +166,14 @@ Return ONLY valid JSON, no markdown:
   }
 }
 
+// ─── Word-boundary helper ─────────────────────────────────────────────────────
+// Prevents "phone" matching inside "headphone" or "earphone".
+
+function matchesWord(text: string, word: string): boolean {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![a-z])${escaped}(?![a-z])`, "i").test(text);
+}
+
 // ─── Phase 2a: Category-first fetch (strict) ─────────────────────────────────
 
 async function fetchPassA(intent: SearchIntent): Promise<ProductWithImages[]> {
@@ -186,23 +194,29 @@ async function fetchPassA(intent: SearchIntent): Promise<ProductWithImages[]> {
   if (error || !data) return [];
 
   const all = data as unknown as ProductWithImages[];
-  const lowerTerms = intent.categoryTerms.map((t) => t.toLowerCase());
 
-  // Keep only products whose category name or slug contains a categoryTerm
+  // Use word-boundary matching — "phone" must not match "headphone"
   return all.filter((p) => {
     const catName = ((p.categories as { name?: string } | null)?.name ?? "").toLowerCase();
     const catSlug = ((p.categories as { slug?: string } | null)?.slug ?? "").toLowerCase();
-    return lowerTerms.some((term) => catName.includes(term) || catSlug.includes(term));
+    return intent.categoryTerms.some((term) =>
+      matchesWord(catName, term.toLowerCase()) || matchesWord(catSlug, term.toLowerCase())
+    );
   });
 }
 
-// ─── Phase 2b: Fallback — title/description search ────────────────────────────
+// ─── Phase 2b: Fallback — title/description word-boundary search ──────────────
 
 async function fetchPassB(intent: SearchIntent): Promise<ProductWithImages[]> {
   if (!intent.categoryTerms.length) return [];
 
+  // Use Postgres \y word-boundary markers — prevents "phone" matching "headphone"
   const orFilter = intent.categoryTerms
-    .map((kw) => `title.ilike.%${kw}%,description.ilike.%${kw}%`)
+    .map((kw) => {
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pat = `\\\\y${escaped}\\\\y`;
+      return `title.~*.${pat},description.~*.${pat}`;
+    })
     .join(",");
 
   const { data, error } = await supabase
@@ -221,12 +235,13 @@ async function fetchPassB(intent: SearchIntent): Promise<ProductWithImages[]> {
 
 function hardExclude(products: ProductWithImages[], excluded: string[]): ProductWithImages[] {
   if (!excluded.length) return products;
-  const lowerExcluded = excluded.map((t) => t.toLowerCase());
-
   return products.filter((p) => {
     const catName = ((p.categories as { name?: string } | null)?.name ?? "").toLowerCase();
     const catSlug = ((p.categories as { slug?: string } | null)?.slug ?? "").toLowerCase();
-    return !lowerExcluded.some((term) => catName.includes(term) || catSlug.includes(term));
+    // Word-boundary: excluded term "phone" must not fire inside "headphone"
+    return !excluded.some((term) =>
+      matchesWord(catName, term.toLowerCase()) || matchesWord(catSlug, term.toLowerCase())
+    );
   });
 }
 
@@ -240,13 +255,13 @@ function scoreProduct(p: ProductWithImages, intent: SearchIntent): number {
   const catName = ((p.categories as { name?: string } | null)?.name ?? "").toLowerCase();
   const catSlug = ((p.categories as { slug?: string } | null)?.slug ?? "").toLowerCase();
 
-  // Category match bonus
+  // Category match bonus — word-boundary only
   for (const term of intent.categoryTerms.map((t) => t.toLowerCase())) {
-    if (catName.includes(term) || catSlug.includes(term)) score += 20;
-    if (title.includes(term))                             score += 8;
+    if (matchesWord(catName, term) || matchesWord(catSlug, term)) score += 20;
+    if (matchesWord(title, term))                                  score += 8;
   }
 
-  // Use-case keyword scoring — description + title
+  // Use-case keyword scoring — description + title (these are non-product-type words like "gaming", "wireless")
   for (const kw of intent.useCaseKeywords.map((t) => t.toLowerCase())) {
     if (title.includes(kw)) score += 15;
     if (desc.includes(kw))  score += 8;

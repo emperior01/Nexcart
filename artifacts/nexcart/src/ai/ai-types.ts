@@ -17,6 +17,7 @@ export interface ChatMessage {
   role: MessageRole;
   text: string;
   products?: AiProductResult[];
+  comparison?: { a: AiProductResult; b: AiProductResult };
   loading?: boolean;
 }
 

@@ -1,10 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Truck, ShieldCheck, RefreshCw, MessageCircle, Tag, Store } from "lucide-react";
+import { ArrowRight, Truck, ShieldCheck, RefreshCw, MessageCircle, Tag, Store, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/nexcart/Navbar";
 import { Footer } from "@/components/nexcart/Footer";
 import { ProductCard } from "@/components/nexcart/ProductCard";
+import { AISearchBar } from "@/components/nexcart/AISearchBar";
 import { Skeleton } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchSiteSettings, DEFAULT_SETTINGS, type TrustBadge } from "@/lib/site-settings";
@@ -148,6 +149,44 @@ export default function IndexPage() {
                 <Store className="h-3.5 w-3.5" />
                 Become a Seller
               </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ── AI SHOPPING ASSISTANT ── */}
+        <section className="bg-white px-6 py-8 border-b border-[#EFEFEF]">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-2 mb-3 justify-center">
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: "linear-gradient(135deg,#E8611A,#C4511A)" }}
+              >
+                <Sparkles style={{ width: 14, height: 14, color: "#fff" }} strokeWidth={2} />
+              </div>
+              <p className="text-[13px] font-bold text-[#1A1A1A]">Nexcart AI</p>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "#FEF0E8", color: "#E8611A" }}>
+                Smart Search
+              </span>
+            </div>
+            <p className="text-center text-[13px] text-[#6B6B6B] mb-4">
+              What are you looking for today?
+            </p>
+            <AISearchBar />
+            <div className="flex flex-wrap gap-2 justify-center mt-3">
+              {[
+                "Gaming phone under ₦300k",
+                "Laptop for programming",
+                "Wireless headphones",
+                "Gifts for a student",
+              ].map((hint) => (
+                <span
+                  key={hint}
+                  className="text-[11px] px-3 py-1.5 rounded-full"
+                  style={{ background: "#F4F4F4", color: "#6B6B6B" }}
+                >
+                  {hint}
+                </span>
+              ))}
             </div>
           </div>
         </section>
