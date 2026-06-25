@@ -277,11 +277,7 @@ export default function AiAssistantPage() {
             }
           </button>
         </div>
-        {!hasAiKey && (
-          <p className="text-center text-[10px] mt-1.5" style={{ color: "#C8C8C8" }}>
-            Add VITE_OPENAI_API_KEY to Vercel to enable smart AI suggestions
-          </p>
-        )}
+
       </div>
       <Footer />
     </div>
