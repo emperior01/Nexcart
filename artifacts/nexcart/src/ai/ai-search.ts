@@ -61,9 +61,17 @@ export function extractIntent(message: string): SearchIntent {
   return { keywords: keywords || message, maxPrice };
 }
 
+// Word-boundary test: "phone" must not match inside "headphone"
+function matchesWord(text: string, word: string): boolean {
+  // \b doesn't work well with non-ASCII but our terms are ASCII-safe
+  const re = new RegExp(`(?<![a-z])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![a-z])`, "i");
+  return re.test(text);
+}
+
 // Category synonyms — maps user intent to searchable terms
+// IMPORTANT: terms here are matched with word-boundary rules, not substring.
 const CATEGORY_TERMS: Record<string, string[]> = {
-  phones:      ["phone", "smartphone", "mobile", "iphone", "android", "samsung", "tecno", "infinix", "xiaomi", "redmi", "oppo", "vivo"],
+  phones:      ["smartphone", "mobile phone", "mobile", "iphone", "android phone", "samsung", "tecno", "infinix", "xiaomi", "redmi", "oppo", "vivo"],
   laptops:     ["laptop", "notebook", "macbook", "chromebook", "hp", "dell", "lenovo", "asus", "acer"],
   tablets:     ["tablet", "ipad", "tab"],
   headphones:  ["headphone", "earphone", "earbud", "airpod", "headset"],
@@ -73,36 +81,66 @@ const CATEGORY_TERMS: Record<string, string[]> = {
   electronics: ["tv", "television", "camera", "speaker", "printer", "router"],
 };
 
-function getSearchTerms(intent: SearchIntent): string[] {
-  const kw = intent.keywords.toLowerCase();
-  const terms = new Set<string>();
-  terms.add(intent.keywords);
+// Accessory/peripheral categories to exclude when user asks for the main product.
+// Key = the main-product category key; value = category keys that must be blocked.
+const ACCESSORY_EXCLUSIONS: Record<string, string[]> = {
+  phones:   ["headphones", "accessories"],
+  laptops:  ["headphones", "accessories"],
+  tablets:  ["headphones", "accessories"],
+};
 
-  // Check if keyword maps to a category
-  for (const [, synonyms] of Object.entries(CATEGORY_TERMS)) {
+function getSearchTerms(intent: SearchIntent): { terms: string[]; excludedSynonyms: string[] } {
+  const kw = intent.keywords.toLowerCase();
+  const matchedCatKeys = new Set<string>();
+  const terms = new Set<string>();
+
+  // Match keyword tokens against category synonyms using word boundaries
+  for (const [catKey, synonyms] of Object.entries(CATEGORY_TERMS)) {
     for (const syn of synonyms) {
-      if (kw.includes(syn) || syn.includes(kw)) {
+      // User input contains this synonym as a whole word, OR this synonym IS the keyword
+      if (matchesWord(kw, syn) || kw === syn) {
+        matchedCatKeys.add(catKey);
         synonyms.forEach(s => terms.add(s));
         break;
       }
     }
   }
 
-  // Also add individual words
+  // Add individual tokens (word-boundary safe: only add if ≥ 3 chars and not a stopword)
   kw.split(/\s+/).filter(w => w.length > 2).forEach(w => terms.add(w));
 
-  return Array.from(terms);
+  // If no category match found, fall back to raw keyword
+  if (matchedCatKeys.size === 0) terms.add(intent.keywords);
+
+  // Build exclusion list: synonyms of accessory categories for the matched main categories
+  const excludedSynonyms: string[] = [];
+  for (const catKey of matchedCatKeys) {
+    const blockedCatKeys = ACCESSORY_EXCLUSIONS[catKey] ?? [];
+    for (const blocked of blockedCatKeys) {
+      (CATEGORY_TERMS[blocked] ?? []).forEach(s => excludedSynonyms.push(s));
+    }
+  }
+
+  return { terms: Array.from(terms), excludedSynonyms };
 }
 
 async function queryByTitle(keyword: string, maxPrice?: number, limit = 8): Promise<ProductWithImages[]> {
+  // Use a word-boundary pattern: \y is Postgres' word boundary marker.
+  // This prevents "phone" matching "headphone" or "earphone".
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = `\\y${escaped}\\y`;
+
   let q = supabase
     .from("products")
     .select("*, product_images(*), categories(id,name,slug)")
     .eq("is_active", true)
-    .ilike("title", `%${keyword}%`)
+    .or(`title.ilike.%${keyword}%,title.~*.${pattern}`)
     .order("is_featured", { ascending: false })
     .limit(limit);
   if (maxPrice) q = q.lte("price", maxPrice);
+  const { data } = await q;
+  return (data ?? []) as ProductWithImages[];
+}
   const { data } = await q;
   return (data ?? []) as ProductWithImages[];
 }
@@ -129,45 +167,42 @@ function scoreProduct(p: AiProductResult, message: string, intent: SearchIntent)
   const lower = message.toLowerCase();
   const title = p.title.toLowerCase();
   const desc = (p.description ?? "").toLowerCase();
+  const category = (p.category ?? "").toLowerCase();
   let score = 0;
 
-  // Title match
   const words = intent.keywords.toLowerCase().split(/\s+/).filter(w => w.length > 1);
   for (const w of words) {
-    if (title.includes(w)) score += 12;
-    if (desc.includes(w)) score += 4;
+    if (matchesWord(title, w)) score += 12;
+    if (matchesWord(desc, w))  score += 4;
   }
 
-  // Exact phrase match bonus
-  if (title.includes(intent.keywords.toLowerCase())) score += 30;
+  // Exact phrase match bonus (whole-word)
+  if (matchesWord(title, intent.keywords.toLowerCase())) score += 30;
 
   // Category match bonus
-  if (p.category) {
-    const catLower = p.category.toLowerCase();
-    if (lower.includes(catLower)) score += 20;
+  if (category) {
+    if (matchesWord(lower, category)) score += 20;
     for (const [cat, synonyms] of Object.entries(CATEGORY_TERMS)) {
-      if (catLower.includes(cat) || cat.includes(catLower)) {
+      if (matchesWord(category, cat) || matchesWord(cat, category)) {
         for (const syn of synonyms) {
-          if (lower.includes(syn)) { score += 15; break; }
+          if (matchesWord(lower, syn)) { score += 15; break; }
         }
       }
     }
   }
 
-  // Price fit
   if (intent.maxPrice) {
     if (p.price <= intent.maxPrice) score += 15;
-    else score -= 50; // Hard penalize over budget
+    else score -= 50;
   }
 
-  // In stock
   if (p.stock > 0) score += 5;
 
   return score;
 }
 
 export async function searchProductsByIntent(intent: SearchIntent): Promise<AiProductResult[]> {
-  const terms = getSearchTerms(intent);
+  const { terms, excludedSynonyms } = getSearchTerms(intent);
   const allRaw: ProductWithImages[] = [];
 
   for (const term of terms.slice(0, 5)) {
@@ -176,7 +211,17 @@ export async function searchProductsByIntent(intent: SearchIntent): Promise<AiPr
     if (allRaw.length >= 12) break;
   }
 
-  const deduped = dedup(allRaw);
+  let deduped = dedup(allRaw);
+
+  // Hard-exclude accessory categories
+  if (excludedSynonyms.length > 0) {
+    deduped = deduped.filter(p => {
+      const catName = ((p.categories as { name?: string } | null)?.name ?? "").toLowerCase();
+      const catSlug = ((p.categories as { slug?: string } | null)?.slug ?? "").toLowerCase();
+      return !excludedSynonyms.some(ex => matchesWord(catName, ex) || matchesWord(catSlug, ex));
+    });
+  }
+
   if (deduped.length > 0) {
     const scored = deduped
       .map(p => ({ p: toAiProduct(p), score: scoreProduct(toAiProduct(p), intent.keywords, intent) }))
@@ -195,7 +240,7 @@ export async function searchProductsByIntent(intent: SearchIntent): Promise<AiPr
 
 export async function searchProductsByKeyword(message: string): Promise<AiProductResult[]> {
   const intent = extractIntent(message);
-  const terms = getSearchTerms(intent);
+  const { terms, excludedSynonyms } = getSearchTerms(intent);
   const allRaw: ProductWithImages[] = [];
 
   // Try with price filter first
@@ -223,7 +268,17 @@ export async function searchProductsByKeyword(message: string): Promise<AiProduc
 
   if (allRaw.length === 0) return [];
 
-  const deduped = dedup(allRaw);
+  let deduped = dedup(allRaw);
+
+  // Hard-exclude accessory categories
+  if (excludedSynonyms.length > 0) {
+    deduped = deduped.filter(p => {
+      const catName = ((p.categories as { name?: string } | null)?.name ?? "").toLowerCase();
+      const catSlug = ((p.categories as { slug?: string } | null)?.slug ?? "").toLowerCase();
+      return !excludedSynonyms.some(ex => matchesWord(catName, ex) || matchesWord(catSlug, ex));
+    });
+  }
+
   const scored = deduped
     .map(p => ({ p: toAiProduct(p), score: scoreProduct(toAiProduct(p), message, intent) }))
     .sort((a, b) => b.score - a.score);
