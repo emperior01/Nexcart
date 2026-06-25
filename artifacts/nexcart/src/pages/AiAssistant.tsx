@@ -17,12 +17,7 @@ const hasAiKey = !!import.meta.env.VITE_OPENAI_API_KEY;
 const WELCOME: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  text: "Hi! I'm Nexcart AI. Tell me what you're looking for and I'll find the best products for you.
-
-Try:
-- Find me a phone under 200,000
-- Show me laptops for programming
-- Recommend shoes for a wedding",
+  text: "Hi! I am Nexcart AI. Tell me what you are looking for and I will find the best products for you. Try: phones, laptops, shoes, fashion accessories.",
 };
 
 function uid() {
