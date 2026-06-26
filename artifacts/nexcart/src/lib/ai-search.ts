@@ -124,25 +124,26 @@ Return ONLY valid JSON, no markdown:
 }`;
 
   try {
-    const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY ?? "";
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY ?? "";
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
+        "Authorization": "Bearer " + apiKey,
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: "gpt-3.5-turbo",
         max_tokens: 512,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userQuery }],
+        temperature: 0,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userQuery },
+        ],
       }),
     });
 
     const data = await res.json();
-    const raw = (data?.content?.[0]?.text ?? "").replace(/```json|```/gi, "").trim();
+    const raw = (data?.choices?.[0]?.message?.content ?? "").replace(/```json|```/gi, "").trim();
     const parsed = JSON.parse(raw) as SearchIntent;
 
     return {
