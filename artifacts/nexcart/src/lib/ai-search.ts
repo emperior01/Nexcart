@@ -308,6 +308,33 @@ export async function aiSearch(userQuery: string): Promise<AISearchResult> {
     };
   }
 
+  // Handle broad single-word category queries — ask for clarification
+  const isBroad = intent.categoryTerms.length <= 2 && intent.useCaseKeywords.length === 0 && intent.maxPrice === null;
+  const broadCategoryMap: Record<string, string> = {
+    electronic: "electronics. Are you looking for phones, laptops, TVs, or audio?",
+    electronics: "electronics. Are you looking for phones, laptops, TVs, or audio?",
+    phone: "phones. Are you looking for a gaming phone, camera phone, or budget phone?",
+    laptop: "laptops. Are you looking for a programming laptop, gaming laptop, or everyday use?",
+    fashion: "fashion. Are you looking for shirts, shoes, dresses, or accessories?",
+    shoe: "shoes. Are you looking for sneakers, formal shoes, or sandals?",
+    shoes: "shoes. Are you looking for sneakers, formal shoes, or sandals?",
+    watch: "watches. Are you looking for a smartwatch or a classic watch?",
+    tv: "TVs. Are you looking for a smart TV, 4K TV, or a specific size?",
+    headphone: "headphones. Are you looking for wireless, noise-cancelling, or wired headphones?",
+    headphones: "headphones. Are you looking for wireless, noise-cancelling, or wired headphones?",
+  };
+  if (isBroad) {
+    const lowerSummary = intent.summary.toLowerCase().trim();
+    for (const [key, clarification] of Object.entries(broadCategoryMap)) {
+      if (lowerSummary === key || lowerSummary.includes(key)) {
+        return {
+          intent, results: [], trace,
+          message: "I can help you find " + clarification,
+        };
+      }
+    }
+  }
+
   // Phase 2a
   const passALabel = `2a. Pass A — categoryTerms: ${JSON.stringify(intent.categoryTerms)}`;
   trace.push(passALabel);
