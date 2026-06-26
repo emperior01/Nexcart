@@ -430,7 +430,7 @@ export function AISearchBar() {
                 className="flex-1 bg-transparent outline-none text-sm text-[#1A1A1A] placeholder-[#AAAAAA] min-w-0"
                 style={{ fontSize: 14 }}
                 autoComplete="off"
-                spellCheck={False}
+                spellCheck={false}
                 autoFocus
               />
               {query && (
