@@ -9,7 +9,7 @@ import { Footer } from "@/components/nexcart/Footer";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-import { aiProvider, searchProductsByIntent, searchProductsByKeyword, generateLocalReply } from "@/ai/ai-search";
+import { aiProvider, searchProductsByIntent, searchProductsByKeyword, generateLocalReply, extractIntent } from "@/ai/ai-search";
 import type { ChatMessage, AiProductResult } from "@/ai/ai-types";
 
 const hasAiKey = !!import.meta.env.VITE_OPENAI_API_KEY;
@@ -341,7 +341,7 @@ export default function AiAssistantPage() {
       if (hasAiKey) {
         const intent = await aiProvider.parseIntent(text);
         products = await searchProductsByIntent(intent);
-        replyText = await aiProvider.generateReply(text, products);
+        replyText = await aiProvider.generateReply(text, products, intent);
       } else {
         products = await searchProductsByKeyword(text);
         replyText = generateLocalReply(text, products);

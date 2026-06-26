@@ -17,18 +17,21 @@ export interface ChatMessage {
   role: MessageRole;
   text: string;
   products?: AiProductResult[];
-  comparison?: { a: AiProductResult; b: AiProductResult };
   loading?: boolean;
+  comparison?: { a: AiProductResult; b: AiProductResult };
 }
 
 export interface SearchIntent {
-  keywords: string;
+  keywords: string;        // clean search terms for DB query
+  productType: string;     // exact product type: smartphone, laptop, headphone, shoe, etc.
+  excludeTypes: string[];  // product types to never return
   maxPrice?: number;
   minPrice?: number;
-  category?: string;
+  useCase?: string;        // gaming, work, travel, photography, etc.
+  brand?: string;          // Samsung, Apple, HP, etc.
 }
 
 export interface AiProvider {
   parseIntent(userMessage: string): Promise<SearchIntent>;
-  generateReply(userMessage: string, products: AiProductResult[]): Promise<string>;
+  generateReply(userMessage: string, products: AiProductResult[], intent: SearchIntent): Promise<string>;
 }

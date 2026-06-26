@@ -1,84 +1,89 @@
 import type { AiProvider, AiProductResult, SearchIntent } from "./ai-types";
 
-// Uses Anthropic claude-sonnet-4-6 via the proxy available in this environment
-const AI_URL = "https://api.anthropic.com/v1/messages";
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 
-async function callAI(systemPrompt: string, userMessage: string): Promise<string> {
-  const res = await fetch(AI_URL, {
+async function callOpenAI(messages: { role: string; content: string }[]): Promise<string> {
+  const key = import.meta.env.VITE_OPENAI_API_KEY as string | undefined;
+  if (!key) throw new Error("No OpenAI key");
+  const res = await fetch(OPENAI_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY ?? "",
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true",
+      "Authorization": "Bearer " + key,
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 400,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userMessage }],
+      model: "gpt-3.5-turbo",
+      max_tokens: 300,
+      temperature: 0,
+      messages,
     }),
   });
-  if (!res.ok) throw new Error("AI API error: " + res.status);
-  const data = (await res.json()) as { content: { type: string; text: string }[] };
-  return data.content.find(b => b.type === "text")?.text?.trim() ?? "";
+  if (!res.ok) throw new Error("OpenAI error: " + res.status);
+  const data = (await res.json()) as { choices: { message: { content: string } }[] };
+  return data.choices[0]?.message?.content?.trim() ?? "";
 }
+
+const INTENT_SYSTEM = [
+  "You are a product search intent extractor for Nexcart, a Nigerian ecommerce marketplace.",
+  "Extract the user shopping intent and return ONLY valid JSON with no markdown or explanation.",
+  "JSON shape: {",
+  "  \"keywords\": string,",
+  "  \"productType\": string,",
+  "  \"excludeTypes\": string[],",
+  "  \"maxPrice\": number | null,",
+  "  \"minPrice\": number | null,",
+  "  \"useCase\": string | null,",
+  "  \"brand\": string | null",
+  "}",
+  "productType must be one of: smartphone laptop tablet headphone earphone television camera shoe shirt trouser dress bag watch accessories appliance other",
+  "excludeTypes: types that must NOT appear. Example: smartphone excludes headphone earphone",
+  "price: 300k=300000 2m=2000000 2million=2000000",
+  "Examples:",
+  "phones good for gaming -> {keywords:phone,productType:smartphone,excludeTypes:[headphone,earphone],useCase:gaming}",
+  "Samsung S26 -> {keywords:Samsung S26,productType:smartphone,brand:Samsung}",
+  "laptop for programming under 500k -> {keywords:laptop,productType:laptop,maxPrice:500000,useCase:programming}",
+  "wireless headphones -> {keywords:headphone,productType:headphone,excludeTypes:[smartphone,laptop]}"
+].join(" ");
 
 export const openAiProvider: AiProvider = {
   async parseIntent(userMessage: string): Promise<SearchIntent> {
-    const system = `You are a shopping assistant for Nexcart marketplace.
-Analyze the user shopping request and extract structured search intent.
-Respond ONLY with valid JSON, no markdown, no explanation.
-JSON shape:
-{
-  "keywords": "the best search terms to find this product in a database (brand, model, product type)",
-  "maxPrice": number or null,
-  "minPrice": number or null,
-  "category": "one of: phones, laptops, tablets, headphones, fashion, shoes, accessories, electronics or null"
-}
-
-Rules:
-- For "gaming phone" use keywords: "smartphone" or "phone"  
-- For "work laptop" use keywords: "laptop"
-- For "portable device" extract the likely product type
-- For "Samsung S26" use keywords: "Samsung S26"
-- For price: "2 million" = 2000000, "300k" = 300000, "2m" = 2000000
-- Return the most searchable keywords, not the full sentence`;
-
     try {
-      const raw = await callAI(system, userMessage);
+      const raw = await callOpenAI([
+        { role: "system", content: INTENT_SYSTEM },
+        { role: "user", content: userMessage },
+      ]);
       const cleaned = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(cleaned) as Partial<SearchIntent>;
       return {
         keywords: parsed.keywords ?? userMessage,
+        productType: parsed.productType ?? "other",
+        excludeTypes: parsed.excludeTypes ?? [],
         maxPrice: parsed.maxPrice ?? undefined,
         minPrice: parsed.minPrice ?? undefined,
-        category: parsed.category ?? undefined,
+        useCase: parsed.useCase ?? undefined,
+        brand: parsed.brand ?? undefined,
       };
     } catch {
-      return { keywords: userMessage };
+      return { keywords: userMessage, productType: "other", excludeTypes: [] };
     }
   },
 
-  async generateReply(userMessage: string, products: AiProductResult[]): Promise<string> {
-    const system = `You are Nexcart AI, a helpful shopping assistant for Nexcart marketplace in Nigeria.
-Be friendly, concise, and helpful. Maximum 2-3 sentences.
-If products found: briefly explain why they match and invite exploration.
-If no products: empathize and suggest alternative search terms.
-Do not list prices. Do not use markdown.`;
-
-    const productSummary = products.length > 0
-      ? `Found ${products.length} product(s): ${products.map(p => p.title + " (" + (p.category ?? "general") + ")").join(", ")}`
-      : "No matching products found in the database.";
-
+  async generateReply(userMessage: string, products: AiProductResult[], intent: SearchIntent): Promise<string> {
+    const system = "You are Nexcart AI, a friendly shopping assistant for a Nigerian ecommerce marketplace. Write 1-2 sentences maximum. No markdown. If products found explain briefly why they match. If no products suggest alternatives.";
+    const found = products.length > 0
+      ? "Found " + products.length + " products: " + products.map(function(p) { return p.title; }).join(", ")
+      : "No matching products found.";
+    const ctx = "User: " + userMessage + ". Intent: " + intent.productType + (intent.useCase ? " for " + intent.useCase : "") + (intent.maxPrice ? " budget " + intent.maxPrice : "") + ". " + found;
     try {
-      return await callAI(system, `User request: "${userMessage}"
-Search result: ${productSummary}
-Write a short helpful reply.`);
+      return await callOpenAI([
+        { role: "system", content: system },
+        { role: "user", content: ctx },
+      ]);
     } catch {
-      return products.length > 0
-        ? `Found ${products.length} product${products.length > 1 ? "s" : ""} that match your request. Tap any card to view or add to cart.`
-        : "I could not find an exact match. Try a broader search term or browse the shop.";
+      if (products.length > 0) {
+        return "Found " + products.length + " product" + (products.length > 1 ? "s" : "") + " matching your request. Tap any card to view or add to cart.";
+      }
+      return "I could not find an exact match. Try a different keyword or browse the shop.";
     }
   },
 };
