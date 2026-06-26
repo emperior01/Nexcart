@@ -1,10 +1,14 @@
-import { Link } from "@tanstack/react-router";
 import { Sparkles } from "lucide-react";
 
-export function AiButton() {
+interface AiButtonProps {
+  onClick: () => void;
+}
+
+export function AiButton({ onClick }: AiButtonProps) {
   return (
-    <Link
-      to="/ai"
+    <button
+      onClick={onClick}
+      aria-label="Open Nexcart AI Shopping Assistant"
       style={{
         position: "fixed",
         bottom: 24,
@@ -18,13 +22,14 @@ export function AiButton() {
         padding: "12px 18px",
         boxShadow: "0 4px 20px rgba(232,97,26,0.45)",
         color: "#fff",
-        textDecoration: "none",
         fontWeight: 700,
         fontSize: 14,
+        border: "none",
+        cursor: "pointer",
       }}
     >
       <Sparkles style={{ width: 18, height: 18 }} strokeWidth={2} />
       Nexcart AI
-    </Link>
+    </button>
   );
 }

@@ -4,7 +4,7 @@ import {
   createRouter,
   Outlet,
 } from "@tanstack/react-router";
-import { createElement } from "react";
+import { createElement, useState } from "react";
 import { CartDrawer } from "@/components/nexcart/CartDrawer";
 import IndexPage from "@/pages/Index";
 import ShopPage from "@/pages/Shop";
@@ -45,6 +45,7 @@ import SellerNotifications from "@/pages/seller/Notifications";
 import SellerVerification from "@/pages/seller/Verification";
 import AiAssistantPage from "@/pages/AiAssistant";
 import { AiButton } from "@/components/nexcart/AiButton";
+import { AiDrawer } from "@/components/nexcart/AiDrawer";
 import BecomeSellerPage from "@/pages/BecomeSeller";
 import OrderSuccessPage from "@/pages/OrderSuccess";
 import CartPage from "@/pages/Cart";
@@ -52,12 +53,14 @@ import StorePage from "@/pages/Store";
 import NotFound from "@/pages/not-found";
 
 function RootComponent() {
+  const [aiOpen, setAiOpen] = useState(false);
   return createElement(
     "div",
     null,
     createElement(Outlet, null),
     createElement(CartDrawer, null),
-    createElement(AiButton, null),
+    createElement(AiButton, { onClick: function() { setAiOpen(true); } }),
+    createElement(AiDrawer, { open: aiOpen, onClose: function() { setAiOpen(false); } }),
   );
 }
 
