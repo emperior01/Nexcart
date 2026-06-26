@@ -9,8 +9,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  Search, X, Loader2, Sparkles, PackageSearch,
-  ArrowRight, ChevronRight, ChevronDown,
+  Search, X, Loader2, Sparkles, PackageSearch, Send, ArrowRight, ChevronRight, ChevronDown,
 } from "lucide-react";
 import { aiSearch } from "@/lib/ai-search";
 import type { AISearchResult, ScoredProduct } from "@/lib/ai-search";
@@ -413,20 +412,49 @@ export function AISearchBar() {
             )}
           </div>
 
-          {/* Footer */}
+          {/* Input bar inside modal */}
           <div
-            className="px-4 py-2.5 border-t border-[#F5F5F5] flex items-center justify-between"
+            className="px-3 py-3 border-t border-[#F5F5F5]"
             style={{ flexShrink: 0 }}
           >
-            <p className="text-[10px] text-[#BBBBBB]">Powered by Nexcart AI</p>
-            <Link
-              to="/shop"
-              onClick={handleNavigate}
-              className="text-[11px] font-semibold flex items-center gap-1 transition-colors hover:opacity-80"
-              style={{ color: "#E8611A", textDecoration: "none" }}
+            <div
+              className="flex items-center gap-2 rounded-full px-4"
+              style={{ background: "#F5F5F5", border: "1.5px solid #E8E8E8", height: 46 }}
             >
-              Browse all <ArrowRight style={{ width: 11, height: 11 }} />
-            </Link>
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+                placeholder="Ask Nexcart AI anything..."
+                className="flex-1 bg-transparent outline-none text-sm text-[#1A1A1A] placeholder-[#AAAAAA] min-w-0"
+                style={{ fontSize: 14 }}
+                autoComplete="off"
+                spellCheck={False}
+                autoFocus
+              />
+              {query && (
+                <button
+                  onClick={() => { setQuery(""); setResult(null); setHasSearched(false); }}
+                  className="flex items-center justify-center flex-shrink-0 rounded-full"
+                  style={{ width: 24, height: 24, color: "#9B9B9B" }}
+                >
+                  <X style={{ width: 13, height: 13 }} strokeWidth={2.5} />
+                </button>
+              )}
+              <button
+                onClick={handleSubmit}
+                disabled={!query.trim() || loading}
+                className="flex items-center justify-center flex-shrink-0 rounded-full disabled:opacity-40"
+                style={{ width: 32, height: 32, background: "#E8611A" }}
+                aria-label="Search"
+              >
+                {loading
+                  ? <Loader2 style={{ width: 14, height: 14, color: "#fff" }} className="animate-spin" />
+                  : <Send style={{ width: 14, height: 14, color: "#fff" }} strokeWidth={2} />
+                }
+              </button>
+            </div>
           </div>
         </div>
       )}
