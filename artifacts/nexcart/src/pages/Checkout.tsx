@@ -20,7 +20,7 @@ async function verifyAndCreateOrder(
   cartCurrency: string
 ) {
   const { data: { session } } = await supabase.auth.getSession();
-  const res = await supabase.functions.invoke("verify-payment", {
+  const res = await supabase.functions.invoke("bright-function", {
     body: { reference, currency: cartCurrency, items, shippingAddress },
     headers: session?.access_token
       ? { Authorization: `Bearer ${session.access_token}` }
