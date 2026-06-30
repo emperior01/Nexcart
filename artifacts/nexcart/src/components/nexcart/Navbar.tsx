@@ -6,7 +6,7 @@ import {
   TrendingUp, ChevronRight, Phone,
 } from "lucide-react";
 import { Logo } from "./Logo";
-import { AISearchBar } from "./AISearchBar";
+import { SearchBar } from "./SearchBar";
 import { useAuth } from "@/hooks/use-auth";
 import { useSeller } from "@/hooks/use-seller";
 import { useCart } from "@/lib/cart";
@@ -312,13 +312,13 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         </div>
       </div>
 
-      {/* ── AI Search bar row ── */}
+      {/* ── Search bar row ── */}
       <div
         className="px-4 py-2.5"
         style={{ background: "#FFFFFF", borderBottom: "1px solid #EFEFEF" }}
       >
         <div className="max-w-3xl mx-auto">
-          <AISearchBar />
+          <SearchBar />
         </div>
       </div>
 
