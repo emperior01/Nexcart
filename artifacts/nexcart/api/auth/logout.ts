@@ -1,0 +1,19 @@
+import { revokeSession } from "../_lib/session";
+import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies";
+
+export default async function handler(req: any, res: any) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  const cookies = parseCookies(req.headers.cookie);
+  const token = cookies[SESSION_COOKIE];
+
+  if (token) {
+    await revokeSession(token);
+  }
+
+  appendSetCookie(res, clearCookie(SESSION_COOKIE));
+  res.status(200).json({ success: true });
+}
