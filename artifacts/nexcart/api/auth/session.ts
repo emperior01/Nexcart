@@ -1,6 +1,6 @@
-import { db } from "../_lib/db";
-import { validateSession } from "../_lib/session";
-import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies";
+import { db } from "../_lib/db.js";
+import { validateSession } from "../_lib/session.js";
+import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies.js";
 
 // This replaces the client-side supabase.auth.getUser()/getSession() calls
 // that use-auth.ts previously relied on. The frontend should call this on

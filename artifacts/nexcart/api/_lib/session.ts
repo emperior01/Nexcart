@@ -1,5 +1,5 @@
 import { randomBytes, createHash } from "crypto";
-import { db } from "./db";
+import { db } from "./db.js";
 
 export type SessionRole = "customer" | "seller" | "admin";
 

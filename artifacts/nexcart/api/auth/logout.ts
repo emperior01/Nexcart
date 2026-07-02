@@ -1,5 +1,5 @@
-import { revokeSession } from "../_lib/session";
-import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies";
+import { revokeSession } from "../_lib/session.js";
+import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {

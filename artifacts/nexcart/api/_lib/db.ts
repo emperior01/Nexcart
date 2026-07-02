@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "../../src/integrations/supabase/types";
+import type { Database } from "../../src/integrations/supabase/types.js";
 
 // SERVER-ONLY. This file must never be imported from client code (anything
 // under src/). It uses the Supabase service-role key, which bypasses RLS

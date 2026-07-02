@@ -1,6 +1,6 @@
-import { db, authClient } from "../_lib/db";
-import { createSession, resolveRole, revokeSession } from "../_lib/session";
-import { SESSION_COOKIE, GUEST_CART_COOKIE, parseCookies, serializeCookie, appendSetCookie } from "../_lib/cookies";
+import { db, authClient } from "../_lib/db.js";
+import { createSession, resolveRole, revokeSession } from "../_lib/session.js";
+import { SESSION_COOKIE, GUEST_CART_COOKIE, parseCookies, serializeCookie, appendSetCookie } from "../_lib/cookies.js";
 
 // Phase 2 (guest cart) plugs in here: import mergeGuestCartIntoUser from
 // "../_lib/guestCart" and call it where the TODO below is, then delete
