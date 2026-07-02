@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "../../src/integrations/supabase/types.js";
 
 // SERVER-ONLY. This file must never be imported from client code (anything
 // under src/). It uses the Supabase service-role key, which bypasses RLS
@@ -33,7 +32,10 @@ export const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 // Supabase Auth (signInWithPassword) during login. We deliberately don't
 // keep the session it returns — we immediately discard the Supabase-issued
 // JWT/localStorage-style session and mint our own nex_session instead.
+// Untyped for the same reason as `db` above — avoids a Database-generic
+// instantiation entirely, which sidesteps a cross-package type-identity
+// mismatch in this monorepo's tsc --build project references.
 const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? "";
-export const authClient = createClient<Database>(SUPABASE_URL, ANON_KEY, {
+export const authClient = createClient(SUPABASE_URL, ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
