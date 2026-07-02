@@ -94,6 +94,25 @@ export default function AuthPage() {
       } else {
         const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (err) throw err;
+
+        // Establish the secure server-side session (nex_session cookie)
+        // alongside Supabase's own client session. Best-effort and
+        // non-blocking: if this fails, the user is still fully logged in
+        // via the existing Supabase auth — this only powers the newer
+        // security features (logout-everywhere, guest cart merge, checkout
+        // session tracking), it isn't load-bearing for the app's normal
+        // RLS-authenticated data access.
+        try {
+          await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ email: email.trim(), password }),
+          });
+        } catch (_) {
+          // Non-fatal — see comment above.
+        }
+
         toast.success("Welcome back!");
         void navigate({ to: "/" });
       }
