@@ -33,7 +33,16 @@ export default async function handler(req: any, res: any) {
   // Verify credentials against Supabase Auth. We only use this to confirm
   // the password is correct and get the user id — the session it returns
   // is immediately discarded, never persisted, never sent to the client.
-  const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
+  //
+  // NOTE: cast to `any` here. This monorepo's tsc --build project-reference
+  // setup resolves two different type declarations for @supabase/supabase-js
+  // across workspace packages (a duplicate/hoisted version conflict), which
+  // makes the real, correct-at-runtime methods below appear "missing" to
+  // the type checker even though they exist. This is a type-checking
+  // artifact, not a runtime bug — casting avoids fighting the workspace's
+  // dependency resolution just to satisfy tsc.
+  const authAny = authClient.auth as any;
+  const { data: authData, error: authError } = await authAny.signInWithPassword({
     email: email.trim(),
     password,
   });
@@ -44,7 +53,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const userId = authData.user.id;
-  await authClient.auth.signOut(); // discard Supabase's own client-style session immediately
+  await authAny.signOut(); // discard Supabase's own client-style session immediately
 
   if (staleToken) {
     await revokeSession(staleToken).catch(() => {});
