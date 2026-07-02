@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
 
 function GoogleIcon() {
@@ -17,6 +18,7 @@ function GoogleIcon() {
 
 export default function AuthPage() {
   const navigate = useNavigate();
+  const mergeItems = useCart((s) => s.mergeItems);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -103,12 +105,18 @@ export default function AuthPage() {
         // session tracking), it isn't load-bearing for the app's normal
         // RLS-authenticated data access.
         try {
-          await fetch("/api/auth/login", {
+          const res = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify({ email: email.trim(), password }),
           });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.guestCartItems) && data.guestCartItems.length > 0) {
+              mergeItems(data.guestCartItems);
+            }
+          }
         } catch (_) {
           // Non-fatal — see comment above.
         }

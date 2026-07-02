@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { syncGuestCartAdd, syncGuestCartUpdate, syncGuestCartRemove, syncGuestCartClear } from "./guestCartSync";
 
 export interface CartItem {
   productId: string;
@@ -21,6 +22,7 @@ interface CartState {
   removeItem: (productId: string) => void;
   updateQty: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  mergeItems: (incoming: CartItem[]) => void;
   openCart: () => void;
   closeCart: () => void;
   saveForUser: (userId: string) => void;
@@ -43,6 +45,7 @@ export const useCart = create<CartState>()(
       total: 0,
 
       addItem(incoming) {
+        syncGuestCartAdd(incoming.productId, 1);
         set((state) => {
           const existing = state.items.find((i) => i.productId === incoming.productId);
           const items = existing
@@ -57,6 +60,7 @@ export const useCart = create<CartState>()(
       },
 
       removeItem(productId) {
+        syncGuestCartRemove(productId);
         set((state) => {
           const items = state.items.filter((i) => i.productId !== productId);
           return { items, ...computeDerived(items) };
@@ -64,6 +68,11 @@ export const useCart = create<CartState>()(
       },
 
       updateQty(productId, quantity) {
+        if (quantity < 1) {
+          syncGuestCartRemove(productId);
+        } else {
+          syncGuestCartUpdate(productId, quantity);
+        }
         set((state) => {
           if (quantity < 1) {
             const items = state.items.filter((i) => i.productId !== productId);
@@ -79,7 +88,33 @@ export const useCart = create<CartState>()(
       },
 
       clearCart() {
+        syncGuestCartClear();
         set({ items: [], count: 0, total: 0 });
+      },
+
+      /**
+       * Merges a set of incoming items (e.g. a guest cart returned by
+       * /api/auth/login on successful sign-in) into the current cart.
+       * Matching products have their quantities summed (capped at
+       * maxStock); new products are appended. Never syncs to the guest
+       * cart API — this only ever runs right after login, when the
+       * shopper is no longer a guest.
+       */
+      mergeItems(incoming) {
+        if (incoming.length === 0) return;
+        set((state) => {
+          let items = [...state.items];
+          for (const guestItem of incoming) {
+            const idx = items.findIndex((i) => i.productId === guestItem.productId);
+            if (idx >= 0) {
+              const merged = Math.min(items[idx].quantity + guestItem.quantity, items[idx].maxStock);
+              items[idx] = { ...items[idx], quantity: merged };
+            } else {
+              items.push(guestItem);
+            }
+          }
+          return { items, ...computeDerived(items) };
+        });
       },
 
       saveForUser(userId: string) {
