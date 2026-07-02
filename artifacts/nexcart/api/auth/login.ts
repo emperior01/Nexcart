@@ -1,10 +1,7 @@
 import { db, authClient } from "../_lib/db.js";
 import { createSession, resolveRole, revokeSession } from "../_lib/session.js";
-import { SESSION_COOKIE, GUEST_CART_COOKIE, parseCookies, serializeCookie, appendSetCookie } from "../_lib/cookies.js";
-
-// Phase 2 (guest cart) plugs in here: import mergeGuestCartIntoUser from
-// "../_lib/guestCart" and call it where the TODO below is, then delete
-// this comment. Left as a clean seam so Phase 1 ships and builds standalone.
+import { SESSION_COOKIE, GUEST_CART_COOKIE, parseCookies, serializeCookie, clearCookie, appendSetCookie } from "../_lib/cookies.js";
+import { consumeGuestCartForMerge } from "../_lib/guestCart.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
@@ -79,12 +76,18 @@ export default async function handler(req: any, res: any) {
   const cookieMaxAge = role === "customer" && rememberMe ? 60 * 24 * 60 * 60 : 30 * 24 * 60 * 60;
   appendSetCookie(res, serializeCookie(SESSION_COOKIE, token, { maxAgeSeconds: cookieMaxAge }));
 
-  // TODO (Phase 2): merge guest cart into user cart here, then clear the
-  // GUEST_CART_COOKIE. Left as a no-op for now — guest cart doesn't exist
-  // yet, so there's nothing to merge, and we deliberately don't touch the
-  // cookie until the merge logic that's supposed to consume it exists.
-  void GUEST_CART_COOKIE;
-  void existingCookies;
+  // Merge any guest cart into this login: hand the validated (server-truth)
+  // items back to the client so it can fold them into its own cart store,
+  // then delete the server-side guest cart row and clear the cookie. The
+  // client's existing cart items are left alone here — merging them with
+  // what's returned is the client's job (same "add" semantics it already
+  // uses for its own items), since that logic already exists there.
+  const guestToken = existingCookies[GUEST_CART_COOKIE];
+  let guestCartItems: Awaited<ReturnType<typeof consumeGuestCartForMerge>> = [];
+  if (guestToken) {
+    guestCartItems = await consumeGuestCartForMerge(guestToken).catch(() => []);
+    appendSetCookie(res, clearCookie(GUEST_CART_COOKIE));
+  }
 
   const { data: profile } = await db
     .from("profiles")
@@ -94,5 +97,6 @@ export default async function handler(req: any, res: any) {
 
   res.status(200).json({
     user: { id: userId, email: authData.user.email, role, fullName: profile?.full_name ?? null },
+    guestCartItems,
   });
 }
