@@ -63,13 +63,18 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
 
   useEffect(() => {
     if (!user) { setIsAdmin(false); return; }
+    let cancelled = false;
     supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "admin")
       .maybeSingle()
-      .then(({ data }) => setIsAdmin(!!data));
+      .then(({ data }) => {
+        if (cancelled) return;
+        setIsAdmin(!!data);
+      });
+    return () => { cancelled = true; };
   }, [user]);
 
   useEffect(() => {
