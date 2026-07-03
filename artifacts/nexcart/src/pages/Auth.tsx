@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
 
 function GoogleIcon() {
@@ -18,7 +17,6 @@ function GoogleIcon() {
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const mergeItems = useCart((s) => s.mergeItems);
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -101,22 +99,25 @@ export default function AuthPage() {
         // alongside Supabase's own client session. Best-effort and
         // non-blocking: if this fails, the user is still fully logged in
         // via the existing Supabase auth — this only powers the newer
-        // security features (logout-everywhere, guest cart merge, checkout
-        // session tracking), it isn't load-bearing for the app's normal
-        // RLS-authenticated data access.
+        // security features (logout-everywhere, checkout session tracking),
+        // it isn't load-bearing for the app's normal RLS-authenticated data
+        // access.
+        //
+        // NOTE: we deliberately do NOT merge `guestCartItems` from the
+        // response back into the cart store here. The client-side cart
+        // (cart.ts) is already continuous across login — whatever you
+        // added as a guest is already sitting in it, since that's the same
+        // localStorage-backed store regardless of auth state. Re-adding
+        // the server's guest-cart copy on top double-counted quantities.
+        // The server still deletes its guest cart row/cookie for cleanup;
+        // the response body just isn't used for anything client-side.
         try {
-          const res = await fetch("/api/auth/login", {
+          await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: JSON.stringify({ email: email.trim(), password }),
           });
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data.guestCartItems) && data.guestCartItems.length > 0) {
-              mergeItems(data.guestCartItems);
-            }
-          }
         } catch (_) {
           // Non-fatal — see comment above.
         }
