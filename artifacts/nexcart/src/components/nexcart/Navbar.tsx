@@ -6,7 +6,7 @@ import {
   TrendingUp, ChevronRight, Phone,
 } from "lucide-react";
 import { Logo } from "./Logo";
-import { AISearchBar } from "./AISearchBar";
+import { SearchBar } from "./SearchBar";
 import { useAuth } from "@/hooks/use-auth";
 import { useSeller } from "@/hooks/use-seller";
 import { useCart } from "@/lib/cart";
@@ -63,21 +63,13 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
 
   useEffect(() => {
     if (!user) { setIsAdmin(false); return; }
-    let cancelled = false;
     supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
       .eq("role", "admin")
       .maybeSingle()
-      .then(({ data }) => {
-        // If `user` changed (including becoming null) while this request
-        // was in flight, this result is stale — applying it would
-        // overwrite a correct reset with outdated data.
-        if (cancelled) return;
-        setIsAdmin(!!data);
-      });
-    return () => { cancelled = true; };
+      .then(({ data }) => setIsAdmin(!!data));
   }, [user]);
 
   useEffect(() => {
@@ -320,13 +312,13 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
         </div>
       </div>
 
-      {/* ── AI Search bar row ── */}
+      {/* ── Search bar row ── */}
       <div
         className="px-4 py-2.5"
         style={{ background: "#FFFFFF", borderBottom: "1px solid #EFEFEF" }}
       >
         <div className="max-w-3xl mx-auto">
-          <AISearchBar />
+          <SearchBar />
         </div>
       </div>
 
