@@ -90,6 +90,23 @@ export function useAuth(): AuthState {
         return;
       }
       if (event === "SIGNED_IN" && session?.user) {
+        // Best-effort: establish the secure server-side session (nex_session
+        // cookie) from the JWT Supabase just issued. This is what actually
+        // covers Google OAuth — unlike email/password sign-in (handled
+        // explicitly in Auth.tsx, where a password is available to verify),
+        // OAuth is a redirect flow with no component mounted to hook into
+        // afterward. This global listener is the only place both paths
+        // reliably pass through. Non-blocking, non-fatal — same as
+        // Auth.tsx's own call, this isn't load-bearing for RLS access.
+        if (session.access_token) {
+          fetch("/api/auth/oauth-session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ accessToken: session.access_token }),
+          }).catch(() => {});
+        }
+
         // Re-validate from server — never trust the cached session object
         // alone. But again: only treat a genuine rejection as sign-out.
         supabase.auth.getUser().then(({ data: { user }, error }) => {
