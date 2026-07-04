@@ -56,12 +56,25 @@ export function useAuth(): AuthState {
         return;
       }
       if (error || !user) {
-        // Couldn't confirm either way (network error, timeout, etc). Don't
-        // wipe a possibly-valid session over a transient failure — just
-        // stop the loading spinner and leave whatever tokens exist alone.
-        // The next successful check (route change, auth state event, etc.)
-        // will resolve this properly.
-        setState((prev) => ({ ...prev, loading: false }));
+        // Couldn't confirm via the server (network error, timeout, cold
+        // start, etc — not a genuine rejection, that's handled above).
+        // Falling back to getSession() here matters a lot in practice:
+        // this exact path fires right after a fresh login, when the
+        // homepage re-mounts this hook and immediately re-validates. If
+        // that second check hiccups, leaving `user` at its default of
+        // null makes a freshly-logged-in person look logged out even
+        // though their tokens are perfectly intact. getSession() only
+        // reads localStorage — no network call, can't fail this way —
+        // so it's a safe, honest fallback: it reflects "here's what we
+        // have locally" rather than "we don't know, so assume logged out."
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) {
+            setState({ user: session.user, session, loading: false });
+            restoreForUser(session.user.id);
+          } else {
+            setState((prev) => ({ ...prev, loading: false }));
+          }
+        });
         return;
       }
       supabase.auth.getSession().then(({ data: { session } }) => {
