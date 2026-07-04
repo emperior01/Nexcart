@@ -50,7 +50,15 @@ export default async function handler(req: any, res: any) {
   }
 
   const userId = authData.user.id;
-  await authAny.signOut(); // discard Supabase's own client-style session immediately
+  // scope: "local" is critical here. Without it, signOut() defaults to
+  // "global" scope, which revokes this user's refresh token on Supabase's
+  // server for ALL sessions — including the browser's own session that was
+  // just legitimately created by signInWithPassword a moment ago. That was
+  // silently killing every real login: the browser would sign in fine,
+  // then this call would immediately revoke it server-side, and the next
+  // getUser() check would correctly (but tragically) see a genuinely
+  // invalidated token and log the person straight back out.
+  await authAny.signOut({ scope: "local" });
 
   if (staleToken) {
     await revokeSession(staleToken).catch(() => {});
