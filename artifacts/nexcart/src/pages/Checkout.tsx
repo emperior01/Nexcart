@@ -180,6 +180,7 @@ export default function CheckoutPage() {
       savedItems: typeof items;
       shippingAddress: { full_name: string; address: string; city: string; country: string };
       cartCurrency: string;
+      checkoutSessionId?: string | null;
     };
     try { parsed = JSON.parse(saved); } catch {
       toast.error("Session data corrupted. Contact support with ref: " + reference); return;
@@ -192,6 +193,17 @@ export default function CheckoutPage() {
       parsed.cartCurrency
     )
       .then(() => {
+        // Best-effort — see the create-side comment in handlePaystackCheckout.
+        // The order is already created and confirmed at this point regardless
+        // of whether this call succeeds.
+        if (parsed.checkoutSessionId) {
+          fetch("/api/checkout/session", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ id: parsed.checkoutSessionId }),
+          }).catch(() => {});
+        }
         clearCart();
         sessionStorage.removeItem("nexcart_checkout");
         void navigate({ to: "/order-success", search: { ref: reference as string } });
@@ -277,9 +289,27 @@ export default function CheckoutPage() {
         throw new Error("Paystack did not return a checkout URL");
       }
 
+      // Best-effort checkout session tracking (120-min expiry, server-side).
+      // Purely observational — doesn't gate or alter anything below.
+      let checkoutSessionId: string | null = null;
+      try {
+        const trackRes = await fetch("/api/checkout/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ cartSnapshot: items }),
+        });
+        if (trackRes.ok) {
+          const trackData = await trackRes.json();
+          checkoutSessionId = trackData.checkoutSessionId ?? null;
+        }
+      } catch (_) {
+        // Non-fatal — checkout proceeds regardless.
+      }
+
       sessionStorage.setItem(
         "nexcart_checkout",
-        JSON.stringify({ savedItems: items, shippingAddress, cartCurrency, reference })
+        JSON.stringify({ savedItems: items, shippingAddress, cartCurrency, reference, checkoutSessionId })
       );
 
       console.log("[Checkout] Redirecting to Paystack:", authorization_url);

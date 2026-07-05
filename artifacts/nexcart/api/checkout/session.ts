@@ -1,5 +1,5 @@
 import { validateSession } from "../_lib/session.js";
-import { createCheckoutSession, getCheckoutSession } from "../_lib/checkoutSession.js";
+import { createCheckoutSession, getCheckoutSession, completeCheckoutSession } from "../_lib/checkoutSession.js";
 import { SESSION_COOKIE, GUEST_CART_COOKIE, parseCookies } from "../_lib/cookies.js";
 
 export default async function handler(req: any, res: any) {
@@ -42,6 +42,24 @@ export default async function handler(req: any, res: any) {
       expiresAt: checkoutSession.expires_at,
       cartSnapshot: checkoutSession.cart_snapshot,
     });
+    return;
+  }
+
+  if (req.method === "PATCH") {
+    const { id } = (req.body ?? {}) as { id?: string };
+    if (!id) {
+      res.status(400).json({ error: "id is required." });
+      return;
+    }
+    // Marking complete is a courtesy/observability signal — it does NOT
+    // gate order creation or payment verification in any way. Those stay
+    // entirely owned by verifyAndCreateOrder() / the Paystack edge
+    // function, untouched. If this call fails, the checkout still
+    // succeeded from the shopper's perspective; the session just lazily
+    // flips to "abandoned" on its own 120-minute expiry instead, which is
+    // a harmless bookkeeping difference, not a functional one.
+    await completeCheckoutSession(id);
+    res.status(200).json({ success: true });
     return;
   }
 
