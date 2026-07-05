@@ -7,6 +7,7 @@ import { useSeller } from "@/hooks/use-seller";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Skeleton } from "@/components/ui/index";
 import { toast } from "sonner";
+import { StepUpDialog } from "@/components/nexcart/StepUpDialog";
 import type { Database } from "@/integrations/supabase/types";
 
 type Withdrawal = Database["public"]["Tables"]["withdrawals"]["Row"];
@@ -22,6 +23,7 @@ export default function SellerWithdrawals() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showStepUp, setShowStepUp] = useState(false);
   const [form, setForm] = useState({ amount: "", bank_name: "", account_name: "", account_number: "" });
 
   const { data: withdrawals, isLoading } = useQuery({
@@ -64,6 +66,50 @@ export default function SellerWithdrawals() {
     },
   });
 
+  async function submitWithdrawal() {
+    if (!seller?.id) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/seller/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          amount: parseFloat(form.amount),
+          bank_name: form.bank_name.trim(),
+          account_name: form.account_name.trim(),
+          account_number: form.account_number.trim(),
+        }),
+      });
+
+      if (res.status === 403) {
+        const data = await res.json().catch(() => ({}));
+        if (data.error === "step_up_required") {
+          setSubmitting(false);
+          setShowStepUp(true);
+          return;
+        }
+        toast.error(data.error ?? "Not authorized to request withdrawals.");
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to submit request.");
+      }
+
+      toast.success("Withdrawal request submitted!");
+      setForm({ amount: "", bank_name: "", account_name: "", account_number: "" });
+      setShowForm(false);
+      qc.invalidateQueries({ queryKey: ["seller-withdrawals", seller.id] });
+      qc.invalidateQueries({ queryKey: ["seller-available-balance", seller.id] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit request.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!seller?.id) return;
@@ -75,27 +121,7 @@ export default function SellerWithdrawals() {
     if (!form.bank_name.trim() || !form.account_name.trim() || !form.account_number.trim()) {
       toast.error("All bank details are required."); return;
     }
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.from("withdrawals").insert({
-        seller_id: seller.id,
-        amount,
-        bank_name: form.bank_name.trim(),
-        account_name: form.account_name.trim(),
-        account_number: form.account_number.trim(),
-        status: "pending",
-      } as any);
-      if (error) throw error;
-      toast.success("Withdrawal request submitted!");
-      setForm({ amount: "", bank_name: "", account_name: "", account_number: "" });
-      setShowForm(false);
-      qc.invalidateQueries({ queryKey: ["seller-withdrawals", seller.id] });
-      qc.invalidateQueries({ queryKey: ["seller-available-balance", seller.id] });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit request.");
-    } finally {
-      setSubmitting(false);
-    }
+    await submitWithdrawal();
   }
 
   // ─── Locked state for unverified sellers ─────────────────────────────────
@@ -344,6 +370,13 @@ export default function SellerWithdrawals() {
           </div>
         </>
       )}
+
+      <StepUpDialog
+        open={showStepUp}
+        onOpenChange={setShowStepUp}
+        onVerified={submitWithdrawal}
+        description="Requesting a payout requires a fresh password confirmation. Please re-enter your password to continue."
+      />
     </div>
   );
 }
