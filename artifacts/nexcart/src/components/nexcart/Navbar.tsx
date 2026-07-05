@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSeller } from "@/hooks/use-seller";
 import { useCart } from "@/lib/cart";
 import { supabase } from "@/integrations/supabase/client";
+import { clearServerSession } from "@/lib/authSession";
 
 interface NavbarProps {
   announcementText?: string;
@@ -101,6 +102,7 @@ export function Navbar({ announcementText = "Fast delivery · Secure encrypted c
     setMenuOpen(false);
     setMobileOpen(false);
     setIsAdmin(false); // reset role immediately, don't wait for re-render
+    void clearServerSession();
     try {
       // scope: "global" invalidates the session on Supabase server for all devices
       await supabase.auth.signOut({ scope: "global" });

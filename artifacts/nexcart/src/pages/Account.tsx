@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/index";
 import { Skeleton } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
+import { clearServerSession } from "@/lib/authSession";
 import { useAuth } from "@/hooks/use-auth";
 import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -75,6 +76,7 @@ export default function AccountPage() {
   }
 
   async function signOut() {
+    void clearServerSession();
     await supabase.auth.signOut();
     void navigate({ to: "/" });
   }

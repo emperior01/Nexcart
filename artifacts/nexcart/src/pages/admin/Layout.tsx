@@ -3,6 +3,7 @@ import { Link, useNavigate, useRouterState, Outlet } from "@tanstack/react-route
 import { LayoutDashboard, Package, Tags, ShoppingBag, Users, LogOut, Home, Settings, Menu, X, Store, Wallet, CreditCard, ShieldAlert, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { clearServerSession } from "@/lib/authSession";
 import { useAuth } from "@/hooks/use-auth";
 import { Logo } from "@/components/nexcart/Logo";
 
@@ -146,6 +147,7 @@ export default function AdminLayout() {
   });
 
   async function signOut() {
+    void clearServerSession();
     await supabase.auth.signOut();
     void navigate({ to: "/" });
   }

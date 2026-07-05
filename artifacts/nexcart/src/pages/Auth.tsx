@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { clearServerSession } from "@/lib/authSession";
 import { toast } from "sonner";
 
 function GoogleIcon() {
@@ -42,6 +43,7 @@ export default function AuthPage() {
     // Clear any existing Supabase session before starting OAuth.
     // Without this, Edge/Opera Mini reuse the cached session from the last
     // logged-in user and skip the Google account picker entirely.
+    void clearServerSession();
     try {
       await supabase.auth.signOut({ scope: "global" });
     } catch (_) {}

@@ -6,6 +6,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { clearServerSession } from "@/lib/authSession";
 import { useWishlist } from "@/hooks/use-wishlist";
 import { useCart } from "@/lib/cart";
 import { useState, useEffect } from "react";
@@ -52,6 +53,7 @@ export default function AccountHub() {
   async function signOut() {
     if (user) saveForUser(user.id);
     clearCart();
+    void clearServerSession();
     await supabase.auth.signOut();
     void navigate({ to: "/" });
   }

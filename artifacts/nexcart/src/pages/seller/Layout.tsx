@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { clearServerSession } from "@/lib/authSession";
 import { useAuth } from "@/hooks/use-auth";
 import { useSeller } from "@/hooks/use-seller";
 import { Logo } from "@/components/nexcart/Logo";
@@ -328,6 +329,7 @@ export default function SellerLayout() {
   }, [user, seller, authLoading, sellerLoading, navigate]);
 
   async function signOut() {
+    void clearServerSession();
     await supabase.auth.signOut();
     void navigate({ to: "/" });
   }
