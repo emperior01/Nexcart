@@ -36,6 +36,8 @@ import {
   PaginationNext,
 } from "@/components/ui/pagination";
 import { toast } from "sonner";
+import { useStepUp } from "@/hooks/use-step-up";
+import { StepUpDialog } from "@/components/nexcart/StepUpDialog";
 
 /* Types */
 
@@ -269,6 +271,7 @@ function StatusBadge({ banned }: { banned: boolean }) {
 
 export default function AdminUsers() {
   const qc = useQueryClient();
+  const { open, setOpen, runWithStepUp, handleVerified } = useStepUp();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterValue>("all");
   const [page, setPage] = useState(1);
@@ -300,12 +303,20 @@ export default function AdminUsers() {
   }
 
   async function toggleBan(userId: string, currentlyBanned: boolean) {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ banned: !currentlyBanned })
-      .eq("id", userId);
-    if (error) toast.error(error.message);
-    else toast.success(currentlyBanned ? "User unbanned." : "User banned.");
+    const res = await runWithStepUp(() =>
+      fetch("/api/admin/user-ban", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId, banned: !currentlyBanned }),
+      })
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? "Failed to update.");
+      return;
+    }
+    toast.success(currentlyBanned ? "User unbanned." : "User banned.");
     qc.invalidateQueries({ queryKey: ["admin-users"] });
   }
 
@@ -747,6 +758,13 @@ export default function AdminUsers() {
           )}
         </SheetContent>
       </Sheet>
+
+      <StepUpDialog
+        open={open}
+        onOpenChange={setOpen}
+        onVerified={handleVerified}
+        description="Banning or unbanning a user requires a fresh password confirmation. Please re-enter your password to continue."
+      />
     </div>
   );
 }

@@ -50,43 +50,12 @@ export function useAllPaymentMethods() {
   });
 }
 
-/** Toggle active/inactive — admin only */
-export function useTogglePaymentMethod() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: "active" | "inactive" }) => {
-      const { error } = await (supabase as any)
-        .from("payment_methods")
-        .update({ status })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payment-methods"] });
-      toast.success("Payment method updated.");
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-}
-
-/** Update config (wallet addresses, priority, etc.) — admin only */
-export function useUpdatePaymentMethod() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, patch }: { id: string; patch: Partial<PaymentMethod> }) => {
-      const { error } = await (supabase as any)
-        .from("payment_methods")
-        .update(patch)
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["payment-methods"] });
-      toast.success("Saved.");
-    },
-    onError: (err: Error) => toast.error(err.message),
-  });
-}
+// NOTE: direct-write mutations for toggling/updating payment methods used
+// to live here. They're gone — those writes now go through
+// /api/admin/payment-method (see Payments.tsx's PaymentCard), which
+// enforces step-up (fresh password) verification before applying changes.
+// Don't reintroduce a client-side direct supabase.from("payment_methods")
+// write; it would bypass that check entirely.
 
 // ── Customer preference hooks ─────────────────────────────────────────────────
 // These read/write the customer's preferred_payment_method_id on their profile.

@@ -3,10 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldOff, Eye, Mail, Phone, MapPin, Clock, ShieldCheck, RefreshCw } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/index";
 import { toast } from "sonner";
+import { useStepUp } from "@/hooks/use-step-up";
+import { StepUpDialog } from "@/components/nexcart/StepUpDialog";
 
 type SellerApplication = {
   id: string;
@@ -36,7 +37,7 @@ type TabFilter = "all" | "basic" | "verified" | "suspended" | "pending" | "rejec
 const tabFilters: TabFilter[] = ["all", "basic", "verified", "suspended", "pending", "rejected"];
 
 export default function AdminSellers() {
-  const { user } = useAuth();
+  const { open, setOpen, runWithStepUp, handleVerified } = useStepUp();
   const qc = useQueryClient();
   const [currentFilter, setCurrentFilter] = useState<TabFilter>("all");
 
@@ -67,21 +68,19 @@ export default function AdminSellers() {
   }, { all: 0 });
 
   async function updateStatus(seller: SellerApplication, status: SellerApplication["verification_status"]) {
-    const { error } = await (supabase.from("sellers") as any).update({
-      verification_status: status,
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: user?.id ?? null,
-    }).eq("id", seller.id);
+    const res = await runWithStepUp(() =>
+      fetch("/api/admin/seller-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ sellerId: seller.id, status, storeName: seller.store_name }),
+      })
+    );
 
-    if (error) { toast.error(error.message); return; }
-
-    if (status === "verified" || status === "suspended") {
-      const title = status === "verified" ? "Account Upgraded to Verified 🎉" : "Seller Account Suspended";
-      const message =
-        status === "verified"
-          ? `Congratulations! Your store "${seller.store_name}" has been verified. You now have full access including withdrawal requests.`
-          : `Your seller account for "${seller.store_name}" has been suspended. Please contact support for assistance.`;
-      await (supabase.from("seller_notifications") as any).insert({ seller_id: seller.id, title, message });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? "Failed to update status.");
+      return;
     }
 
     const labels: Record<string, string> = {
@@ -258,6 +257,13 @@ export default function AdminSellers() {
           </div>
         )}
       </div>
+
+      <StepUpDialog
+        open={open}
+        onOpenChange={setOpen}
+        onVerified={handleVerified}
+        description="Changing a seller's status requires a fresh password confirmation. Please re-enter your password to continue."
+      />
     </div>
   );
 }

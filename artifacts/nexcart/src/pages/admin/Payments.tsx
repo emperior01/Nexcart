@@ -5,10 +5,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/index";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { useStepUp } from "@/hooks/use-step-up";
+import { StepUpDialog } from "@/components/nexcart/StepUpDialog";
 import {
   useAllPaymentMethods,
-  useTogglePaymentMethod,
-  useUpdatePaymentMethod,
   type PaymentMethod,
 } from "@/hooks/use-payment-methods";
 
@@ -79,20 +81,59 @@ function CryptoConfig({
 // ── Payment method card ────────────────────────────────────────────────────────
 function PaymentCard({ method }: { method: PaymentMethod }) {
   const [expanded, setExpanded] = useState(false);
-  const toggle = useTogglePaymentMethod();
-  const update = useUpdatePaymentMethod();
+  const [toggling, setToggling] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { open, setOpen, runWithStepUp, handleVerified } = useStepUp();
+  const qc = useQueryClient();
   const meta = PROVIDER_META[method.provider] ?? { emoji: "💰", color: "#6B7280", bg: "#F9FAFB" };
   const isActive = method.status === "active";
 
-  function handleToggle() {
-    toggle.mutate({ id: method.id, status: isActive ? "inactive" : "active" });
+  async function handleToggle() {
+    setToggling(true);
+    try {
+      const res = await runWithStepUp(() =>
+        fetch("/api/admin/payment-method", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id: method.id, patch: { status: isActive ? "inactive" : "active" } }),
+        })
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to update.");
+      }
+      qc.invalidateQueries({ queryKey: ["payment-methods"] });
+      toast.success("Payment method updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update.");
+    } finally {
+      setToggling(false);
+    }
   }
 
-  function handleSaveWallets(wallets: Record<string, string>) {
-    update.mutate({
-      id: method.id,
-      patch: { config: { ...method.config, wallets } },
-    });
+  async function handleSaveWallets(wallets: Record<string, string>) {
+    setSaving(true);
+    try {
+      const res = await runWithStepUp(() =>
+        fetch("/api/admin/payment-method", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ id: method.id, patch: { config: { ...method.config, wallets } } }),
+        })
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to save.");
+      }
+      qc.invalidateQueries({ queryKey: ["payment-methods"] });
+      toast.success("Saved.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -138,7 +179,7 @@ function PaymentCard({ method }: { method: PaymentMethod }) {
           {/* Toggle */}
           <button
             onClick={handleToggle}
-            disabled={toggle.isPending}
+            disabled={toggling}
             className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all"
             style={{
               background: isActive ? "#FEF2F2" : "#F0FDF4",
@@ -146,7 +187,7 @@ function PaymentCard({ method }: { method: PaymentMethod }) {
               color: isActive ? "#EF4444" : "#16A34A",
             }}
           >
-            {toggle.isPending ? (
+            {toggling ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : isActive ? (
               <ToggleRight className="h-3.5 w-3.5" />
@@ -178,10 +219,17 @@ function PaymentCard({ method }: { method: PaymentMethod }) {
           <CryptoConfig
             method={method}
             onSave={handleSaveWallets}
-            saving={update.isPending}
+            saving={saving}
           />
         </div>
       )}
+
+      <StepUpDialog
+        open={open}
+        onOpenChange={setOpen}
+        onVerified={handleVerified}
+        description="Changing payment settings requires a fresh password confirmation. Please re-enter your password to continue."
+      />
     </div>
   );
 }
