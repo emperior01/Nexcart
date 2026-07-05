@@ -8,6 +8,7 @@ import { Input, Label } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/lib/cart";
+import { sanitizeText } from "@/lib/sanitize";
 import { formatPrice } from "@/lib/products";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useActivePaymentMethods, useUserPaymentPreference, type PaymentMethod } from "@/hooks/use-payment-methods";
@@ -259,7 +260,12 @@ export default function CheckoutPage() {
     if (!validateForm()) return;
     setLoading(true);
 
-    const shippingAddress = { full_name: fullName, address, city, country };
+    const shippingAddress = {
+      full_name: sanitizeText(fullName, 150),
+      address: sanitizeText(address, 300),
+      city: sanitizeText(city, 100),
+      country: sanitizeText(country, 100),
+    };
 
     try {
       const { data: { session } } = await supabase.auth.getSession();

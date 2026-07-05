@@ -6,6 +6,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/index";
 import { toast } from "sonner";
+import { sanitizeText, sanitizeMultiline, sanitizePhone, sanitizeUrl } from "@/lib/sanitize";
 import {
   Store, ShieldCheck, Lock, CheckCircle, AlertCircle,
   Globe,
@@ -76,13 +77,20 @@ export default function SellerSettings() {
     if (!form.store_name.trim()) { toast.error("Store name is required."); return; }
     setSaving(true);
     try {
+      const safeLogo = form.store_logo.trim() ? sanitizeUrl(form.store_logo) : null;
+      const safeBanner = form.store_banner.trim() ? sanitizeUrl(form.store_banner) : null;
+      if ((form.store_logo.trim() && !safeLogo) || (form.store_banner.trim() && !safeBanner)) {
+        toast.error("Logo/banner must be valid http(s) links.");
+        setSaving(false);
+        return;
+      }
       const { error } = await (supabase.from("sellers") as any).update({
-        store_name: form.store_name.trim(),
-        store_description: form.store_description.trim() || null,
-        store_logo: form.store_logo.trim() || null,
-        store_banner: form.store_banner.trim() || null,
-        phone: form.phone.trim() || null,
-        address: form.address.trim() || null,
+        store_name: sanitizeText(form.store_name, 200),
+        store_description: form.store_description.trim() ? sanitizeMultiline(form.store_description, 2000) : null,
+        store_logo: safeLogo,
+        store_banner: safeBanner,
+        phone: form.phone.trim() ? sanitizePhone(form.phone) : null,
+        address: form.address.trim() ? sanitizeMultiline(form.address, 500) : null,
       }).eq("id", seller.id);
       if (error) throw error;
       toast.success("Store settings saved!");

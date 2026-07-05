@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import { sanitizeText, sanitizePhone } from "@/lib/sanitize";
 
 export default function AccountProfile() {
   const { user } = useAuth();
@@ -48,7 +49,11 @@ export default function AccountProfile() {
     const { error } = await supabase
       .from("profiles")
       .upsert(
-        { id: user.id, full_name: fullName || null, phone: phone || null } as any,
+        {
+          id: user.id,
+          full_name: fullName.trim() ? sanitizeText(fullName, 100) : null,
+          phone: phone.trim() ? sanitizePhone(phone) : null,
+        } as any,
         { onConflict: "id" }
       );
     setSaving(false);

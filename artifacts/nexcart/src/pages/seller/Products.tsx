@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea, Select, Skeleton } from "@/components/ui/index";
 import { ImagePicker } from "@/components/nexcart/ImagePicker";
 import { toast } from "sonner";
+import { sanitizeText, sanitizeMultiline, sanitizeSlug, sanitizeNumber, sanitizeInteger, sanitizeUrl } from "@/lib/sanitize";
 import type { Database } from "@/integrations/supabase/types";
 
 type Product = Database["public"]["Tables"]["products"]["Row"];
@@ -111,13 +112,13 @@ export default function SellerProducts() {
     setSaving(true);
     try {
       const payload = {
-        title: form.title.trim(),
-        slug: form.slug || toSlug(form.title),
-        description: form.description || null,
-        price: parseFloat(form.price),
-        compare_at_price: form.compare_at_price ? parseFloat(form.compare_at_price) : null,
-        currency: form.currency,
-        stock: parseInt(form.stock, 10),
+        title: sanitizeText(form.title, 200),
+        slug: sanitizeSlug(form.slug || toSlug(form.title)),
+        description: form.description ? sanitizeMultiline(form.description, 5000) : null,
+        price: sanitizeNumber(form.price, 0.01, 1_000_000_000),
+        compare_at_price: form.compare_at_price ? sanitizeNumber(form.compare_at_price, 0.01, 1_000_000_000) : null,
+        currency: sanitizeText(form.currency, 10),
+        stock: sanitizeInteger(form.stock, 0, 1_000_000),
         category_id: form.category_id || null,
         is_featured: form.is_featured,
         is_active: form.is_active,
@@ -136,14 +137,18 @@ export default function SellerProducts() {
       }
 
       // Save image record if we have a URL (either uploaded or typed)
-      if (form.image_url.trim() && productId) {
+      const safeImageUrl = form.image_url.trim() ? sanitizeUrl(form.image_url) : null;
+      if (form.image_url.trim() && !safeImageUrl) {
+        toast.error("Image URL must be a valid http(s) link — image was not saved.");
+      }
+      if (safeImageUrl && productId) {
         if (editing) {
           await supabase.from("product_images")
             .delete().eq("product_id", productId).eq("is_primary", true);
         }
         await supabase.from("product_images").insert({
           product_id: productId,
-          url: form.image_url.trim(),
+          url: safeImageUrl,
           is_primary: true,
           sort_order: 0,
         } as any);
