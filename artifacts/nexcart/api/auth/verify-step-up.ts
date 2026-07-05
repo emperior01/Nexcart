@@ -26,7 +26,8 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  const { data: authUser } = await db.auth.admin.getUserById(session.user_id);
+  // Same duplicate-type-declaration workaround as login.ts / session.ts.
+  const { data: authUser } = await (db.auth as any).admin.getUserById(session.user_id);
   const email = authUser?.user?.email;
   if (!email) {
     res.status(500).json({ error: "Could not resolve account email." });
