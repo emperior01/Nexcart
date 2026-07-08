@@ -48,19 +48,38 @@ export function getClientIp(req: any): string {
 }
 
 async function upstashPipeline(commands: (string | number)[][]): Promise<any[]> {
-  const res = await fetch(`${UPSTASH_URL}/pipeline`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${UPSTASH_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(commands),
-  });
-  if (!res.ok) {
-    throw new Error(`Upstash pipeline failed: ${res.status}`);
+  // Without a timeout, a genuinely unreachable Upstash (network partition,
+  // DNS failure) would hang this fetch on the OS-level TCP/TLS timeout —
+  // tens of seconds — stalling every protected route, including login and
+  // checkout. That would turn "fail open for availability" into an outage
+  // caused by an unrelated service. 1.5s is generous for a same-region
+  // Redis REST call but short enough that a real outage fails fast.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1500);
+  try {
+    // Typed `any` deliberately: api/tsconfig.json compiles with
+    // `lib: ["es2022"]` (no "dom"), so the ambient global `Response` type
+    // in scope here is an incomplete fallback missing `.ok`/`.status`/
+    // `.json()`. Rather than adding "dom" to the shared api/tsconfig.json
+    // (which would affect all 12 routes for one file's sake), this keeps
+    // the workaround local to the one place that needs it.
+    const res: any = await fetch(`${UPSTASH_URL}/pipeline`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${UPSTASH_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(commands),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`Upstash pipeline failed: ${res.status}`);
+    }
+    const data = (await res.json()) as { result: any; error?: string }[];
+    return data.map((entry) => entry.result);
+  } finally {
+    clearTimeout(timeout);
   }
-  const data = (await res.json()) as { result: any; error?: string }[];
-  return data.map((entry) => entry.result);
 }
 
 /**
