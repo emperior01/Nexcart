@@ -2,12 +2,17 @@ import { db, authClient } from "../_lib/db.js";
 import { createSession, resolveRole, revokeSession } from "../_lib/session.js";
 import { SESSION_COOKIE, GUEST_CART_COOKIE, parseCookies, serializeCookie, clearCookie, appendSetCookie } from "../_lib/cookies.js";
 import { consumeGuestCartForMerge } from "../_lib/guestCart.js";
+import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
+
+  // No session exists yet at this point, so this is IP-scoped. This is the
+  // credential-guessing surface — tightest tier on purpose.
+  if (await enforceRateLimit(req, res, "auth:login", RATE_LIMIT_TIERS.AUTH_STRICT)) return;
 
   const { email, password, rememberMe } = (req.body ?? {}) as {
     email?: string;

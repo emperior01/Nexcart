@@ -1,11 +1,14 @@
 import { revokeSession } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies.js";
+import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
+
+  if (await enforceRateLimit(req, res, "auth:logout", RATE_LIMIT_TIERS.AUTH_MODERATE)) return;
 
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies[SESSION_COOKIE];

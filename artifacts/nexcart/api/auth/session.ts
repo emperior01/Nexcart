@@ -1,6 +1,7 @@
 import { db } from "../_lib/db.js";
 import { validateSession } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies.js";
+import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
 
 // This replaces the client-side supabase.auth.getUser()/getSession() calls
 // that use-auth.ts previously relied on. The frontend should call this on
@@ -12,6 +13,11 @@ export default async function handler(req: any, res: any) {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
+
+  // This gets called on every page load / auth-state change, so it's the
+  // loosest tier — not a sensitive action, just needs a ceiling against a
+  // runaway client-side retry loop.
+  if (await enforceRateLimit(req, res, "auth:session", RATE_LIMIT_TIERS.GENERAL)) return;
 
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies[SESSION_COOKIE];

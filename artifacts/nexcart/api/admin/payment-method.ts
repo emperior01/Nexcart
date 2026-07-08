@@ -1,6 +1,7 @@
 import { db } from "../_lib/db.js";
 import { validateSession, hasFreshStepUp } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies } from "../_lib/cookies.js";
+import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
 
 // Covers both "toggle active/inactive" and "update config" from
 // use-payment-methods.ts — both were direct client-side updates to
@@ -22,6 +23,11 @@ export default async function handler(req: any, res: any) {
     res.status(403).json({ error: "Admin access required." });
     return;
   }
+
+  // Backstop against a compromised/stolen admin session being hammered.
+  // Keyed by user_id, not IP.
+  if (await enforceRateLimit(req, res, "admin:payment-method", RATE_LIMIT_TIERS.ADMIN_ACTION, session.user_id)) return;
+
   if (!hasFreshStepUp(session)) {
     res.status(403).json({ error: "step_up_required" });
     return;

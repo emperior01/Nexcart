@@ -1,9 +1,14 @@
 import { GUEST_CART_COOKIE, parseCookies, serializeCookie, clearCookie, appendSetCookie } from "../_lib/cookies.js";
 import { getGuestCart, addToGuestCart, updateGuestCartItem, removeFromGuestCart } from "../_lib/guestCart.js";
+import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
 
 const GUEST_CART_MAX_AGE = 30 * 24 * 60 * 60; // 30 days, matches guest_carts.expires_at default
 
 export default async function handler(req: any, res: any) {
+  // Applies across GET/POST/PATCH/DELETE alike — this route has no auth,
+  // so IP is the only identifier available.
+  if (await enforceRateLimit(req, res, "cart:guest", RATE_LIMIT_TIERS.GENERAL)) return;
+
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies[GUEST_CART_COOKIE];
 

@@ -1,6 +1,7 @@
 import { db, authClient } from "../_lib/db.js";
 import { createSession, resolveRole, revokeSession } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies, serializeCookie, appendSetCookie } from "../_lib/cookies.js";
+import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
 
 // Used for OAuth (Google) sign-ins, which are redirect-based — there's no
 // password to re-verify here like in login.ts. Instead, this trusts an
@@ -17,6 +18,9 @@ export default async function handler(req: any, res: any) {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
+
+  // No nex_session exists yet at this point, so this is IP-scoped.
+  if (await enforceRateLimit(req, res, "auth:oauth-session", RATE_LIMIT_TIERS.AUTH_MODERATE)) return;
 
   const { accessToken } = (req.body ?? {}) as { accessToken?: string };
   if (!accessToken) {
