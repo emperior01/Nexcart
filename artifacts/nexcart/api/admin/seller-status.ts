@@ -1,7 +1,7 @@
 import { db } from "../_lib/db.js";
 import { validateSession, hasFreshStepUp } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies } from "../_lib/cookies.js";
-import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
@@ -21,7 +21,10 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  if (await enforceRateLimit(req, res, "admin:seller-status", RATE_LIMIT_TIERS.ADMIN_ACTION, session.user_id)) return;
+  // Backstop against a compromised/stolen admin session being hammered.
+  // Keyed by user_id, not IP. Fails CLOSED — admin mutations must not run
+  // unthrottled during a Redis outage.
+  if (await enforceRateLimit(req, res, "admin:seller-status", session.user_id)) return;
 
   if (!hasFreshStepUp(session)) {
     res.status(403).json({ error: "step_up_required" });

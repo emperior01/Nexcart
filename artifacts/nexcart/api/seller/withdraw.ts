@@ -1,7 +1,7 @@
 import { db } from "../_lib/db.js";
 import { validateSession, hasFreshStepUp } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies } from "../_lib/cookies.js";
-import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
 
 // Moves withdrawal creation server-side specifically so step-up
 // verification can actually be enforced. The previous client-side direct
@@ -23,8 +23,10 @@ export default async function handler(req: any, res: any) {
   }
 
   // Real money leaving the platform — tightest non-auth tier, keyed by
-  // user_id so this can't be dodged by switching IPs.
-  if (await enforceRateLimit(req, res, "seller:withdraw", RATE_LIMIT_TIERS.FINANCIAL, session.user_id)) return;
+  // user_id so this can't be dodged by switching IPs. Fails CLOSED: a
+  // withdrawal must never be allowed to proceed unthrottled just because
+  // Redis is down.
+  if (await enforceRateLimit(req, res, "seller:withdraw", session.user_id)) return;
 
   if (!hasFreshStepUp(session)) {
     res.status(403).json({ error: "step_up_required" });

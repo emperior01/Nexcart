@@ -1,12 +1,16 @@
 import { validateSession } from "../_lib/session.js";
 import { createCheckoutSession, getCheckoutSession, completeCheckoutSession } from "../_lib/checkoutSession.js";
 import { SESSION_COOKIE, GUEST_CART_COOKIE, parseCookies } from "../_lib/cookies.js";
-import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
 
 export default async function handler(req: any, res: any) {
   // Applies across GET/POST/PATCH alike. IP-based — logged-in and guest
-  // checkouts both hit this, so user_id isn't always available.
-  if (await enforceRateLimit(req, res, "checkout:session", RATE_LIMIT_TIERS.GENERAL)) return;
+  // checkouts both hit this, so user_id isn't always available. Checkout
+  // is on the sensitive list, so this now fails CLOSED (503) if Redis is
+  // unreachable rather than the previous always-fail-open behavior — an
+  // unprotected checkout path is a bigger risk than a brief 503 during an
+  // outage.
+  if (await enforceRateLimit(req, res, "checkout:session")) return;
 
   const cookies = parseCookies(req.headers.cookie);
 

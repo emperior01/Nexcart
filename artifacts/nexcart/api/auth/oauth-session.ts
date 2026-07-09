@@ -1,7 +1,7 @@
 import { db, authClient } from "../_lib/db.js";
 import { createSession, resolveRole, revokeSession } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies, serializeCookie, appendSetCookie } from "../_lib/cookies.js";
-import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
 
 // Used for OAuth (Google) sign-ins, which are redirect-based — there's no
 // password to re-verify here like in login.ts. Instead, this trusts an
@@ -19,8 +19,10 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  // No nex_session exists yet at this point, so this is IP-scoped.
-  if (await enforceRateLimit(req, res, "auth:oauth-session", RATE_LIMIT_TIERS.AUTH_MODERATE)) return;
+  // No nex_session exists yet at this point, so this is IP-scoped. Mints a
+  // session the same as login.ts, so it gets the same sensitive
+  // classification — fails CLOSED if Redis is unreachable.
+  if (await enforceRateLimit(req, res, "auth:oauth-session")) return;
 
   const { accessToken } = (req.body ?? {}) as { accessToken?: string };
   if (!accessToken) {

@@ -1,6 +1,6 @@
 import { revokeSession } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies.js";
-import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
@@ -8,7 +8,9 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  if (await enforceRateLimit(req, res, "auth:logout", RATE_LIMIT_TIERS.AUTH_MODERATE)) return;
+  // Normal tier, fails open — a Redis outage should never be the reason
+  // someone can't log out.
+  if (await enforceRateLimit(req, res, "auth:logout")) return;
 
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies[SESSION_COOKIE];

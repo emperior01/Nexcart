@@ -1,6 +1,6 @@
 import { validateSession, revokeAllSessionsForUser } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies, clearCookie, appendSetCookie } from "../_lib/cookies.js";
-import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
@@ -19,7 +19,10 @@ export default async function handler(req: any, res: any) {
 
   // Keyed by user_id, not IP — this is an authenticated action, and IP
   // limiting would let the same account get hammered from many IPs.
-  if (await enforceRateLimit(req, res, "auth:logout-all", RATE_LIMIT_TIERS.AUTH_MODERATE, session.user_id)) return;
+  // Normal tier, fails open — same reasoning as logout.ts: revoking
+  // sessions is a security-positive action, so a Redis outage shouldn't
+  // be able to block it.
+  if (await enforceRateLimit(req, res, "auth:logout-all", session.user_id)) return;
 
   await revokeAllSessionsForUser(session.user_id);
 

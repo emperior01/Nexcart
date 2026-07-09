@@ -1,7 +1,7 @@
 import { db, authClient } from "../_lib/db.js";
 import { validateSession, markStepUpVerified } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies } from "../_lib/cookies.js";
-import { enforceRateLimit, RATE_LIMIT_TIERS } from "../_lib/rateLimit.js";
+import { enforceRateLimit } from "../_lib/rateLimit.js";
 
 // Called when a sensitive action (like requesting a payout) has been
 // blocked because the session's last password confirmation is too old.
@@ -22,10 +22,10 @@ export default async function handler(req: any, res: any) {
   }
 
   // Password-guessing surface (re-checks the account password), so this
-  // gets the strict tier. Keyed by user_id since the session is already
-  // known here — a stolen/shared session token still gets throttled per
-  // account, not per IP.
-  if (await enforceRateLimit(req, res, "auth:verify-step-up", RATE_LIMIT_TIERS.AUTH_STRICT, session.user_id)) return;
+  // gets the strict, fail-closed tier. Keyed by user_id since the session
+  // is already known here — a stolen/shared session token still gets
+  // throttled per account, not per IP.
+  if (await enforceRateLimit(req, res, "auth:verify-step-up", session.user_id)) return;
 
   const { password } = (req.body ?? {}) as { password?: string };
   if (!password) {
