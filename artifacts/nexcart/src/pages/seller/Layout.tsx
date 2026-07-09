@@ -323,15 +323,15 @@ export default function SellerLayout() {
     if (!user) { void navigate({ to: "/auth" }); return; }
     if (!seller) { void navigate({ to: "/become-seller" }); return; }
     const status = seller.verification_status as string;
-    if (status === "suspended") {
-      void navigate({ to: "/" });
+    if (status === "suspended" || status === "pending" || status === "rejected") {
+      void navigate({ to: "/become-seller" });
     }
   }, [user, seller, authLoading, sellerLoading, navigate]);
 
   async function signOut() {
     void clearServerSession();
     await supabase.auth.signOut();
-    void navigate({ to: "/" });
+    void navigate({ to: "/become-seller" });
   }
 
   if (authLoading || sellerLoading) {
