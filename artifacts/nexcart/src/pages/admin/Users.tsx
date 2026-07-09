@@ -75,6 +75,50 @@ interface UsersPageData {
   rlsRestricted: boolean;
 }
 
+type UserAuthDetail = {
+  createdAt: string | null;
+  lastSignInAt: string | null;
+  emailConfirmedAt: string | null;
+  phoneConfirmedAt: string | null;
+};
+
+/** Pulls registration date / last login / verification status straight from
+ * Supabase Auth (via the user-detail admin action) — these aren't stored on
+ * `profiles` and don't need to be; Supabase already tracks them per user. */
+async function fetchUserDetail(userId: string): Promise<UserAuthDetail> {
+  const fallback: UserAuthDetail = {
+    createdAt: null,
+    lastSignInAt: null,
+    emailConfirmedAt: null,
+    phoneConfirmedAt: null,
+  };
+  const res = await fetch("/api/admin/moderation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ action: "user-detail", userId }),
+  });
+  if (!res.ok) return fallback;
+  const data = await res.json().catch(() => ({}));
+  return {
+    createdAt: data.createdAt ?? null,
+    lastSignInAt: data.lastSignInAt ?? null,
+    emailConfirmedAt: data.emailConfirmedAt ?? null,
+    phoneConfirmedAt: data.phoneConfirmedAt ?? null,
+  };
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return "Not available";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "Not available";
+  return (
+    d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) +
+    " · " +
+    d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+  );
+}
+
 const PAGE_SIZE = 10;
 
 /* Data fetching */
@@ -283,32 +327,55 @@ export default function AdminUsers() {
     staleTime: 0,
   });
 
-  async function toggleAdmin(userId: string, currentlyAdmin: boolean) {
-    if (currentlyAdmin) {
-      const { error } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId)
-        .eq("role", "admin");
-      if (error) toast.error(error.message);
-      else toast.success("Admin role removed.");
-    } else {
-      const { error } = await supabase
-        .from("user_roles")
-        .upsert({ user_id: userId, role: "admin" } as any);
-      if (error) toast.error(error.message);
-      else toast.success("Admin role granted.");
-    }
-    qc.invalidateQueries({ queryKey: ["admin-users"] });
-  }
+  const { data: userDetail, isLoading: userDetailLoading } = useQuery({
+    queryKey: ["admin-user-detail", selectedUser?.id],
+    queryFn: () => fetchUserDetail(selectedUser!.id),
+    enabled: !!selectedUser,
+    staleTime: 60_000,
+  });
 
-  async function toggleBan(userId: string, currentlyBanned: boolean) {
+  async function toggleAdmin(userId: string, currentlyAdmin: boolean) {
+    const confirmMessage = currentlyAdmin
+      ? "Remove admin privileges from this user?"
+      : "Grant this user full admin access? They'll be able to manage all users, orders, and settings.";
+    if (!window.confirm(confirmMessage)) return;
+
     const res = await runWithStepUp(() =>
       fetch("/api/admin/moderation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ action: "ban-user", userId, banned: !currentlyBanned }),
+        body: JSON.stringify({
+          action: currentlyAdmin ? "demote-admin" : "promote-admin",
+          userId,
+        }),
+      })
+    );
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      toast.error(data.error ?? "Failed to update admin status.");
+      return;
+    }
+    toast.success(currentlyAdmin ? "Admin privileges removed." : "Admin role granted.");
+    qc.invalidateQueries({ queryKey: ["admin-users"] });
+  }
+
+  async function toggleBan(userId: string, currentlyBanned: boolean) {
+    let reason: string | undefined;
+    if (!currentlyBanned) {
+      const input = window.prompt("Reason for banning this user (optional):");
+      if (input === null) return; // cancelled
+      reason = input.trim() || undefined;
+    } else if (!window.confirm("Reactivate this user's account?")) {
+      return;
+    }
+
+    const res = await runWithStepUp(() =>
+      fetch("/api/admin/moderation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "ban-user", userId, banned: !currentlyBanned, reason }),
       })
     );
     if (!res.ok) {
@@ -316,7 +383,7 @@ export default function AdminUsers() {
       toast.error(data.error ?? "Failed to update.");
       return;
     }
-    toast.success(currentlyBanned ? "User unbanned." : "User banned.");
+    toast.success(currentlyBanned ? "User reactivated." : "User banned.");
     qc.invalidateQueries({ queryKey: ["admin-users"] });
   }
 
@@ -421,10 +488,9 @@ export default function AdminUsers() {
             />
             <StatCard
               label="New This Month"
-              value="—"
+              value="Not available"
               icon={UserPlus}
               gradient="linear-gradient(135deg,#3B82F6,#1D4ED8)"
-              note="Requires schema update"
             />
             <StatCard
               label="Admin Users"
@@ -691,14 +757,17 @@ export default function AdminUsers() {
                   <DetailRow
                     icon={Calendar}
                     label="Registration Date"
-                    value="—"
-                    note="Requires schema update (no created_at on profiles)"
+                    value={userDetailLoading ? "Loading…" : formatDate(userDetail?.createdAt ?? null)}
                   />
                   <DetailRow
                     icon={Clock}
                     label="Last Login"
-                    value="—"
-                    note="Not tracked by current schema"
+                    value={userDetailLoading ? "Loading…" : formatDate(userDetail?.lastSignInAt ?? null)}
+                  />
+                  <DetailRow
+                    icon={CheckCircle2}
+                    label="Email Verified"
+                    value={userDetailLoading ? "Loading…" : userDetail?.emailConfirmedAt ? "Yes" : "No"}
                   />
                   <DetailRow
                     icon={ShoppingBag}
@@ -763,7 +832,7 @@ export default function AdminUsers() {
         open={open}
         onOpenChange={setOpen}
         onVerified={handleVerified}
-        description="Banning or unbanning a user requires a fresh password confirmation. Please re-enter your password to continue."
+        description="This action requires a fresh password confirmation. Please re-enter your password to continue."
       />
     </div>
   );
