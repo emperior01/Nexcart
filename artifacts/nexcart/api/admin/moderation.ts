@@ -1,5 +1,5 @@
 import { db } from "../_lib/db.js";
-import { validateSession, hasFreshStepUp } from "../_lib/session.js";
+import { validateSession, hasFreshStepUp, revokeAllSessionsForUser } from "../_lib/session.js";
 import { SESSION_COOKIE, parseCookies } from "../_lib/cookies.js";
 import { enforceRateLimit, getClientIp } from "../_lib/rateLimit.js";
 import { getRequestId } from "../_lib/securityLog.js";
@@ -46,19 +46,131 @@ export default async function handler(req: any, res: any) {
       return;
     }
 
-    const { userId, banned } = (req.body ?? {}) as { userId?: string; banned?: boolean };
+    const { userId, banned, reason } = (req.body ?? {}) as {
+      userId?: string;
+      banned?: boolean;
+      reason?: string;
+    };
     if (!userId || typeof banned !== "boolean") {
       res.status(400).json({ error: "userId and banned are required." });
       return;
     }
 
-    const { error } = await db.from("profiles").update({ banned }).eq("id", userId);
+    const { error } = await db
+      .from("profiles")
+      .update({ banned, ban_reason: banned ? reason?.trim() || null : null })
+      .eq("id", userId);
     if (error) {
       res.status(500).json({ error: error.message });
       return;
     }
 
+    // A banned user's existing sessions must die immediately — otherwise
+    // someone already logged in keeps full access until their session
+    // naturally expires. Best-effort: the ban itself already committed
+    // above, so a revocation hiccup shouldn't be reported as a failed ban.
+    if (banned) {
+      try {
+        await revokeAllSessionsForUser(userId);
+      } catch (revokeError) {
+        console.error("[moderation] revokeAllSessionsForUser failed:", revokeError);
+      }
+    }
+
+    await writeUserAuditLog(req, {
+      adminId: session.user_id,
+      targetUserId: userId,
+      action: banned ? "ban" : "unban",
+      reason: banned ? reason?.trim() || undefined : undefined,
+    });
+
     res.status(200).json({ success: true });
+    return;
+  }
+
+  if (action === "promote-admin" || action === "demote-admin") {
+    if (await enforceRateLimit(req, res, "admin:user-role", session.user_id)) return;
+    if (!hasFreshStepUp(session)) {
+      res.status(403).json({ error: "step_up_required" });
+      return;
+    }
+
+    const { userId } = (req.body ?? {}) as { userId?: string };
+    if (!userId) {
+      res.status(400).json({ error: "userId is required." });
+      return;
+    }
+
+    if (action === "demote-admin") {
+      // Never let the last admin on the platform be removed — even by
+      // another admin, and even accidentally — or the marketplace ends up
+      // with no one who can promote a new admin back in.
+      const { count, error: countError } = await db
+        .from("user_roles")
+        .select("user_id", { count: "exact", head: true })
+        .eq("role", "admin");
+      if (countError) {
+        res.status(500).json({ error: countError.message });
+        return;
+      }
+      if ((count ?? 0) <= 1) {
+        res.status(400).json({ error: "Cannot remove the last administrator." });
+        return;
+      }
+
+      const { error } = await db
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      if (error) {
+        res.status(500).json({ error: error.message });
+        return;
+      }
+    } else {
+      const { error } = await db
+        .from("user_roles")
+        .upsert({ user_id: userId, role: "admin" } as any);
+      if (error) {
+        res.status(500).json({ error: error.message });
+        return;
+      }
+    }
+
+    await writeUserAuditLog(req, {
+      adminId: session.user_id,
+      targetUserId: userId,
+      action: action === "demote-admin" ? "demote" : "promote",
+    });
+
+    res.status(200).json({ success: true });
+    return;
+  }
+
+  if (action === "user-detail") {
+    if (await enforceRateLimit(req, res, "admin:user-detail", session.user_id)) return;
+
+    const { userId } = (req.body ?? {}) as { userId?: string };
+    if (!userId) {
+      res.status(400).json({ error: "userId is required." });
+      return;
+    }
+
+    // Supabase Auth already tracks registration date, last login, and email
+    // verification per user — no custom schema/columns needed for these.
+    const { data, error } = await db.auth.admin.getUserById(userId);
+    if (error || !data?.user) {
+      res.status(404).json({ error: "User not found." });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      createdAt: data.user.created_at ?? null,
+      lastSignInAt: data.user.last_sign_in_at ?? null,
+      emailConfirmedAt: data.user.email_confirmed_at ?? null,
+      phoneConfirmedAt: data.user.phone_confirmed_at ?? null,
+    });
     return;
   }
 
@@ -291,8 +403,35 @@ export default async function handler(req: any, res: any) {
   }
 
   res.status(400).json({
-    error: "action must be one of: ban-user, seller-status, suspend-seller, reactivate-seller, approve-seller, reject-seller.",
+    error:
+      "action must be one of: ban-user, seller-status, suspend-seller, reactivate-seller, approve-seller, reject-seller, promote-admin, demote-admin, user-detail.",
   });
+}
+
+async function writeUserAuditLog(
+  req: any,
+  entry: {
+    adminId: string;
+    targetUserId: string;
+    action: "ban" | "unban" | "promote" | "demote";
+    reason?: string;
+  }
+): Promise<void> {
+  // Best-effort, same reasoning as writeAuditLog above: the moderation
+  // action itself already committed, so a logging failure shouldn't be
+  // reported to the caller as a failed ban/promotion. Still visible in
+  // Vercel's logs if it happens.
+  const { error } = await db.from("user_audit_logs").insert({
+    admin_id: entry.adminId,
+    target_user_id: entry.targetUserId,
+    action: entry.action,
+    reason: entry.reason ?? null,
+    request_id: getRequestId(req),
+    ip_address: getClientIp(req),
+  });
+  if (error) {
+    console.error("[user_audit_logs] insert failed:", error.message);
+  }
 }
 
 async function writeAuditLog(

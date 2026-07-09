@@ -74,6 +74,7 @@ export const ROUTE_POLICIES: Record<string, RoutePolicy> = {
   "admin:seller-status": { classification: "sensitive", limit: 30, windowSeconds: 60 },
   "admin:payment-method": { classification: "sensitive", limit: 30, windowSeconds: 60 },
   "admin:user-ban": { classification: "sensitive", limit: 30, windowSeconds: 60 },
+  "admin:user-role": { classification: "sensitive", limit: 20, windowSeconds: 60 },
 
   // 🟡 Normal — authenticated but not credential-guessing or money-moving.
   // Blocking these during a Redis outage would itself be a bad security
@@ -82,6 +83,7 @@ export const ROUTE_POLICIES: Record<string, RoutePolicy> = {
   "auth:logout-all": { classification: "normal", limit: 20, windowSeconds: 60 },
   "auth:session": { classification: "normal", limit: 60, windowSeconds: 60 },
   "cart:guest": { classification: "normal", limit: CART_LIMIT, windowSeconds: 60 },
+  "admin:user-detail": { classification: "normal", limit: 60, windowSeconds: 60 },
 
   // 🟢 Public — reserved for browse/search/listing routes. None of these
   // exist as serverless functions yet (product listing etc. currently
