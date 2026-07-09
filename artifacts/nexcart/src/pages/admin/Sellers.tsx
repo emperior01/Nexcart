@@ -69,11 +69,11 @@ export default function AdminSellers() {
 
   async function updateStatus(seller: SellerApplication, status: SellerApplication["verification_status"]) {
     const res = await runWithStepUp(() =>
-      fetch("/api/admin/seller-status", {
+      fetch("/api/admin/moderation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ sellerId: seller.id, status, storeName: seller.store_name }),
+        body: JSON.stringify({ action: "seller-status", sellerId: seller.id, status, storeName: seller.store_name }),
       })
     );
 

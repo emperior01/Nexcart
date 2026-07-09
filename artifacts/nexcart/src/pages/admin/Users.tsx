@@ -304,11 +304,11 @@ export default function AdminUsers() {
 
   async function toggleBan(userId: string, currentlyBanned: boolean) {
     const res = await runWithStepUp(() =>
-      fetch("/api/admin/user-ban", {
+      fetch("/api/admin/moderation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ userId, banned: !currentlyBanned }),
+        body: JSON.stringify({ action: "ban-user", userId, banned: !currentlyBanned }),
       })
     );
     if (!res.ok) {
