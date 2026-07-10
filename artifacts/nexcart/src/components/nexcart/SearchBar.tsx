@@ -5,14 +5,22 @@
  * Navigates to the shop page with the search query.
  */
 
-import { useState, useRef, useCallback } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Search, X } from "lucide-react";
 
 export function SearchBar() {
-  const [query, setQuery] = useState("");
+  const searchStr = useRouterState({ select: (s) => s.location.searchStr });
+  const [query, setQuery] = useState(() => new URLSearchParams(searchStr).get("q") ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  // Keep this box in sync with the URL — otherwise it shows empty on the
+  // Shop page even when a search is already active (the Shop page's own
+  // filter box read the URL correctly; this one didn't).
+  useEffect(() => {
+    setQuery(new URLSearchParams(searchStr).get("q") ?? "");
+  }, [searchStr]);
 
   const handleSubmit = useCallback(() => {
     if (query.trim()) {
