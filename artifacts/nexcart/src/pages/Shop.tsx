@@ -10,6 +10,7 @@ import { Input, Select } from "@/components/ui/index";
 import { Skeleton } from "@/components/ui/index";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveCategories } from "@/hooks/use-categories";
+import { expandSearchQuery } from "@/lib/searchSynonyms";
 import type { ProductWithImages } from "@/lib/products";
 
 const PAGE_SIZE = 12;
@@ -50,7 +51,29 @@ export default function ShopPage() {
         .select("*, product_images(*), categories(id,name,slug)", { count: "exact" })
         .eq("is_active", true);
 
-      if (q) query = query.ilike("title", `%${q}%`);
+      if (q) {
+        // Multi-field, synonym-aware search: expands "pot" -> also
+        // "cookware", "saucepan", etc., then matches against title,
+        // description, and category name — not just an exact title
+        // substring like before.
+        const terms = expandSearchQuery(q);
+        if (terms.length > 0) {
+          const catMatches = await supabase
+            .from("categories")
+            .select("id")
+            .or(terms.map((t) => `name.ilike.%${t}%`).join(","));
+          const matchedCategoryIds = (catMatches.data ?? []).map((c) => (c as { id: string }).id);
+
+          const orParts = [
+            ...terms.map((t) => `title.ilike.%${t}%`),
+            ...terms.map((t) => `description.ilike.%${t}%`),
+          ];
+          if (matchedCategoryIds.length > 0) {
+            orParts.push(`category_id.in.(${matchedCategoryIds.join(",")})`);
+          }
+          query = query.or(orParts.join(","));
+        }
+      }
       if (category) {
         const catData = await supabase.from("categories").select("id").eq("slug", category).single();
         const catRow = catData.data as { id: string } | null;
