@@ -495,11 +495,10 @@ export default function CheckoutPage() {
                   ) : (
                     <CreditCard className="h-5 w-5" />
                   )}
-                  {loading
-                    ? "Redirecting to payment…"
-                    : selectedMethod
-                    ? `Pay with ${selectedMethod.name}`
-                    : `Pay ${formatPrice(total, cartCurrency, currency)}`}
+                  {!loading &&
+                    (selectedMethod
+                      ? `Pay with ${selectedMethod.name}`
+                      : `Pay ${formatPrice(total, cartCurrency, currency)}`)}
                 </Button>
               )}
 
