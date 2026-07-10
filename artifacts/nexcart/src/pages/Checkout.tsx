@@ -490,7 +490,11 @@ export default function CheckoutPage() {
                   className="w-full h-12 gap-2 font-bold text-white text-base"
                   style={{ background: "linear-gradient(135deg, #E8611A, #F5986A)" }}
                 >
-                  <CreditCard className="h-5 w-5" />
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <CreditCard className="h-5 w-5" />
+                  )}
                   {loading
                     ? "Redirecting to payment…"
                     : selectedMethod
