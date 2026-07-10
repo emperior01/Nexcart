@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag, Tag } from "lucide-react";
+import { X, ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useCart } from "@/lib/cart";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -234,11 +234,6 @@ export function CartDrawer() {
                       </div>
                     </div>
 
-                    {/* Promo hint */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderRadius: 10, border: "1.5px dashed #E8611A20", background: "#FFF8F5" }}>
-                      <Tag style={{ width: 14, height: 14, color: "#E8611A", flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: "#6B7280" }}>Have a promo code? Apply it at checkout.</span>
-                    </div>
 
                     {/* Checkout — sole primary CTA */}
                     <Link
