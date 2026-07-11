@@ -18,10 +18,11 @@ const PAGE_SIZE = 12;
 function useSearchParams() {
   const searchStr = useRouterState({ select: (s) => s.location.searchStr });
   const params = new URLSearchParams(searchStr);
+  const q = params.get("q") ?? "";
   return {
     category: params.get("category") ?? "",
-    q: params.get("q") ?? "",
-    sort: params.get("sort") ?? "newest",
+    q,
+    sort: params.get("sort") ?? (q ? "relevance" : "newest"),
     page: parseInt(params.get("page") ?? "1", 10),
   };
 }
@@ -46,6 +47,27 @@ export default function ShopPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["products", "shop", { category, q, sort, page }],
     queryFn: async () => {
+      // When there's a search query, use Phase D's hybrid semantic +
+      // keyword search (Edge Function) instead of the plain client-side
+      // query. Falls back to the synonym-only query below if the Edge
+      // Function call fails for any reason (network issue, cost/rate
+      // limit, etc.) — search should degrade, never break.
+      if (q) {
+        try {
+          const { data: fnData, error: fnError } = await supabase.functions.invoke("semantic-search", {
+            body: { query: q, categorySlug: category || undefined, sort, page, pageSize: PAGE_SIZE },
+          });
+          if (fnError) throw fnError;
+          if (fnData?.error) throw new Error(fnData.error);
+          return {
+            rows: (fnData?.products ?? []) as ProductWithImages[],
+            total: fnData?.totalCount ?? 0,
+          };
+        } catch (semanticSearchError) {
+          console.error("[Shop] semantic-search failed, falling back to keyword search:", semanticSearchError);
+        }
+      }
+
       let query = supabase
         .from("products")
         .select("*, product_images(*), categories(id,name,slug)", { count: "exact" })
@@ -142,6 +164,7 @@ export default function ShopPage() {
             onChange={(e) => setParam("sort", e.target.value)}
             className="w-36 rounded-xl border-[#EFEFEF]"
           >
+            <option value="relevance">Relevance</option>
             <option value="newest">Newest</option>
             <option value="price_asc">Price: Low–High</option>
             <option value="price_desc">Price: High–Low</option>
