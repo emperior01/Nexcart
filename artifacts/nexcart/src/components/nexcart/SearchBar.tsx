@@ -5,14 +5,18 @@
  * Navigates to the shop page with the search query.
  */
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, type ChangeEvent } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { Search, X } from "lucide-react";
+import { Search, X, Camera, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function SearchBar() {
   const searchStr = useRouterState({ select: (s) => s.location.searchStr });
   const [query, setQuery] = useState(() => new URLSearchParams(searchStr).get("q") ?? "");
+  const [imageSearchLoading, setImageSearchLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   // Keep this box in sync with the URL — otherwise it shows empty on the
@@ -27,6 +31,46 @@ export function SearchBar() {
       void navigate({ to: "/shop", search: { q: query.trim() } });
     }
   }, [query, navigate]);
+
+  const handleImagePicked = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = ""; // allow picking the same file again later
+      if (!file) return;
+
+      setImageSearchLoading(true);
+      try {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1] ?? "");
+          };
+          reader.onerror = () => reject(new Error("Could not read image"));
+          reader.readAsDataURL(file);
+        });
+
+        const { data, error } = await supabase.functions.invoke("image-to-query", {
+          body: { imageBase64: base64, mimeType: file.type || "image/jpeg" },
+        });
+
+        if (error) throw error;
+        if (data?.error) {
+          toast.error(data.error);
+          return;
+        }
+        if (data?.query) {
+          void navigate({ to: "/shop", search: { q: data.query } });
+        }
+      } catch (err) {
+        console.error("[SearchBar] image search failed:", err);
+        toast.error("Couldn't search with that photo. Please try again.");
+      } finally {
+        setImageSearchLoading(false);
+      }
+    },
+    [navigate]
+  );
 
   return (
     <div className="w-full relative">
@@ -59,6 +103,15 @@ export function SearchBar() {
           spellCheck={false}
         />
 
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleImagePicked}
+          style={{ display: "none" }}
+        />
+
         {query && (
           <button
             onClick={() => setQuery("")}
@@ -69,6 +122,20 @@ export function SearchBar() {
             <X style={{ width: 14, height: 14 }} strokeWidth={2.5} />
           </button>
         )}
+
+        <button
+          onClick={() => imageInputRef.current?.click()}
+          disabled={imageSearchLoading}
+          className="flex items-center justify-center flex-shrink-0 rounded-full transition-colors hover:bg-[#F4F4F4]"
+          style={{ width: 32, height: 32, marginRight: 4, color: "#9B9B9B" }}
+          aria-label="Search by photo"
+        >
+          {imageSearchLoading ? (
+            <Loader2 style={{ width: 16, height: 16 }} strokeWidth={2} className="animate-spin" />
+          ) : (
+            <Camera style={{ width: 17, height: 17 }} strokeWidth={1.8} />
+          )}
+        </button>
 
         <button
           onClick={handleSubmit}
