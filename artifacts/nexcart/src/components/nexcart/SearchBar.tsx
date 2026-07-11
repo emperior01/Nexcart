@@ -107,7 +107,6 @@ export function SearchBar() {
           ref={imageInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={handleImagePicked}
           style={{ display: "none" }}
         />
@@ -123,17 +122,33 @@ export function SearchBar() {
           </button>
         )}
 
+        <span
+          style={{
+            width: 1,
+            height: 22,
+            background: "#E8E8E8",
+            marginRight: 6,
+            flexShrink: 0,
+          }}
+        />
+
         <button
           onClick={() => imageInputRef.current?.click()}
           disabled={imageSearchLoading}
-          className="flex items-center justify-center flex-shrink-0 rounded-full transition-colors hover:bg-[#F4F4F4]"
-          style={{ width: 32, height: 32, marginRight: 4, color: "#9B9B9B" }}
+          className="flex items-center justify-center flex-shrink-0 rounded-full transition-all hover:opacity-90 active:scale-95"
+          style={{
+            width: 32,
+            height: 32,
+            marginRight: 8,
+            background: "#F4F4F4",
+            color: "#E8611A",
+          }}
           aria-label="Search by photo"
         >
           {imageSearchLoading ? (
-            <Loader2 style={{ width: 16, height: 16 }} strokeWidth={2} className="animate-spin" />
+            <Loader2 style={{ width: 16, height: 16 }} strokeWidth={2.2} className="animate-spin" />
           ) : (
-            <Camera style={{ width: 17, height: 17 }} strokeWidth={1.8} />
+            <Camera style={{ width: 16, height: 16 }} strokeWidth={2} />
           )}
         </button>
 
