@@ -47,6 +47,7 @@ export function SearchBar() {
   const searchStr = useRouterState({ select: (s) => s.location.searchStr });
   const [query, setQuery] = useState(() => new URLSearchParams(searchStr).get("q") ?? "");
   const [imageSearchLoading, setImageSearchLoading] = useState(false);
+  const [imageCandidates, setImageCandidates] = useState<string[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -64,6 +65,14 @@ export function SearchBar() {
     }
   }, [query, navigate]);
 
+  const searchForCandidate = useCallback(
+    (candidate: string) => {
+      setImageCandidates(null);
+      void navigate({ to: "/shop", search: { q: candidate } });
+    },
+    [navigate]
+  );
+
   const handleImagePicked = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -71,6 +80,7 @@ export function SearchBar() {
       if (!file) return;
 
       setImageSearchLoading(true);
+      setImageCandidates(null);
       try {
         // Phone camera photos are often 3-8MB, and base64 inflates that by
         // ~33% on top. Sending that whole thing as one JSON body over
@@ -89,8 +99,13 @@ export function SearchBar() {
           toast.error(data.error);
           return;
         }
-        if (data?.query) {
-          void navigate({ to: "/shop", search: { q: data.query } });
+        const queries: string[] = Array.isArray(data?.queries) ? data.queries : [];
+        if (queries.length === 1) {
+          searchForCandidate(queries[0]);
+        } else if (queries.length > 1) {
+          // Multiple distinct products spotted in the photo — let the
+          // shopper pick which one, rather than guessing which was meant.
+          setImageCandidates(queries);
         }
       } catch (err) {
         console.error("[SearchBar] image search failed:", err);
@@ -99,7 +114,7 @@ export function SearchBar() {
         setImageSearchLoading(false);
       }
     },
-    [navigate]
+    [searchForCandidate]
   );
 
   return (
@@ -194,6 +209,54 @@ export function SearchBar() {
           <Search style={{ width: 16, height: 16 }} strokeWidth={2.2} />
         </button>
       </div>
+
+      {imageCandidates && (
+        <div
+          className="absolute left-0 right-0 z-20"
+          style={{
+            top: "calc(100% + 8px)",
+            background: "#FFFFFF",
+            border: "1.5px solid #E8E8E8",
+            borderRadius: 16,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            padding: 12,
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#1A1A1A" }}>
+              Found a few products — which one?
+            </span>
+            <button
+              onClick={() => setImageCandidates(null)}
+              className="flex items-center justify-center rounded-full hover:bg-[#F4F4F4]"
+              style={{ width: 24, height: 24, color: "#9B9B9B", flexShrink: 0 }}
+              aria-label="Close"
+            >
+              <X style={{ width: 13, height: 13 }} strokeWidth={2.5} />
+            </button>
+          </div>
+          <div className="flex flex-col" style={{ gap: 6 }}>
+            {imageCandidates.map((candidate) => (
+              <button
+                key={candidate}
+                onClick={() => searchForCandidate(candidate)}
+                className="text-left transition-colors hover:bg-[#FFF3EC]"
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  background: "#FAFAFA",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "#1A1A1A",
+                  textTransform: "capitalize",
+                }}
+              >
+                {candidate}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
