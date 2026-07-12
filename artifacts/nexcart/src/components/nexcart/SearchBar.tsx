@@ -11,6 +11,38 @@ import { Search, X, Camera, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/** Resizes an image file down to maxDimension on its longest side and
+ * re-encodes as JPEG at the given quality, returning just the base64
+ * payload (no "data:image/jpeg;base64," prefix). Keeps image-search
+ * uploads small and fast regardless of how large the original camera
+ * photo was. */
+async function resizeImageToBase64(file: File, maxDimension: number, quality: number): Promise<string> {
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Could not read image"));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Could not load image"));
+    el.src = dataUrl;
+  });
+
+  const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not process image");
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const resizedDataUrl = canvas.toDataURL("image/jpeg", quality);
+  return resizedDataUrl.split(",")[1] ?? "";
+}
+
 export function SearchBar() {
   const searchStr = useRouterState({ select: (s) => s.location.searchStr });
   const [query, setQuery] = useState(() => new URLSearchParams(searchStr).get("q") ?? "");
@@ -40,18 +72,16 @@ export function SearchBar() {
 
       setImageSearchLoading(true);
       try {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const result = reader.result as string;
-            resolve(result.split(",")[1] ?? "");
-          };
-          reader.onerror = () => reject(new Error("Could not read image"));
-          reader.readAsDataURL(file);
-        });
+        // Phone camera photos are often 3-8MB, and base64 inflates that by
+        // ~33% on top. Sending that whole thing as one JSON body over
+        // mobile data is exactly what was getting truncated mid-transfer
+        // (server saw an empty/incomplete body). Resizing to a reasonable
+        // max dimension before upload fixes that and is faster besides —
+        // Gemini doesn't need full camera resolution to recognize a product.
+        const base64 = await resizeImageToBase64(file, 1024, 0.82);
 
         const { data, error } = await supabase.functions.invoke("image-to-query", {
-          body: { imageBase64: base64, mimeType: file.type || "image/jpeg" },
+          body: { imageBase64: base64, mimeType: "image/jpeg" },
         });
 
         if (error) throw error;
