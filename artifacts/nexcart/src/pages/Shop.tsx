@@ -33,6 +33,15 @@ export default function ShopPage() {
   const [search, setSearch] = useState(q);
   const [filterOpen, setFilterOpen] = useState(false);
 
+  // Without this, this box (and the page's own sense of what's being
+  // searched) goes stale whenever the URL's q changes from somewhere
+  // other than this input itself — e.g. image search redirecting here
+  // while the Shop page is already mounted. useState(q) above only reads
+  // the URL once, at first mount.
+  useEffect(() => {
+    setSearch(q);
+  }, [q]);
+
   function setParam(key: string, value: string) {
     const params = new URLSearchParams(window.location.search);
     if (value) params.set(key, value);
