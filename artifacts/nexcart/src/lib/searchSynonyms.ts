@@ -24,6 +24,22 @@ function normalize(s: string): string {
   return s.trim().toLowerCase();
 }
 
+// Short/common connector words that shouldn't become individual ILIKE
+// search terms — "and" is a substring of "brand", "handle", "android",
+// "understand", etc., so using it as a bare keyword term accidentally
+// matches huge swaths of an unrelated catalog. This came up for real with
+// an image-search-generated query like "electric clothes iron white and
+// grey", where the word "and" alone matched almost everything.
+const STOPWORDS = new Set([
+  "and", "or", "the", "a", "an", "is", "are", "was", "were", "in", "on",
+  "at", "to", "of", "for", "with", "this", "that", "it", "its", "from",
+  "by", "be", "as", "your", "my", "i", "you",
+]);
+
+function isUsableTerm(word: string): boolean {
+  return word.length >= 3 && !STOPWORDS.has(word);
+}
+
 /** Strips characters that would break a PostgREST .or() filter string
  * (commas, parens, periods) so user input can't corrupt the query. */
 export function sanitizeSearchTerm(term: string): string {
@@ -41,6 +57,7 @@ export function expandSearchQuery(rawQuery: string): string[] {
   const terms = new Set<string>([query]);
   const words = query.split(/\s+/).filter(Boolean);
   for (const word of words) {
+    if (!isUsableTerm(word)) continue;
     terms.add(word);
     for (const group of SYNONYM_GROUPS) {
       if (group.includes(word)) {
